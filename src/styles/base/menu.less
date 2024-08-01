@@ -1,0 +1,82 @@
+.app-menu {
+    position: fixed;
+    background-color: @color-secondary-base;
+    color: @color-font-gray; 
+    width:  256px;
+    height: 100vh;
+
+    .app-menu-header {
+        position: relative;
+        padding: 15px 0 15px 30px;
+        cursor: pointer;
+
+        .app-menu-title {
+            display: flex;
+            pointer-events: none;
+
+            img {
+                width: 32px;
+                height: 32px;
+                margin-right: 15px;
+            }
+    
+            h2 {
+                line-height: 32px;
+                color: @color-brand;
+            }
+        }
+
+        .app-menu-subtitle {
+            pointer-events: none;
+            margin-top: 15px;
+            color: @color-font-gray;  
+        }
+
+        border-bottom: 1px solid @color-tertiary-base;
+    }
+
+    .app-menu-content {
+        position: relative;
+        height: calc(100vh - 96px);
+        padding: 15px 0 15px 20px;
+
+        .app-menu-item{
+            display: flex;
+            padding: 15px;
+            cursor: pointer;
+            width: 185px;
+            border-radius: 10px;
+
+            img {
+                pointer-events: none;
+                width: 20px;
+                height: 20px;
+                margin-right: 20px;
+            }
+    
+            span {
+                pointer-events: none;
+                line-height: 25px;
+                font-weight: bold;
+            }
+
+            &:hover {
+                background-color: @color-tertiary-base;
+            }
+
+            &.menu-item-selected {
+                background-color: #0842a0;
+                color: @color-font-white;
+            }
+        }
+
+        .app-menu-footer {
+            position: absolute;
+            left: 0;
+            bottom: 35px;
+            width: calc(100% - 15px);
+            padding: 15px 0 15px 15px;
+            border-top: 1px solid @color-tertiary-base;
+        }
+    }
+  }
