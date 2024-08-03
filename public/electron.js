@@ -35,7 +35,7 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false);
   remoteMain.enable(mainWindow.webContents);
-  //mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
   mainWindow.on("closed", () => (mainWindow = null));
 }
 
