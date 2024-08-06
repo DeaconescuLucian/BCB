@@ -1,0 +1,17 @@
+@import 'generate-wallet';
+
+.page-container {
+    margin-top: @page-container-margin-top;
+    width: 100%;
+    height: @page-height;
+}
+
+.page-content-container {
+    width: calc(100% - 2 * @default-page-container-padding);
+    margin-top: 15px;
+    height: calc(@page-height - 2 * @default-page-container-padding);
+    background-color: @color-secondary-base;
+    border-radius: 10px;
+    box-shadow: 0px 0px 12px @color-brand;
+    padding: @default-page-container-padding;
+}

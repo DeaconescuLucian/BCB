@@ -30,19 +30,24 @@ body {
   overflow-x: hidden;
 }
 
+img {
+  width: 20px;
+  height: 20px;
+}
+
 .main-container {
   position: fixed;
   left: 256px;
-  width: calc(100vw - 256px);
-  height: 100vh;
+  width: calc(100vw - @menu-width - 2 * @default-main-container-padding);
+  height: calc(100vh - 2 * @default-main-container-padding);
   padding: 30px;
   color: @color-font-gray;
 }
 
 .top-bar {
   position: fixed;
-  left: 256px;
-  width: calc(100vw - 256px);
+  left: @menu-width;
+  width: calc(100vw - @menu-width);
   z-index: 1001;
 }
 
@@ -60,7 +65,7 @@ body {
 
     &:hover {
       background-color: @color-tertiary-base;
-      color: @color-font-blue;
+      color: @color-font-brand;
     }
 
     img {
