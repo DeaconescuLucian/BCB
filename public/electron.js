@@ -17,6 +17,8 @@ remoteMain.initialize();
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    minWidth: 900,
+    minHeight: 680,
     width: 900, 
     height: 680, 
     frame: false,
