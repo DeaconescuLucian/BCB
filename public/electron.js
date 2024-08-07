@@ -38,14 +38,14 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
   remoteMain.enable(mainWindow.webContents);
   mainWindow.webContents.openDevTools();
-  mainWindow.on("closed", () => (mainWindow = null));
+  mainWindow.on("closed", () => {process.exit(1);});
 }
 
 app.on("ready", createWindow);
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
-    app.quit();
+    process.exit(1);
   }
 });
 
