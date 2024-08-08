@@ -10,6 +10,7 @@
     "cross-env": "6.0.2",
     "electron-is-dev": "1.1.0",
     "electron-log": "^3.0.8",
+    "bs58": "^5.0.0",
     "firebase": "^10.12.4",
     "firebaseui": "^6.1.0",
     "react": "^18.3.1",
