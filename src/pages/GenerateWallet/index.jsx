@@ -13,8 +13,10 @@ function GenerateWallet() {
     if (!wallets) wallets = [];
     else wallets = JSON.parse(wallets);
 
-    wallets.push(wallet);
+    wallets.push(wallet.kp);
     localStorage.setItem("wallets", JSON.stringify(wallets));
+
+    //TODO: hide the save button until a new wallet is generated
   };
 
   return (

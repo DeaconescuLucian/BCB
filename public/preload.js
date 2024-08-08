@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, app } = require('electron');
 const { getCurrentWindow } = require('@electron/remote');
 
 contextBridge.exposeInMainWorld('electron', {
@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('electron', {
     closeWindow: () => {
         const window = getCurrentWindow();
         if (window) {
+            window.close();
             window.destroy();
         }
     }

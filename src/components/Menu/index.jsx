@@ -24,7 +24,7 @@ function Menu() {
 
   const solanaSVG = (
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 96 96" fill="none">
-      <g clip-path="url(#a)">
+      <g clipPath="url(#a)">
         <path
           fill="url(#b)"
           d="m108.53 75.69-17.72 19a4.099 4.099 0 0 1-3 1.31h-84a2.06 2.06 0 0 1-1.51-3.46l17.7-19a4.1 4.1 0 0 1 3-1.31h84a2.05 2.05 0 0 1 1.53 3.46ZM90.81 37.42a4.14 4.14 0 0 0-3-1.31h-84a2.06 2.06 0 0 0-1.51 3.46L20 58.58a4.14 4.14 0 0 0 3 1.31h84a2.06 2.06 0 0 0 1.5-3.46L90.81 37.42Zm-87-13.65h84a4.098 4.098 0 0 0 3-1.31l17.72-19a2.052 2.052 0 0 0-.387-3.14A2.05 2.05 0 0 0 107 0H23a4.1 4.1 0 0 0-3 1.31l-17.7 19a2.06 2.06 0 0 0 1.51 3.46Z"
@@ -32,12 +32,12 @@ function Menu() {
       </g>
       <defs>
         <linearGradient id="b" x1="10.81" x2="98.89" y1="98.29" y2="-1.01" gradientUnits="userSpaceOnUse">
-          <stop offset=".08" stop-color="#9945FF" />
-          <stop offset=".3" stop-color="#8752F3" />
-          <stop offset=".5" stop-color="#5497D5" />
-          <stop offset=".6" stop-color="#43B4CA" />
-          <stop offset=".72" stop-color="#28E0B9" />
-          <stop offset=".97" stop-color="#19FB9B" />
+          <stop offset=".08" stopColor="#9945FF" />
+          <stop offset=".3" stopColor="#8752F3" />
+          <stop offset=".5" stopColor="#5497D5" />
+          <stop offset=".6" stopColor="#43B4CA" />
+          <stop offset=".72" stopColor="#28E0B9" />
+          <stop offset=".97" stopColor="#19FB9B" />
         </linearGradient>
         <clipPath id="a">
           <path fill="#fff" d="M0 0h96v96H0z" />
