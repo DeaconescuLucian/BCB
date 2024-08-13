@@ -1,15 +1,15 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/index.jsx', // Entry point of your React application
+  entry: './src/index.jsx',
   output: {
-    filename: 'bundle.js', // Output bundle file
-    path: path.resolve(__dirname, 'public') // Output directory to `public`
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'public')
   },
   module: {
     rules: [
       {
-        test: /\.js$/, // Apply babel-loader to .js files
+        test: /\.(js|jsx)/,
         exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
@@ -19,17 +19,17 @@ module.exports = {
         }
       },
       {
-        test: /\.less$/, // Apply loaders to .less files
+        test: /\.less$/,
         use: [
-          'style-loader', // Injects styles into the DOM
-          'css-loader',   // Translates CSS into CommonJS
-          'less-loader'   // Compiles LESS to CSS
+          'style-loader',
+          'css-loader',
+          'less-loader'
         ]
       }
     ]
   },
   resolve: {
-    extensions: ['.js', '.jsx'] // Resolve these extensions
+    extensions: ['.js', '.jsx']
   },
-  mode: 'development' // Set mode to 'development' or 'production'
+  mode: 'development'
 };
