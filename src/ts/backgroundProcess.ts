@@ -35,5 +35,3 @@ console.log('Background process file loaded');
 if (process.send) {
     process.send('ready');
 }
-
-WatchWalletHandler(null);

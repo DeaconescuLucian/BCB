@@ -17,9 +17,9 @@ const WatchWalletHandler = (mainWindow) => {
         console.log('Watch Wallet Called');
         try {
             return new Promise((resolve) => {
-                const key = (0, wallet_1.generateWallet)().pub;
+                const key = (0, wallet_1.importKeypair)(arg);
                 if (mainWindow)
-                    (0, ipcHandler_1.sendToRenderer)(mainWindow, 'started-watching-wallet', 'ceva');
+                    (0, ipcHandler_1.sendToRenderer)(mainWindow, 'started-watching-wallet', key === null || key === void 0 ? void 0 : key.pub);
                 resolve('ceva');
             });
         }

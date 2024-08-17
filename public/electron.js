@@ -131,7 +131,6 @@ function createWindow() {
         frame: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            enableRemoteModule: true,
             contextIsolation: true,
             nodeIntegration: true,
         },
@@ -196,6 +195,8 @@ electron_1.app.on('ready', () => {
     createWindow();
     registerHandlers();
     startBackgroundProcess();
+    // let k = generateWallet();
+    // console.log(k);
 });
 electron_1.app.on('window-all-closed', (event) => {
     if (process.platform !== 'darwin') {

@@ -1,14 +1,14 @@
 import { BrowserWindow } from 'electron';
 import { registerHandler, sendToRenderer } from '../ipcHandler';
-import { generateWallet } from '../solana/wallet';
+import { importKeypair } from '../solana/wallet';
 
 export const WatchWalletHandler = (mainWindow: BrowserWindow | null) => {
   registerHandler('watch-wallet', async (e: any, arg: string) => {
     console.log('Watch Wallet Called');
     try {
       return new Promise((resolve) => {
-        //const key = generateWallet().pub;
-        if (mainWindow) sendToRenderer(mainWindow, 'started-watching-wallet', 'ceva');
+        const key = importKeypair(arg);
+        if (mainWindow) sendToRenderer(mainWindow, 'started-watching-wallet', key?.pub);
         resolve('ceva');
       });
     } catch (error) {

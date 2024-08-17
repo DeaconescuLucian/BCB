@@ -6,6 +6,7 @@ import * as electronReload from 'electron-reload';
 import { fork, ChildProcess, exec } from 'child_process';
 import { registerHandler, sendToRenderer } from './ipcHandler';
 import { WatchWalletHandler } from './handlers/WalletHandler';
+import { generateWallet } from './solana/wallet';
 
 electronReload.default(__dirname, {});
 
@@ -110,7 +111,7 @@ function createWindow(): void {
     frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      enableRemoteModule: true,
+    
       contextIsolation: true,
       nodeIntegration: true,
     },
@@ -182,6 +183,8 @@ app.on('ready', () => {
   createWindow();
   registerHandlers();
   startBackgroundProcess();
+  // let k = generateWallet();
+  // console.log(k);
 });
 
 app.on('window-all-closed', (event: any) => {
