@@ -8,12 +8,12 @@
     "@electron/remote": "^2.1.2",
     "@solana/web3.js": "^1.95.2",
     "axios": "^1.7.3",
+    "bs58": "^5.0.0",
     "cors": "^2.8.5",
     "cross-env": "6.0.2",
     "electron-is-dev": "1.1.0",
     "electron-log": "^3.0.8",
     "express": "^4.19.2",
-    "bs58": "^5.0.0",
     "firebase": "^10.12.4",
     "firebaseui": "^6.1.0",
     "kill-port": "^2.0.1",
@@ -27,7 +27,9 @@
   "devDependencies": {
     "@craco/craco": "^7.1.0",
     "@types/express": "^4.17.21",
-    "@types/node": "^22.1.0",
+    "@types/node": "^22.4.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
     "concurrently": "4.1.2",
     "craco-less": "^3.0.1",
     "css-loader": "^7.1.2",
@@ -54,17 +56,14 @@
   "scripts": {
     "react-start": "craco start",
     "react-build": "craco build",
-    "server-build": "npx tsc",
-    "server-start": "pm2 start dist/server.js",
-    "server-stop": "pm2 stop server",
     "react-test": "craco test",
     "react-eject": "react-scripts eject",
     "release": "yarn react-build && electron-builder --publish=always",
-    "electron-build": "webpack",
-    "open-server-from-terminal": "start cmd /k \"yarn server-start && exit\"",
-    "close-server-from-terminal": "start cmd /k \"yarn server-stop && npx kill-port 3000 && exit\"",
-    "start": "concurrently \"cross-env BROWSER=none yarn react-start\" \"wait-on http://localhost:3000 && node sequence.js\"",
-    "build": "yarn server-build && yarn react-build && yarn electron-build"
+    "electron-build": "yarn tsc",
+    "close-web-app": "npx kill-port 3000",
+    "start": "concurrently \"cross-env BROWSER=none yarn react-start\" \"wait-on http://localhost:3000 && electron .\"",
+    "build": "yarn react-build && yarn electron-build",
+    "tsc": "tsc"
   },
   "browserslist": {
     "production": [

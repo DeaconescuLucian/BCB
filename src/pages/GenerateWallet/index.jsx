@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { generateWallet } from "../../solana/wallet.ts";
+import { generateWallet } from "../../ts/solana/wallet";
 import Button from "../../components/FormControls/Button.tsx";
 import CopyToClipboard from "../../components/CopyToClipboard/index.tsx";
 import Page from "../../components/Page/index.tsx";

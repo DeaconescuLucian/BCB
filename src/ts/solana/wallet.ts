@@ -15,7 +15,7 @@ export function importKeypair(param:string){
     }
     catch{
         try{
-            //secretKey = bs58.decode(param);
+            secretKey = bs58.decode(param);
             keyPair = Keypair.fromSecretKey(secretKey);
         }
         catch{
