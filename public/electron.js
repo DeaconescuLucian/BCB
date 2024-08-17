@@ -39,6 +39,7 @@ const remoteMain = __importStar(require("@electron/remote/main"));
 const electronReload = __importStar(require("electron-reload"));
 const child_process_1 = require("child_process");
 const ipcHandler_1 = require("./ipcHandler");
+const WalletHandler_1 = require("./handlers/WalletHandler");
 electronReload.default(__dirname, {});
 let mainWindow;
 let tray;
@@ -133,15 +134,15 @@ function createWindow() {
             enableRemoteModule: true,
             contextIsolation: true,
             nodeIntegration: true,
-        }
+        },
     });
-    mainWindow.loadURL(isDev
-        ? "http://localhost:3000"
-        : `file://${path.join(__dirname, "../build/index.html")}`);
+    mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
     mainWindow.setMenuBarVisibility(false);
     remoteMain.enable(mainWindow.webContents);
     mainWindow.webContents.openDevTools();
-    mainWindow.on("closed", () => { mainWindow = null; });
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
 }
 function createTray() {
     const iconPath = path.join(__dirname, 'solana.png');
@@ -161,6 +162,10 @@ function createTray() {
         {
             label: 'Quit',
             click: () => {
+                (0, child_process_1.exec)('yarn run close-web-app');
+                if (backgroundProcess) {
+                    backgroundProcess.kill();
+                }
                 process.exit(1);
             },
         },
@@ -181,28 +186,26 @@ function registerHandlers() {
             return 'error';
         }
     }));
+    (0, WalletHandler_1.WatchWalletHandler)(mainWindow);
     (0, ipcHandler_1.registerHandler)('stop-background-process', () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess();
     }));
 }
-electron_1.app.on("ready", () => {
+electron_1.app.on('ready', () => {
     createTray();
     createWindow();
     registerHandlers();
     startBackgroundProcess();
 });
-electron_1.app.on("window-all-closed", (event) => {
-    if (process.platform !== "darwin") {
+electron_1.app.on('window-all-closed', (event) => {
+    if (process.platform !== 'darwin') {
         event.preventDefault();
         if (mainWindow) {
             mainWindow.hide();
         }
     }
-    if (backgroundProcess) {
-        backgroundProcess.kill();
-    }
 });
-electron_1.app.on("activate", () => {
+electron_1.app.on('activate', () => {
     if (mainWindow === null) {
         createWindow();
     }

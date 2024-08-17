@@ -3,8 +3,9 @@ import * as path from 'path';
 import * as isDev from 'electron-is-dev';
 import * as remoteMain from '@electron/remote/main';
 import * as electronReload from 'electron-reload';
-import { fork, ChildProcess } from 'child_process';
+import { fork, ChildProcess, exec } from 'child_process';
 import { registerHandler, sendToRenderer } from './ipcHandler';
+import { WatchWalletHandler } from './handlers/WalletHandler';
 
 electronReload.default(__dirname, {});
 
@@ -69,7 +70,6 @@ async function startBackgroundProcess(): Promise<string> {
   });
 }
 
-
 async function stopBackgroundProcess(): Promise<string> {
   console.log('Entering stopBackgroundProcess function');
   console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
@@ -113,19 +113,17 @@ function createWindow(): void {
       enableRemoteModule: true,
       contextIsolation: true,
       nodeIntegration: true,
-    }
+    },
   });
 
-  mainWindow.loadURL(
-    isDev
-      ? "http://localhost:3000"
-      : `file://${path.join(__dirname, "../build/index.html")}`
-  );
+  mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
 
   mainWindow.setMenuBarVisibility(false);
   remoteMain.enable(mainWindow.webContents);
   mainWindow.webContents.openDevTools();
-  mainWindow.on("closed", () => { mainWindow = null; });
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
 function createTray(): void {
@@ -146,6 +144,10 @@ function createTray(): void {
     {
       label: 'Quit',
       click: () => {
+        exec('yarn run close-web-app');
+        if (backgroundProcess) {
+          backgroundProcess.kill();
+        }
         process.exit(1);
       },
     },
@@ -155,44 +157,43 @@ function createTray(): void {
   tray.setToolTip('Blockchain Busters');
 }
 
-function registerHandlers(){
+function registerHandlers() {
   registerHandler('start-background-process', async () => {
     console.log('start-background-process handler called');
     try {
       const result = await startBackgroundProcess();
       console.log('startBackgroundProcess result:', result);
       return result;
-    } catch (error:any) {
+    } catch (error) {
       console.error('Error in startBackgroundProcess:', error);
       return 'error';
     }
   });
+
+  WatchWalletHandler(mainWindow);
 
   registerHandler('stop-background-process', async () => {
     return await stopBackgroundProcess();
   });
 }
 
-app.on("ready", () => {
+app.on('ready', () => {
   createTray();
   createWindow();
   registerHandlers();
   startBackgroundProcess();
 });
 
-app.on("window-all-closed", (event:any) => {
-  if (process.platform !== "darwin") {
+app.on('window-all-closed', (event: any) => {
+  if (process.platform !== 'darwin') {
     event.preventDefault();
     if (mainWindow) {
       mainWindow.hide();
     }
   }
-  if (backgroundProcess) {
-    backgroundProcess.kill();
-  }
 });
 
-app.on("activate", () => {
+app.on('activate', () => {
   if (mainWindow === null) {
     createWindow();
   } else {

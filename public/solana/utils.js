@@ -9,7 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.simpleTransfer = exports.createSignedTransaction = exports.getSolanaBalance = exports.TransferFeesDefault = void 0;
+exports.TransferFeesDefault = void 0;
+exports.getSolanaBalance = getSolanaBalance;
+exports.createSignedTransaction = createSignedTransaction;
+exports.simpleTransfer = simpleTransfer;
 const web3_js_1 = require("@solana/web3.js");
 exports.TransferFeesDefault = {
     prioFee: 1000,
@@ -20,7 +23,6 @@ function getSolanaBalance(connection, publicKey) {
         return ((yield connection.getBalance(publicKey)) / web3_js_1.LAMPORTS_PER_SOL);
     });
 }
-exports.getSolanaBalance = getSolanaBalance;
 function createSignedTransaction(wallet, connection, instructions, signers, blockhash) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!blockhash) {
@@ -44,7 +46,6 @@ function createSignedTransaction(wallet, connection, instructions, signers, bloc
         return tx;
     });
 }
-exports.createSignedTransaction = createSignedTransaction;
 function simpleTransfer(connection, TransferParams) {
     return __awaiter(this, void 0, void 0, function* () {
         let { walletA, walletB, amount, cpuLimit, prioFee } = TransferParams;
@@ -84,4 +85,3 @@ function simpleTransfer(connection, TransferParams) {
         return;
     });
 }
-exports.simpleTransfer = simpleTransfer;

@@ -9,7 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendToRenderer = exports.registerHandler = void 0;
+exports.registerHandler = registerHandler;
+exports.sendToRenderer = sendToRenderer;
 const electron_1 = require("electron");
 const handlers = {};
 function registerHandler(channel, handler) {
@@ -28,10 +29,8 @@ function registerHandler(channel, handler) {
         }
     }));
 }
-exports.registerHandler = registerHandler;
 function sendToRenderer(window, channel, ...args) {
     if (window) {
         window.webContents.send(channel, ...args);
     }
 }
-exports.sendToRenderer = sendToRenderer;

@@ -27,7 +27,7 @@
   "devDependencies": {
     "@craco/craco": "^7.1.0",
     "@types/express": "^4.17.21",
-    "@types/node": "^22.1.0",
+    "@types/node": "^22.4.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "concurrently": "4.1.2",
@@ -41,7 +41,7 @@
     "prettier": "^1.4.4",
     "react-scripts": "^5.0.0",
     "style-loader": "^4.0.0",
-    "typescript": "^4|| 4.9.5",
+    "typescript": "^5.5.4",
     "wait-on": "3.3.0",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4"
@@ -60,6 +60,7 @@
     "react-eject": "react-scripts eject",
     "release": "yarn react-build && electron-builder --publish=always",
     "electron-build": "yarn tsc",
+    "close-web-app": "npx kill-port 3000",
     "start": "concurrently \"cross-env BROWSER=none yarn react-start\" \"wait-on http://localhost:3000 && electron .\"",
     "build": "yarn react-build && yarn electron-build",
     "tsc": "tsc"

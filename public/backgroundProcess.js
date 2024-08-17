@@ -1,4 +1,6 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const WalletHandler_1 = require("./handlers/WalletHandler");
 let interval;
 function startBackgroundProcess() {
     console.log('Background process started');
@@ -30,3 +32,4 @@ console.log('Background process file loaded');
 if (process.send) {
     process.send('ready');
 }
+(0, WalletHandler_1.WatchWalletHandler)(null);

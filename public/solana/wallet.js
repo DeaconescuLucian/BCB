@@ -23,7 +23,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.importKeypair = exports.generateWallet = void 0;
+exports.generateWallet = void 0;
+exports.importKeypair = importKeypair;
 const web3_js_1 = require("@solana/web3.js");
 const bs58 = __importStar(require("bs58"));
 const generateWallet = () => {
@@ -49,4 +50,3 @@ function importKeypair(param) {
     }
     return { kp: keyPair, pub: keyPair.publicKey.toBase58(), secret: keyPair.secretKey };
 }
-exports.importKeypair = importKeypair;

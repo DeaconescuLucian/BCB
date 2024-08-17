@@ -1,3 +1,5 @@
+import { WatchWalletHandler } from './handlers/WalletHandler';
+
 let interval: NodeJS.Timeout;
 
 function startBackgroundProcess() {
@@ -32,4 +34,6 @@ console.log('Background process file loaded');
 
 if (process.send) {
     process.send('ready');
-  }
+}
+
+WatchWalletHandler(null);
