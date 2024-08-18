@@ -9,24 +9,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WatchWalletHandler = void 0;
 const ipcHandler_1 = require("../ipcHandler");
 const wallet_1 = require("../solana/wallet");
-const WatchWalletHandler = (mainWindow) => {
-    (0, ipcHandler_1.registerHandler)('watch-wallet', (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
-        console.log('Watch Wallet Called');
+const ImportWalletHandler = (mainWindow) => {
+    (0, ipcHandler_1.registerHandler)('import-wallet', (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            return new Promise((resolve) => {
-                const key = (0, wallet_1.importKeypair)(arg);
-                if (mainWindow)
-                    (0, ipcHandler_1.sendToRenderer)(mainWindow, 'started-watching-wallet', key === null || key === void 0 ? void 0 : key.pub);
-                resolve('ceva');
-            });
+            const key = (0, wallet_1.importKeypair)(arg);
+            if (mainWindow)
+                (0, ipcHandler_1.sendToRenderer)(mainWindow, 'wallet-imported', key === null || key === void 0 ? void 0 : key.pub);
         }
         catch (error) {
-            console.error('Error in startBackgroundProcess:', error);
+            console.error('Error in ImportWalletHandler:', error);
             return 'error';
         }
     }));
 };
-exports.WatchWalletHandler = WatchWalletHandler;
+const GenerateWalletHandler = (mainWindow) => {
+    (0, ipcHandler_1.registerHandler)('generate-wallet', () => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            const key = (0, wallet_1.generateWallet)();
+            console.log(key);
+            if (mainWindow)
+                (0, ipcHandler_1.sendToRenderer)(mainWindow, 'wallet-generated', JSON.stringify(key));
+        }
+        catch (error) {
+            console.error('Error in GenerateWalletHandler:', error);
+            return 'error';
+        }
+    }));
+};
+const handleWallet = (mainWindow) => {
+    ImportWalletHandler(mainWindow);
+    GenerateWalletHandler(mainWindow);
+};
+exports.default = handleWallet;

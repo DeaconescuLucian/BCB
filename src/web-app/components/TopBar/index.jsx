@@ -42,6 +42,7 @@ function TopBar() {
 
   return (
     <div className="top-bar">
+      <div className="bar"></div>
       <div className="container-end">
         <div className="image-container" onClick={minimizeWindow}>
           <img src={window_minimize_icon} alt="" />

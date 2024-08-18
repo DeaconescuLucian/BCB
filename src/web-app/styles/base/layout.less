@@ -21,7 +21,7 @@ body {
   padding: 0;
   width: 100vw;
   height: 100vh;
-  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
 #root {
@@ -49,11 +49,18 @@ img {
   left: @menu-width;
   width: calc(100vw - @menu-width);
   z-index: 1001;
+  display: flex;
+  justify-content: end;
+
+  .bar {
+    width: calc(100% - 90px);
+    -webkit-app-region: drag;
+  }
 }
 
 .container-end {
   display: flex;
-  justify-content: flex-end;
+  width: 90px;
   padding-top: 10px;
 
   .image-container {

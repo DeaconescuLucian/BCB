@@ -1,5 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 let interval;
 function startBackgroundProcess() {
     console.log('Background process started');

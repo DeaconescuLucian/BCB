@@ -1,12 +1,11 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, Tray, Menu, ipcRenderer } from 'electron';
 import * as path from 'path';
 import * as isDev from 'electron-is-dev';
 import * as remoteMain from '@electron/remote/main';
 import * as electronReload from 'electron-reload';
 import { fork, ChildProcess, exec } from 'child_process';
 import { registerHandler, sendToRenderer } from './ipcHandler';
-import { WatchWalletHandler } from './handlers/WalletHandler';
-import { generateWallet } from './solana/wallet';
+import { setupHandlers } from './handlers';
 
 electronReload.default(__dirname, {});
 
@@ -18,7 +17,6 @@ remoteMain.initialize();
 let backgroundProcess: ChildProcess | null = null;
 
 async function startBackgroundProcess(): Promise<string> {
-  console.log('Entering startBackgroundProcess function');
   console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
 
   if (backgroundProcess) {
@@ -111,17 +109,15 @@ function createWindow(): void {
     frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-    
       contextIsolation: true,
       nodeIntegration: true,
     },
   });
 
   mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
-
   mainWindow.setMenuBarVisibility(false);
   remoteMain.enable(mainWindow.webContents);
-  mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools({ mode: 'detach', activate: true });
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -137,6 +133,7 @@ function createTray(): void {
       click: () => {
         if (mainWindow === null) {
           createWindow();
+          setupHandlers(mainWindow);
         } else {
           mainWindow.show();
         }
@@ -171,7 +168,7 @@ function registerHandlers() {
     }
   });
 
-  WatchWalletHandler(mainWindow);
+  setupHandlers(mainWindow);
 
   registerHandler('stop-background-process', async () => {
     return await stopBackgroundProcess();
@@ -183,8 +180,6 @@ app.on('ready', () => {
   createWindow();
   registerHandlers();
   startBackgroundProcess();
-  // let k = generateWallet();
-  // console.log(k);
 });
 
 app.on('window-all-closed', (event: any) => {

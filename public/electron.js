@@ -39,7 +39,7 @@ const remoteMain = __importStar(require("@electron/remote/main"));
 const electronReload = __importStar(require("electron-reload"));
 const child_process_1 = require("child_process");
 const ipcHandler_1 = require("./ipcHandler");
-const WalletHandler_1 = require("./handlers/WalletHandler");
+const handlers_1 = require("./handlers");
 electronReload.default(__dirname, {});
 let mainWindow;
 let tray;
@@ -138,7 +138,7 @@ function createWindow() {
     mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
     mainWindow.setMenuBarVisibility(false);
     remoteMain.enable(mainWindow.webContents);
-    mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools({ mode: 'detach', activate: true });
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
@@ -152,6 +152,7 @@ function createTray() {
             click: () => {
                 if (mainWindow === null) {
                     createWindow();
+                    (0, handlers_1.setupHandlers)(mainWindow);
                 }
                 else {
                     mainWindow.show();
@@ -172,6 +173,20 @@ function createTray() {
     tray.setContextMenu(contextMenu);
     tray.setToolTip('Blockchain Busters');
 }
+electron_1.ipcMain.on('drag-window', (event, { x, y }) => {
+    const window = electron_1.BrowserWindow.fromWebContents(event.sender);
+    if (window) {
+        const { x, y } = window.getBounds();
+        const currentX = x;
+        const currentY = y;
+        window.setBounds({
+            x: currentX + x,
+            y: currentY + y,
+            width: window.getBounds().width,
+            height: window.getBounds().height,
+        });
+    }
+});
 function registerHandlers() {
     (0, ipcHandler_1.registerHandler)('start-background-process', () => __awaiter(this, void 0, void 0, function* () {
         console.log('start-background-process handler called');
@@ -185,7 +200,7 @@ function registerHandlers() {
             return 'error';
         }
     }));
-    (0, WalletHandler_1.WatchWalletHandler)(mainWindow);
+    (0, handlers_1.setupHandlers)(mainWindow);
     (0, ipcHandler_1.registerHandler)('stop-background-process', () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess();
     }));
@@ -195,8 +210,6 @@ electron_1.app.on('ready', () => {
     createWindow();
     registerHandlers();
     startBackgroundProcess();
-    // let k = generateWallet();
-    // console.log(k);
 });
 electron_1.app.on('window-all-closed', (event) => {
     if (process.platform !== 'darwin') {

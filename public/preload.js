@@ -44,4 +44,5 @@ electron_1.contextBridge.exposeInMainWorld('electron', {
             electron_1.ipcRenderer.removeListener(channel, subscription);
         };
     },
+    ipcMain: electron_1.ipcMain
 });
