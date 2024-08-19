@@ -1,6 +1,6 @@
-let interval: NodeJS.Timeout;
+var interval: NodeJS.Timeout;
 
-function startBackgroundProcess() {
+function startMainProcess() {
   interval = setInterval(() => {
     const message = `Background update at ${new Date().toLocaleTimeString()}`;
     if (process.send) {
@@ -9,7 +9,7 @@ function startBackgroundProcess() {
   }, 5000);
 }
 
-function stopBackgroundProcess() {
+function stopMainProcess() {
   if (interval) {
     clearInterval(interval);
   }
@@ -18,9 +18,9 @@ function stopBackgroundProcess() {
 
 process.on('message', (msg) => {
   if (msg === 'start') {
-    startBackgroundProcess();
+    startMainProcess();
   } else if (msg === 'stop') {
-    stopBackgroundProcess();
+    stopMainProcess();
   }
 });
 

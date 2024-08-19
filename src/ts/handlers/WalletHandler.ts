@@ -1,12 +1,13 @@
 import { BrowserWindow } from 'electron';
 import { registerHandler, sendToRenderer } from '../ipcHandler';
 import { importKeypair, generateWallet } from '../solana/wallet';
+import { CustomEvents } from '../events';
 
 const ImportWalletHandler = (mainWindow: BrowserWindow | null) => {
-  registerHandler('import-wallet', async (e: any, arg: string) => {
+  registerHandler(CustomEvents.importWalletEvent, async (e: any, arg: string) => {
     try {
       const key = importKeypair(arg);
-      if (mainWindow) sendToRenderer(mainWindow, 'wallet-imported', key?.pub);
+      if (mainWindow) sendToRenderer(mainWindow, CustomEvents.walletImportedEvent, key?.pub);
     } catch (error) {
       console.error('Error in ImportWalletHandler:', error);
       return 'error';
@@ -15,11 +16,10 @@ const ImportWalletHandler = (mainWindow: BrowserWindow | null) => {
 };
 
 const GenerateWalletHandler = (mainWindow: BrowserWindow | null) => {
-  registerHandler('generate-wallet', async () => {
+  registerHandler(CustomEvents.generateWalletEvent, async () => {
     try {
       const key = generateWallet();
-      console.log(key)
-      if (mainWindow) sendToRenderer(mainWindow, 'wallet-generated', JSON.stringify(key));
+      if (mainWindow) sendToRenderer(mainWindow, CustomEvents.walletGeneratedEvent, JSON.stringify(key));
     } catch (error) {
       console.error('Error in GenerateWalletHandler:', error);
       return 'error';

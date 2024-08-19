@@ -38,10 +38,16 @@ img {
 .main-container {
   position: fixed;
   left: 256px;
-  width: calc(100vw - @menu-width - 2 * @default-main-container-padding);
+  width: calc(100vw - @menu-width - @right-section-width - 2 * @default-main-container-padding);
   height: calc(100vh - 2 * @default-main-container-padding);
   padding: 30px;
   color: @color-font-gray;
+
+  &.hidden-right-section {
+    width: calc(100vw - @menu-width - @right-section-hidden-width - 2 * @default-main-container-padding);
+  }
+
+  transition: 0.5s ease;
 }
 
 .top-bar {
@@ -51,6 +57,7 @@ img {
   z-index: 1001;
   display: flex;
   justify-content: end;
+  background-color: @color-base;
 
   .bar {
     width: calc(100% - 90px);
@@ -61,7 +68,8 @@ img {
 .container-end {
   display: flex;
   width: 90px;
-  padding-top: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 
   .image-container {
     cursor: pointer;

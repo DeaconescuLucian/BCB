@@ -11,12 +11,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const ipcHandler_1 = require("../ipcHandler");
 const wallet_1 = require("../solana/wallet");
+const events_1 = require("../events");
 const ImportWalletHandler = (mainWindow) => {
-    (0, ipcHandler_1.registerHandler)('import-wallet', (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.importWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const key = (0, wallet_1.importKeypair)(arg);
             if (mainWindow)
-                (0, ipcHandler_1.sendToRenderer)(mainWindow, 'wallet-imported', key === null || key === void 0 ? void 0 : key.pub);
+                (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.CustomEvents.walletImportedEvent, key === null || key === void 0 ? void 0 : key.pub);
         }
         catch (error) {
             console.error('Error in ImportWalletHandler:', error);
@@ -25,12 +26,11 @@ const ImportWalletHandler = (mainWindow) => {
     }));
 };
 const GenerateWalletHandler = (mainWindow) => {
-    (0, ipcHandler_1.registerHandler)('generate-wallet', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.generateWalletEvent, () => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const key = (0, wallet_1.generateWallet)();
-            console.log(key);
             if (mainWindow)
-                (0, ipcHandler_1.sendToRenderer)(mainWindow, 'wallet-generated', JSON.stringify(key));
+                (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.CustomEvents.walletGeneratedEvent, JSON.stringify(key));
         }
         catch (error) {
             console.error('Error in GenerateWalletHandler:', error);
