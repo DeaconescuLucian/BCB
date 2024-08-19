@@ -1,32 +1,27 @@
 "use strict";
-let interval;
-function startBackgroundProcess() {
-    console.log('Background process started');
+var interval;
+function startMainProcess() {
     interval = setInterval(() => {
         const message = `Background update at ${new Date().toLocaleTimeString()}`;
-        console.log('Sending message:', message);
         if (process.send) {
             process.send(message);
         }
     }, 5000);
 }
-function stopBackgroundProcess() {
-    console.log('Stopping background process');
+function stopMainProcess() {
     if (interval) {
         clearInterval(interval);
     }
     process.exit(0);
 }
 process.on('message', (msg) => {
-    console.log('Received message in background process:', msg);
     if (msg === 'start') {
-        startBackgroundProcess();
+        startMainProcess();
     }
     else if (msg === 'stop') {
-        stopBackgroundProcess();
+        stopMainProcess();
     }
 });
-console.log('Background process file loaded');
 if (process.send) {
     process.send('ready');
 }

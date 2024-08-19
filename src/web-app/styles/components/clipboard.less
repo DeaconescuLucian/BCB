@@ -1,0 +1,27 @@
+.copy-icon {
+  margin-left: 10px;
+
+  svg {
+    cursor: pointer;
+    width: 12px;
+    height: 12px;
+    path {
+      fill: @color-font-gray;
+    }
+
+    &:hover {
+      path {
+        fill: @color-brand;
+      }
+    }
+  }
+
+  .copy-to-clipboard-message {
+    position: absolute;
+    background-color: @color-black;
+    color: @color-font-white;
+    padding: 10px;
+    border-radius: 5px;
+    top: -40px;
+  }
+}

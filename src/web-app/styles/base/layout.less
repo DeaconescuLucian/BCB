@@ -1,0 +1,91 @@
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.static {
+  position: static;
+}
+
+.app-container {
+  width: 100%;
+  height: 100%;
+  background-color: @color-base;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+img {
+  width: 20px;
+  height: 20px;
+}
+
+.main-container {
+  position: fixed;
+  left: 256px;
+  width: calc(100vw - @menu-width - @right-section-width - 2 * @default-main-container-padding);
+  height: calc(100vh - 2 * @default-main-container-padding);
+  padding: 30px;
+  color: @color-font-gray;
+
+  &.hidden-right-section {
+    width: calc(100vw - @menu-width - @right-section-hidden-width - 2 * @default-main-container-padding);
+  }
+
+  transition: 0.5s ease;
+}
+
+.top-bar {
+  position: fixed;
+  left: @menu-width;
+  width: calc(100vw - @menu-width);
+  z-index: 1001;
+  display: flex;
+  justify-content: end;
+  background-color: @color-base;
+
+  .bar {
+    width: calc(100% - 90px);
+    -webkit-app-region: drag;
+  }
+}
+
+.container-end {
+  display: flex;
+  width: 90px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+
+  .image-container {
+    cursor: pointer;
+    padding: 5px;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+
+    &:hover {
+      background-color: @color-tertiary-base;
+      color: @color-font-brand;
+    }
+
+    img {
+      width: 10px;
+      height: 10px;
+    }
+  }
+}

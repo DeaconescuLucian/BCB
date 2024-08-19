@@ -39,20 +39,25 @@ const remoteMain = __importStar(require("@electron/remote/main"));
 const electronReload = __importStar(require("electron-reload"));
 const child_process_1 = require("child_process");
 const ipcHandler_1 = require("./ipcHandler");
-const WalletHandler_1 = require("./handlers/WalletHandler");
+const handlers_1 = require("./handlers");
+const events_1 = require("./events");
+if (!(0, events_1.verifyUniqueEvents)(events_1.ProcessType)) {
+    (0, child_process_1.execSync)('yarn run close-web-app');
+    process.exit(1);
+}
 electronReload.default(__dirname, {});
 let mainWindow;
 let tray;
 remoteMain.initialize();
-let backgroundProcess = null;
-function startBackgroundProcess() {
+let mainBackgroundProcess = null;
+let secondaryBackgroundProcesses = [];
+function startBackgroundProcess(backgroundProcess, processType, pid) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log('Entering startBackgroundProcess function');
         console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
         if (backgroundProcess) {
             if (backgroundProcess.connected) {
                 console.log('Background process is already running');
-                return 'Process already started!';
+                return { message: 'Process already started!', pid: pid };
             }
             else {
                 console.log('Cleaning up disconnected background process');
@@ -61,43 +66,60 @@ function startBackgroundProcess() {
         }
         return new Promise((resolve, reject) => {
             console.log('Starting background process...');
-            backgroundProcess = (0, child_process_1.fork)(path.join(__dirname, 'backgroundProcess.js'));
+            if (processType !== events_1.ProcessType.MAIN) {
+                console.log(`pid: ${pid}`);
+                if (pid && secondaryBackgroundProcesses.find(e => e.pid === pid)) {
+                    console.log(`Process ${pid} already started!`);
+                    resolve({ message: `Process ${pid} already started!`, pid: pid });
+                }
+                else {
+                    console.log(processType.startEvent);
+                    backgroundProcess = (0, child_process_1.fork)(path.join(`${__dirname}/background-processes`, processType.file));
+                    secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess.pid });
+                    (0, ipcHandler_1.registerHandler)(processType.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
+                        yield stopBackgroundProcess(backgroundProcess);
+                    }));
+                }
+            }
+            else {
+                backgroundProcess = (0, child_process_1.fork)(path.join(`${__dirname}/background-processes`, processType.file));
+            }
             const timeout = setTimeout(() => {
                 console.log('Timeout reached, resolving without confirmation');
-                resolve('Process started but no confirmation received');
+                resolve({ message: 'Process started but no confirmation received', pid: undefined });
             }, 5000);
-            backgroundProcess.once('message', (message) => {
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.once('message', (message) => {
                 if (message === 'ready') {
                     console.log('Background process is ready, sending start command');
-                    backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send('start');
+                    if (!pid)
+                        backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send('start');
                     clearTimeout(timeout);
-                    resolve('Started process');
+                    resolve({ message: `Started process ${pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid}.`, pid: pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid });
                 }
             });
-            backgroundProcess.on('error', (error) => {
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('error', (error) => {
                 console.error('Background process error:', error);
                 clearTimeout(timeout);
                 backgroundProcess = null;
                 reject(error);
             });
-            backgroundProcess.on('exit', (code, signal) => {
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('exit', (code, signal) => {
                 console.log(`Background process exited with code ${code} and signal ${signal}`);
                 backgroundProcess = null;
             });
-            backgroundProcess.on('message', (message) => {
-                console.log('Received message in main process:', message);
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('message', (message) => {
                 if (message !== 'ready') {
-                    console.log('Forwarding message to renderer:', message);
-                    (0, ipcHandler_1.sendToRenderer)(mainWindow, 'background-update', message);
+                    (0, ipcHandler_1.sendToRenderer)(mainWindow, processType.updateEvent, message);
                 }
             });
         });
     });
 }
-function stopBackgroundProcess() {
+function stopBackgroundProcess(backgroundProcess) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log('Entering stopBackgroundProcess function');
         console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
+        const pid = backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid;
         if (!backgroundProcess) {
             console.log('No process running');
             return 'No process running';
@@ -112,6 +134,7 @@ function stopBackgroundProcess() {
                     backgroundProcess = null;
                     resolve('Forcefully stopped process');
                 }
+                secondaryBackgroundProcesses = secondaryBackgroundProcesses.filter(e => e.pid === pid);
             }, 1000);
             backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.once('exit', () => {
                 console.log('Background process exited');
@@ -119,14 +142,15 @@ function stopBackgroundProcess() {
                 backgroundProcess = null;
                 resolve('Stopped process');
             });
+            resolve(`Stopped process ${pid}`);
         });
     });
 }
 function createWindow() {
     mainWindow = new electron_1.BrowserWindow({
-        minWidth: 900,
+        minWidth: 1156,
         minHeight: 680,
-        width: 900,
+        width: 1156,
         height: 680,
         frame: false,
         webPreferences: {
@@ -138,7 +162,7 @@ function createWindow() {
     mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
     mainWindow.setMenuBarVisibility(false);
     remoteMain.enable(mainWindow.webContents);
-    mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools({ mode: 'detach', activate: true });
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
@@ -152,6 +176,7 @@ function createTray() {
             click: () => {
                 if (mainWindow === null) {
                     createWindow();
+                    (0, handlers_1.setupHandlers)(mainWindow);
                 }
                 else {
                     mainWindow.show();
@@ -161,9 +186,13 @@ function createTray() {
         {
             label: 'Quit',
             click: () => {
-                (0, child_process_1.exec)('yarn run close-web-app');
-                if (backgroundProcess) {
-                    backgroundProcess.kill();
+                (0, child_process_1.execSync)('yarn run close-web-app');
+                secondaryBackgroundProcesses.forEach(pr => {
+                    var _a;
+                    (_a = pr.process) === null || _a === void 0 ? void 0 : _a.kill();
+                });
+                if (mainBackgroundProcess) {
+                    mainBackgroundProcess.kill();
                 }
                 process.exit(1);
             },
@@ -176,7 +205,7 @@ function registerHandlers() {
     (0, ipcHandler_1.registerHandler)('start-background-process', () => __awaiter(this, void 0, void 0, function* () {
         console.log('start-background-process handler called');
         try {
-            const result = yield startBackgroundProcess();
+            const result = yield startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
             console.log('startBackgroundProcess result:', result);
             return result;
         }
@@ -185,18 +214,22 @@ function registerHandlers() {
             return 'error';
         }
     }));
-    (0, WalletHandler_1.WatchWalletHandler)(mainWindow);
-    (0, ipcHandler_1.registerHandler)('stop-background-process', () => __awaiter(this, void 0, void 0, function* () {
-        return yield stopBackgroundProcess();
+    (0, handlers_1.setupHandlers)(mainWindow);
+    (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
+        return yield stopBackgroundProcess(mainBackgroundProcess);
+    }));
+    (0, ipcHandler_1.registerHandler)(events_1.ProcessType.WALLET.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
+        return yield startBackgroundProcess(null, events_1.ProcessType.WALLET, arg);
+    }));
+    (0, ipcHandler_1.registerHandler)(events_1.ProcessType.TRANSACTION.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
+        return yield startBackgroundProcess(null, events_1.ProcessType.TRANSACTION, arg);
     }));
 }
 electron_1.app.on('ready', () => {
     createTray();
     createWindow();
     registerHandlers();
-    startBackgroundProcess();
-    // let k = generateWallet();
-    // console.log(k);
+    startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
 });
 electron_1.app.on('window-all-closed', (event) => {
     if (process.platform !== 'darwin') {
