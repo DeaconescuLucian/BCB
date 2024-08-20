@@ -17,16 +17,16 @@ function startTransactionProcess() {
         const signature = (0, wallet_1.generateWallet)().pub;
         const date = new Date();
         const value = generateRandomNumber();
-        const type = getRandomStatus();
+        const status = getRandomStatus();
         if (process.send) {
             process.send({
                 signature,
                 date,
                 value,
-                type
+                status
             });
         }
-    }, 5000);
+    }, 20000);
 }
 function stopTransactionProcess() {
     if (interval) {

@@ -3,11 +3,13 @@ export type ScriptConfig = {
   startEvent: string;
   stopEvent: string;
   updateEvent: string;
+  type?: string;
 };
 
 export type ConfigDict = {
   MAIN: ScriptConfig;
   WALLET: ScriptConfig;
+  TRANSACTION: ScriptConfig;
   [key: string]: ScriptConfig;
 };
 
@@ -29,7 +31,8 @@ export const ProcessType: ConfigDict = {
     startEvent: 'start-transaction-process',
     stopEvent: 'stop-transaction-process',
     updateEvent: 'transaction-update',
-  }
+    type: 'transaction',
+  },
 };
 
 export const CustomEvents = {
@@ -43,19 +46,19 @@ export function verifyUniqueEvents(processType: ConfigDict): boolean {
   const eventSet = new Set<string>(Object.values(CustomEvents));
 
   for (const key in processType) {
-      if (processType.hasOwnProperty(key)) {
-          const config = processType[key];
+    if (processType.hasOwnProperty(key)) {
+      const config = processType[key];
 
-          const events = [config.startEvent, config.stopEvent, config.updateEvent];
+      const events = [config.startEvent, config.stopEvent, config.updateEvent];
 
-          for (const event of events) {
-              if (eventSet.has(event)) {
-                  console.error(`Duplicate event name found: ${event}`);
-                  return false;
-              }
-              eventSet.add(event);
-          }
+      for (const event of events) {
+        if (eventSet.has(event)) {
+          console.error(`Duplicate event name found: ${event}`);
+          return false;
+        }
+        eventSet.add(event);
       }
+    }
   }
 
   return true;

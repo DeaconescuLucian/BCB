@@ -6,7 +6,10 @@ import * as electronReload from 'electron-reload';
 import { fork, ChildProcess, execSync } from 'child_process';
 import { registerHandler, sendToRenderer } from './ipcHandler';
 import { setupHandlers } from './handlers';
-import { ProcessType, ScriptConfig, verifyUniqueEvents } from './events';
+import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './events';
+import sqlite3 from 'sqlite3';
+import * as db from './database/db';
+import * as transactionsDb from './database/transactions'
 
 if (!verifyUniqueEvents(ProcessType)) {
   execSync('yarn run close-web-app');
@@ -17,13 +20,14 @@ electronReload.default(__dirname, {});
 
 let mainWindow: BrowserWindow | null;
 let tray: Tray;
+let dbConnection: sqlite3.Database;
 
 remoteMain.initialize();
 
 type ProcessObject = {
-  process: ChildProcess | null
-  pid: number | undefined
-}
+  process: ChildProcess | null;
+  pid: number | undefined;
+};
 
 let mainBackgroundProcess: ChildProcess | null = null;
 let secondaryBackgroundProcesses: ProcessObject[] = [];
@@ -32,13 +36,13 @@ async function startBackgroundProcess(
   backgroundProcess: ChildProcess | null,
   processType: ScriptConfig,
   pid?: number
-): Promise<{message: string, pid: number | undefined}> {
+): Promise<{ message: string; pid: number | undefined }> {
   console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
 
   if (backgroundProcess) {
     if (backgroundProcess.connected) {
       console.log('Background process is already running');
-      return {message: 'Process already started!', pid: pid};
+      return { message: 'Process already started!', pid: pid };
     } else {
       console.log('Cleaning up disconnected background process');
       backgroundProcess = null;
@@ -48,39 +52,31 @@ async function startBackgroundProcess(
   return new Promise((resolve, reject) => {
     console.log('Starting background process...');
     if (processType !== ProcessType.MAIN) {
-      console.log(`pid: ${pid}`)
-      if(pid && secondaryBackgroundProcesses.find(e => e.pid === pid))
-      {
+      if (pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) {
         console.log(`Process ${pid} already started!`);
-        resolve({message: `Process ${pid} already started!`, pid: pid})
-      }
-      else
-      {
-        console.log(processType.startEvent)
+        resolve({ message: `Process ${pid} already started!`, pid: pid });
+      } else {
         backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
-        secondaryBackgroundProcesses.push({process: backgroundProcess, pid: backgroundProcess.pid});
+        secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess.pid });
         registerHandler(processType.stopEvent, async () => {
           await stopBackgroundProcess(backgroundProcess);
         });
       }
-    }
-    else
-    {
+    } else {
       backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
     }
 
     const timeout = setTimeout(() => {
       console.log('Timeout reached, resolving without confirmation');
-      resolve({message: 'Process started but no confirmation received', pid: undefined});
+      resolve({ message: 'Process started but no confirmation received', pid: undefined });
     }, 5000);
 
     backgroundProcess?.once('message', (message) => {
       if (message === 'ready') {
         console.log('Background process is ready, sending start command');
-        if(!pid)
-          backgroundProcess?.send('start');
+        if (!pid) backgroundProcess?.send('start');
         clearTimeout(timeout);
-        resolve({message: `Started process ${pid ?? backgroundProcess?.pid}.`, pid: pid ?? backgroundProcess?.pid})
+        resolve({ message: `Started process ${pid ?? backgroundProcess?.pid}.`, pid: pid ?? backgroundProcess?.pid });
       }
     });
 
@@ -98,7 +94,12 @@ async function startBackgroundProcess(
 
     backgroundProcess?.on('message', (message) => {
       if (message !== 'ready') {
-        sendToRenderer(mainWindow, processType.updateEvent, message);
+        if (processType.type === 'transaction') {
+          transactionsDb.insertTransaction(dbConnection, message);
+        }
+        if (mainWindow?.isVisible()) {
+          sendToRenderer(mainWindow, processType.updateEvent, message);
+        }
       }
     });
   });
@@ -125,7 +126,7 @@ async function stopBackgroundProcess(backgroundProcess: ChildProcess | null): Pr
         backgroundProcess = null;
         resolve('Forcefully stopped process');
       }
-      secondaryBackgroundProcesses = secondaryBackgroundProcesses.filter(e => e.pid === pid);
+      secondaryBackgroundProcesses = secondaryBackgroundProcesses.filter((e) => e.pid === pid);
     }, 1000);
 
     backgroundProcess?.once('exit', () => {
@@ -145,6 +146,7 @@ function createWindow(): void {
     width: 1156,
     height: 680,
     frame: false,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -158,6 +160,18 @@ function createWindow(): void {
   mainWindow.webContents.openDevTools({ mode: 'detach', activate: true });
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+  mainWindow?.on('ready-to-show', () => {
+    mainWindow?.show();
+  });
+  mainWindow?.on('show', () => {
+    transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
+      if (err) {
+        console.log('Error retrieving transaction history.');
+      } else {
+        sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, rows);
+      }
+    });
   });
 }
 
@@ -181,12 +195,15 @@ function createTray(): void {
       label: 'Quit',
       click: () => {
         execSync('yarn run close-web-app');
-        secondaryBackgroundProcesses.forEach(pr => {
+        secondaryBackgroundProcesses.forEach((pr) => {
           pr.process?.kill();
-        })
+          console.log(`Process ${pr.pid} stopped.`)
+        });
         if (mainBackgroundProcess) {
           mainBackgroundProcess.kill();
+          console.log("Main process stopped.");
         }
+        db.closeConnection(dbConnection);
         process.exit(1);
       },
     },
@@ -198,10 +215,8 @@ function createTray(): void {
 
 function registerHandlers() {
   registerHandler('start-background-process', async () => {
-    console.log('start-background-process handler called');
     try {
       const result = await startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);
-      console.log('startBackgroundProcess result:', result);
       return result;
     } catch (error) {
       console.error('Error in startBackgroundProcess:', error);
@@ -227,6 +242,8 @@ function registerHandlers() {
 app.on('ready', () => {
   createTray();
   createWindow();
+  dbConnection = db.openConnection();
+  db.initDatabase(dbConnection);
   registerHandlers();
   startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);
 });

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ProcessType } from '../../../ts/events';
-import { rightArrowSvg, leftArrowSvg, successSvg, warningSvg, pendingSvg } from '../../assets/svg';
-import CopyToClipboard from '../CopyToClipboard/index.tsx';
+import { rightArrowSvg, leftArrowSvg} from '../../assets/svg';
 import TransactionItem from './TransactionItem';
 
 function TransactionHistory() {
@@ -13,10 +12,19 @@ function TransactionHistory() {
 
   useEffect(() => {
     const unsubscribe = window.electron.on(transactionProcess.updateEvent, (msg) => {
-      setTransactionList((prevList) => [msg, ...prevList]);
+      if(!Array.isArray(msg))
+        {
+          setTransactionList((prevList) => [msg, ...prevList]);
+        }
+        else
+        {
+          setTransactionList(msg);
+        }
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+    }
   }, []);
 
   useEffect(() => {
@@ -26,6 +34,7 @@ function TransactionHistory() {
   const handleStartBackgroundProcess = async () => {
     const response = await window.electron.invoke(transactionProcess.startEvent, pid);
     setPid(response.success ? response.data.pid : undefined);
+    window.sessionStorage.setItem("transaction-history-pid", response.data.pid)
   };
 
   const hideTransactionHistory = () => {
@@ -55,8 +64,10 @@ function TransactionHistory() {
           </div>
           <div className="content">
             {transactionList.map((tr) => (
+              tr &&
               <TransactionItem
-                type={tr.type}
+                key={tr.signature}
+                status={tr.status}
                 value={tr.value}
                 signature={tr.signature}
                 date={tr.date}

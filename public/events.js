@@ -20,7 +20,8 @@ exports.ProcessType = {
         startEvent: 'start-transaction-process',
         stopEvent: 'stop-transaction-process',
         updateEvent: 'transaction-update',
-    }
+        type: 'transaction',
+    },
 };
 exports.CustomEvents = {
     importWalletEvent: 'import-wallet',

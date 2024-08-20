@@ -1,12 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo } from 'react';
 import { successSvg, warningSvg, pendingSvg, viewSvg } from '../../assets/svg';
 import CopyToClipboard from '../CopyToClipboard/index.tsx';
 import { timeAgo } from '../../utils.js';
 
-function TransactionItem(props) {
+const TransactionItem = memo((props) => {
   const [time, setTime] = useState(timeAgo(props.date));
+  const [animation, setAnimation] = useState((new Date() - new Date(props.date)) < 15000);
+
+  useEffect(() => {
+    const timeIntervalId = setInterval(() => {
+      setTime(timeAgo(props.date));
+    }, 60000);
+
+    const animationTimeoutId = setTimeout(() => {
+      setAnimation(false);
+    }, 20000);
+
+    return () => {
+      clearInterval(timeIntervalId);
+      clearTimeout(animationTimeoutId);
+    }
+  }, []);
+
   const renderIcon = () => {
-    switch (props.type) {
+    switch (props.status) {
       case 'success':
         return successSvg;
       case 'fail':
@@ -18,18 +35,12 @@ function TransactionItem(props) {
     }
   };
 
-  setInterval(() => {
-    setTime(timeAgo(props.date));
-  }, 60000);
-
   return (
-    <div className={`transaction-item ${props.type}`}>
-        <div className="view">
-            {viewSvg}
-        </div>
+    <div className={`transaction-item ${props.status} ${animation ? "animation" : ""}`}>
+      <div className="view">{viewSvg}</div>
       <div className="item-content">
         {' '}
-        <div className={`status ${props.type}`}>
+        <div className={`status ${props.status}`}>
           <div className="time">{time}</div>
           {renderIcon()}
         </div>
@@ -45,6 +56,6 @@ function TransactionItem(props) {
       </div>
     </div>
   );
-}
+});
 
 export default TransactionItem;

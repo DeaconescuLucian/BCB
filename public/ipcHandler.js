@@ -31,6 +31,7 @@ function registerHandler(channel, handler) {
 }
 function sendToRenderer(window, channel, ...args) {
     if (window) {
-        window.webContents.send(channel, ...args);
+        if (channel)
+            window.webContents.send(channel, ...args);
     }
 }
