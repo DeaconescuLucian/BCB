@@ -70,13 +70,13 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
         return new Promise((resolve, reject) => {
             console.log('Starting background process...');
             if (processType !== events_1.ProcessType.MAIN) {
-                if (pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) {
+                if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) || (secondaryBackgroundProcesses.find((e) => e.type === "transaction") && processType.type === "transaction")) {
                     console.log(`Process ${pid} already started!`);
                     resolve({ message: `Process ${pid} already started!`, pid: pid });
                 }
                 else {
                     backgroundProcess = (0, child_process_1.fork)(path.join(`${__dirname}/background-processes`, processType.file));
-                    secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess.pid });
+                    secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid, type: processType.type });
                     (0, ipcHandler_1.registerHandler)(processType.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
                         yield stopBackgroundProcess(backgroundProcess);
                     }));

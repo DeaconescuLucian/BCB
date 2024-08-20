@@ -4,7 +4,6 @@ import { rightArrowSvg, leftArrowSvg} from '../../assets/svg';
 import TransactionItem from './TransactionItem';
 
 function TransactionHistory() {
-  const [pid, setPid] = useState(undefined);
   const [hidden, setHidden] = useState(false);
   const [transactionList, setTransactionList] = useState([]);
 
@@ -32,9 +31,7 @@ function TransactionHistory() {
   }, []);
 
   const handleStartBackgroundProcess = async () => {
-    const response = await window.electron.invoke(transactionProcess.startEvent, pid);
-    setPid(response.success ? response.data.pid : undefined);
-    window.sessionStorage.setItem("transaction-history-pid", response.data.pid)
+    const response = await window.electron.invoke(transactionProcess.startEvent, undefined);
   };
 
   const hideTransactionHistory = () => {

@@ -27,10 +27,12 @@ remoteMain.initialize();
 type ProcessObject = {
   process: ChildProcess | null;
   pid: number | undefined;
+  type: string | undefined;
 };
 
 let mainBackgroundProcess: ChildProcess | null = null;
 let secondaryBackgroundProcesses: ProcessObject[] = [];
+
 
 async function startBackgroundProcess(
   backgroundProcess: ChildProcess | null,
@@ -52,12 +54,12 @@ async function startBackgroundProcess(
   return new Promise((resolve, reject) => {
     console.log('Starting background process...');
     if (processType !== ProcessType.MAIN) {
-      if (pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) {
+      if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) || (secondaryBackgroundProcesses.find((e) => e.type === "transaction") && processType.type === "transaction")) {
         console.log(`Process ${pid} already started!`);
         resolve({ message: `Process ${pid} already started!`, pid: pid });
       } else {
         backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
-        secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess.pid });
+        secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess?.pid, type: processType.type });
         registerHandler(processType.stopEvent, async () => {
           await stopBackgroundProcess(backgroundProcess);
         });
