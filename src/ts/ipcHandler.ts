@@ -21,8 +21,8 @@ export function registerHandler(channel: string, handler: IPCHandler) {
   });
 }
 
-export function sendToRenderer(window: BrowserWindow | null, channel: string, ...args: any[]) {
+export function sendToRenderer(window: BrowserWindow | null, channel?: string, ...args: any[]) {
   if (window) {
-    window.webContents.send(channel, ...args);
+    if (channel) window.webContents.send(channel, ...args);
   }
 }

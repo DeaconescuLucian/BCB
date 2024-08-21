@@ -41,6 +41,8 @@ const child_process_1 = require("child_process");
 const ipcHandler_1 = require("./ipcHandler");
 const handlers_1 = require("./handlers");
 const events_1 = require("./events");
+const db = __importStar(require("./database/db"));
+const transactionsDb = __importStar(require("./database/transactions"));
 if (!(0, events_1.verifyUniqueEvents)(events_1.ProcessType)) {
     (0, child_process_1.execSync)('yarn run close-web-app');
     process.exit(1);
@@ -48,6 +50,7 @@ if (!(0, events_1.verifyUniqueEvents)(events_1.ProcessType)) {
 electronReload.default(__dirname, {});
 let mainWindow;
 let tray;
+let dbConnection;
 remoteMain.initialize();
 let mainBackgroundProcess = null;
 let secondaryBackgroundProcesses = [];
@@ -67,15 +70,13 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
         return new Promise((resolve, reject) => {
             console.log('Starting background process...');
             if (processType !== events_1.ProcessType.MAIN) {
-                console.log(`pid: ${pid}`);
-                if (pid && secondaryBackgroundProcesses.find(e => e.pid === pid)) {
+                if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) || (secondaryBackgroundProcesses.find((e) => e.type === "transaction") && processType.type === "transaction")) {
                     console.log(`Process ${pid} already started!`);
                     resolve({ message: `Process ${pid} already started!`, pid: pid });
                 }
                 else {
-                    console.log(processType.startEvent);
                     backgroundProcess = (0, child_process_1.fork)(path.join(`${__dirname}/background-processes`, processType.file));
-                    secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess.pid });
+                    secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid, type: processType.type });
                     (0, ipcHandler_1.registerHandler)(processType.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
                         yield stopBackgroundProcess(backgroundProcess);
                     }));
@@ -109,7 +110,12 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
             });
             backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('message', (message) => {
                 if (message !== 'ready') {
-                    (0, ipcHandler_1.sendToRenderer)(mainWindow, processType.updateEvent, message);
+                    if (processType.type === 'transaction') {
+                        transactionsDb.insertTransaction(dbConnection, message);
+                    }
+                    if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
+                        (0, ipcHandler_1.sendToRenderer)(mainWindow, processType.updateEvent, message);
+                    }
                 }
             });
         });
@@ -134,7 +140,7 @@ function stopBackgroundProcess(backgroundProcess) {
                     backgroundProcess = null;
                     resolve('Forcefully stopped process');
                 }
-                secondaryBackgroundProcesses = secondaryBackgroundProcesses.filter(e => e.pid === pid);
+                secondaryBackgroundProcesses = secondaryBackgroundProcesses.filter((e) => e.pid === pid);
             }, 1000);
             backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.once('exit', () => {
                 console.log('Background process exited');
@@ -153,6 +159,7 @@ function createWindow() {
         width: 1156,
         height: 680,
         frame: false,
+        show: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
@@ -165,6 +172,19 @@ function createWindow() {
     mainWindow.webContents.openDevTools({ mode: 'detach', activate: true });
     mainWindow.on('closed', () => {
         mainWindow = null;
+    });
+    mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.on('ready-to-show', () => {
+        mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.show();
+    });
+    mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.on('show', () => {
+        transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
+            if (err) {
+                console.log('Error retrieving transaction history.');
+            }
+            else {
+                (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, rows);
+            }
+        });
     });
 }
 function createTray() {
@@ -187,13 +207,16 @@ function createTray() {
             label: 'Quit',
             click: () => {
                 (0, child_process_1.execSync)('yarn run close-web-app');
-                secondaryBackgroundProcesses.forEach(pr => {
+                secondaryBackgroundProcesses.forEach((pr) => {
                     var _a;
                     (_a = pr.process) === null || _a === void 0 ? void 0 : _a.kill();
+                    console.log(`Process ${pr.pid} stopped.`);
                 });
                 if (mainBackgroundProcess) {
                     mainBackgroundProcess.kill();
+                    console.log("Main process stopped.");
                 }
+                db.closeConnection(dbConnection);
                 process.exit(1);
             },
         },
@@ -203,10 +226,8 @@ function createTray() {
 }
 function registerHandlers() {
     (0, ipcHandler_1.registerHandler)('start-background-process', () => __awaiter(this, void 0, void 0, function* () {
-        console.log('start-background-process handler called');
         try {
             const result = yield startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
-            console.log('startBackgroundProcess result:', result);
             return result;
         }
         catch (error) {
@@ -228,6 +249,8 @@ function registerHandlers() {
 electron_1.app.on('ready', () => {
     createTray();
     createWindow();
+    dbConnection = db.openConnection();
+    db.initDatabase(dbConnection);
     registerHandlers();
     startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
 });
