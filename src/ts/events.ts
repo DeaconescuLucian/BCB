@@ -40,6 +40,7 @@ export const CustomEvents = {
   generateWalletEvent: 'generate-wallet',
   walletGeneratedEvent: 'wallet-generated',
   walletImportedEvent: 'wallet-imported',
+  getLatestTransactions: 'get-latest-transactions',
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

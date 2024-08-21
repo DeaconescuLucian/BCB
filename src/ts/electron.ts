@@ -166,14 +166,13 @@ function createWindow(): void {
   mainWindow?.on('ready-to-show', () => {
     mainWindow?.show();
   });
-  mainWindow?.on('show', () => {
-    transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
-      if (err) {
-        console.log('Error retrieving transaction history.');
-      } else {
-        sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, rows);
-      }
-    });
+  mainWindow?.on('show', async () => {
+    try {
+      const rows = await mainWindow?.webContents.executeJavaScript(`window.electron.invoke('get-latest-transactions')`);
+      sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, rows.data);
+    } catch (error) {
+      console.log('Error retrieving transaction history:', error);
+    }
   });
 }
 
@@ -238,6 +237,18 @@ function registerHandlers() {
 
   registerHandler(ProcessType.TRANSACTION.startEvent, async (e: any, arg: number) => {
     return await startBackgroundProcess(null, ProcessType.TRANSACTION, arg);
+  });
+
+  registerHandler(CustomEvents.getLatestTransactions, async () => {
+    return new Promise((resolve, reject) => {
+      transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
   });
 }
 
