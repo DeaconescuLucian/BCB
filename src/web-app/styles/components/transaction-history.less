@@ -13,7 +13,6 @@
 
   .header {
     display: flex;
-    margin-bottom: 15px;
 
     .arrow-button {
       cursor: pointer;
@@ -43,6 +42,21 @@
       line-height: 24px;
       vertical-align: top;
     }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+
+      span {
+        display: block;
+
+        &.transacations-count {
+          font-size: 14px;
+          line-height: 14px;
+          color: @color-font-gray;
+        }
+      }
+    }
   }
 
   .content {
@@ -51,6 +65,7 @@
     font-size: 12px;
     width: calc(100% - 20px);
     overflow-y: scroll;
+    padding-top: 15px;
     &::-webkit-scrollbar {
       display: none;
   }
@@ -163,6 +178,14 @@
 
         .item-content {
             width: 226px;
+            .info {
+              .signature {
+                position: relative;
+                .copy-to-clipboard-message {
+                  left: 70px;
+                }
+              }
+            }
         }
     }
   }
@@ -210,12 +233,18 @@
 
     span {
       font-size: 24px;
-      transform: rotate(90deg); /* or -90deg for the opposite direction */
-      transform-origin: left top; /* adjust as needed */
+      transform: rotate(90deg);
+      transform-origin: left top;
       display: inline-block;
       text-wrap: nowrap;
       margin-left: 26px;
       margin-top: 15px;
+      
+      &.transacations-count {
+        margin-top: 200px;
+        font-size: 20px;
+        color: @color-font-gray;
+      }
     }
   }
 

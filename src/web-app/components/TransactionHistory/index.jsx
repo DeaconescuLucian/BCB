@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ProcessType } from '../../../ts/events';
-import { rightArrowSvg, leftArrowSvg} from '../../assets/svg';
+import { rightArrowSvg, leftArrowSvg } from '../../assets/svg';
 import TransactionItem from './TransactionItem';
 
 function TransactionHistory() {
@@ -11,19 +11,16 @@ function TransactionHistory() {
 
   useEffect(() => {
     const unsubscribe = window.electron.on(transactionProcess.updateEvent, (msg) => {
-      if(!Array.isArray(msg))
-        {
-          setTransactionList((prevList) => [msg, ...prevList]);
-        }
-        else
-        {
-          setTransactionList(msg);
-        }
+      if (!Array.isArray(msg)) {
+        setTransactionList((prevList) => [msg, ...prevList]);
+      } else {
+        setTransactionList(msg);
+      }
     });
 
     return () => {
       unsubscribe();
-    }
+    };
   }, []);
 
   useEffect(() => {
@@ -31,7 +28,7 @@ function TransactionHistory() {
   }, []);
 
   const handleStartBackgroundProcess = async () => {
-    const response = await window.electron.invoke(transactionProcess.startEvent, undefined);
+    await window.electron.invoke(transactionProcess.startEvent, undefined);
   };
 
   const hideTransactionHistory = () => {
@@ -48,7 +45,8 @@ function TransactionHistory() {
             <div className="arrow-button" onClick={hideTransactionHistory}>
               {leftArrowSvg}
             </div>
-            <span>Transaction history</span>
+            <span>Transaction history </span>
+            <span className="transacations-count">( {transactionList.length} transactions )</span>
           </div>
         </div>
       ) : (
@@ -57,19 +55,24 @@ function TransactionHistory() {
             <div className="arrow-button" onClick={hideTransactionHistory}>
               {rightArrowSvg}
             </div>
-            <span>Transaction history</span>
+            <div className="title">
+              <span>Transaction history</span>
+              <span className="transacations-count">( {transactionList.length} transactions )</span>
+            </div>
           </div>
           <div className="content">
-            {transactionList.map((tr) => (
-              tr &&
-              <TransactionItem
-                key={tr.signature}
-                status={tr.status}
-                value={tr.value}
-                signature={tr.signature}
-                date={tr.date}
-              ></TransactionItem>
-            ))}
+            {transactionList.map(
+              (tr) =>
+                tr && (
+                  <TransactionItem
+                    key={tr.signature}
+                    status={tr.status}
+                    value={tr.value}
+                    signature={tr.signature}
+                    date={tr.date}
+                  ></TransactionItem>
+                )
+            )}
           </div>
         </div>
       )}

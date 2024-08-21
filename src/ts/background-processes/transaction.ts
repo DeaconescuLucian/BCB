@@ -28,7 +28,7 @@ function startTransactionProcess() {
         status
       });
     }
-  }, 20000);
+  }, 60000);
 }
 
 function stopTransactionProcess() {
