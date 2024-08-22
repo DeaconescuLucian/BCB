@@ -20,7 +20,6 @@ function createTableTransactions(db) {
 }
 function insertTransaction(db, t) {
     db.serialize(() => {
-        console.log(t);
         db.run(`INSERT INTO transactions (signature, value, "date", status) VALUES (?, ?, ?, ?)`, [t.signature, t.value, t.date, t.status], (err) => {
             if (err) {
                 console.error('Error inserting transaction:', err.message);

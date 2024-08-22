@@ -2,92 +2,101 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../components/FormControls/Button.tsx';
 import CopyToClipboard from '../../components/CopyToClipboard/index.tsx';
 import Page from '../../components/Page/index.tsx';
+import Info from '../../components/Info/index.tsx';
+import { useToast } from '../../contexts/ToastContext.tsx';
+import Input from '../../components/FormControls/Input.tsx';
+import { CustomEvents } from '../../../ts/events.ts'
 
 function GenerateWallet() {
+  const { showToast } = useToast();
   const [wallet, setWallet] = useState(null);
   const [walletSaved, setWalletSaved] = useState(false);
 
-  const saveWallet = () => {
-    var wallets = localStorage.getItem('wallets');
-
-    if (!wallets) wallets = [];
-    else wallets = JSON.parse(wallets);
-
-    wallets.push(wallet.kp);
-    localStorage.setItem('wallets', JSON.stringify(wallets));
-    setWalletSaved(true);
-    //TODO: hide the save button until a new wallet is generated
+  const saveWallet = async () => {
+    const result = await window.electron.invoke(CustomEvents.saveWalletEvent, wallet);
+    if (result) {
+      if(result.data.message)
+      {
+        showToast(result.data.message, 'success');
+        setWalletSaved(true);
+      }
+      else {
+        if(result.data.error)
+        {
+          showToast(result.data.error, 'fail');
+        }
+      }
+    }
   };
 
-  useEffect(() => {
-    const unsubscribe = window.electron.on('wallet-generated', (msg) => {
-      let wlt = JSON.parse(msg);
-      wlt.secret = Object.values(wlt.secret).join(',');
-      setWallet(wlt);
-      setWalletSaved(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
   const handleGenerateWallet = async () => {
-    await window.electron.invoke('generate-wallet');
+    const result = await window.electron.invoke(CustomEvents.generateWalletEvent);
+    if(result.data)
+    {
+      result.data.secretKey = Object.values(result.data.secretKey).join(',');
+      setWallet(result.data);
+      setWalletSaved(false);
+    }
   };
 
   return (
     <Page>
       <div className="generate-wallet-page">
         {!wallet && (
-          <Button
-            onClick={() => {
-              handleGenerateWallet();
-            }}
-            theme="primary"
-            type="add"
-            text="Generate"
-          ></Button>
+            <Button
+              onClick={() => {
+                handleGenerateWallet();
+              }}
+              theme="primary"
+              type="add"
+              text="Generate"
+            ></Button>
         )}
 
         {wallet && (
-          <div className="response">
-            <div className="generated-wallet">
-              <div className="label-with-copy">
-                {' '}
-                <span>Wallet Address: </span>
-                <CopyToClipboard text={wallet.pub}></CopyToClipboard>
-              </div>
+          <>
+            {' '}
+            <div className="response">
+              <div className="generated-wallet">
+                <div className="label-with-copy">
+                  {' '}
+                  <span>Wallet Address: </span>
+                  <CopyToClipboard text={wallet.publicKey}></CopyToClipboard>
+                </div>
 
-              <input type="text" value={wallet.pub} readOnly />
-            </div>
-            <div className="generated-wallet">
-              <div className="label-with-copy">
-                {' '}
-                <span>Secret key: </span>
-                <CopyToClipboard text={wallet.secret}></CopyToClipboard>
+                <Input type="text" theme="primary" readOnly readOnlyValue={wallet.publicKey}></Input>
               </div>
-              <input type="text" value={wallet.secret} readOnly />
-            </div>
-            <div className="buttons-container-end-of-block two-buttons">
-              <Button
-                onClick={() => {
-                  handleGenerateWallet();
-                }}
-                theme="primary"
-                type="add"
-                text="Generate new"
-              ></Button>
-              {!walletSaved && (
+              <div className="generated-wallet">
+                <div className="label-with-copy">
+                  {' '}
+                  <span>Secret key: </span>
+                  <CopyToClipboard text={wallet.secretKey}></CopyToClipboard>
+                </div>
+                <Input type="text" theme="primary" readOnly readOnlyValue={wallet.secretKey}></Input>
+              </div>
+              <div className="buttons-container-end-of-block two-buttons">
                 <Button
                   onClick={() => {
-                    saveWallet();
+                    handleGenerateWallet();
                   }}
-                  theme="secondary"
-                  type="save"
-                  text="Save locally"
+                  theme="primary"
+                  type="add"
+                  text="Generate new"
                 ></Button>
-              )}
-            </div>
-          </div>
+                {!walletSaved && (
+                  <Button
+                    onClick={() => {
+                      saveWallet();
+                    }}
+                    theme="secondary"
+                    type="save"
+                    text="Save locally"
+                  ></Button>
+                )}
+              </div>
+            </div>{' '}
+            <Info text="The secret key along with its public key will be stored locally."></Info>
+          </>
         )}
       </div>
     </Page>

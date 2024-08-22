@@ -4,7 +4,7 @@ var interval: NodeJS.Timeout;
 
 function startWalletProcess() {
   interval = setInterval(() => {
-    const message = generateWallet().pub;
+    const message = generateWallet().publicKey;
     if (process.send) {
       process.send(message);
     }

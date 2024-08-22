@@ -4,7 +4,7 @@ const wallet_1 = require("../solana/wallet");
 var interval;
 function startWalletProcess() {
     interval = setInterval(() => {
-        const message = (0, wallet_1.generateWallet)().pub;
+        const message = (0, wallet_1.generateWallet)().publicKey;
         if (process.send) {
             process.send(message);
         }

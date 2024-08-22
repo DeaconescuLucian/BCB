@@ -38,8 +38,7 @@ export const ProcessType: ConfigDict = {
 export const CustomEvents = {
   importWalletEvent: 'import-wallet',
   generateWalletEvent: 'generate-wallet',
-  walletGeneratedEvent: 'wallet-generated',
-  walletImportedEvent: 'wallet-imported',
+  saveWalletEvent: 'save-wallet',
   getLatestTransactions: 'get-latest-transactions',
 };
 

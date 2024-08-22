@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { createTableTransactions } from './transactions';
+import { createTablWallets } from './wallets';
 
 export function openConnection(): sqlite3.Database {
     const db = new sqlite3.Database('blockchain-busters.db', (err: Error | null) => {
@@ -15,6 +16,7 @@ export function openConnection(): sqlite3.Database {
 export function initDatabase(db: sqlite3.Database): void {
     db.serialize(() => {
         createTableTransactions(db);
+        createTablWallets(db);
     });
 }
 

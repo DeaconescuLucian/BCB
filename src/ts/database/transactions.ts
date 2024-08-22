@@ -18,7 +18,6 @@ export function createTableTransactions(db: sqlite3.Database) {
 
 export function insertTransaction(db: sqlite3.Database, t: any): void {
     db.serialize(() => {
-        console.log(t)
         db.run(`INSERT INTO transactions (signature, value, "date", status) VALUES (?, ?, ?, ?)`,
             [t.signature, t.value, t.date, t.status], (err: Error | null) => {
                 if (err) {

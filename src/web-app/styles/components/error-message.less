@@ -1,0 +1,28 @@
+span {
+    &.error-message {
+        color: @color-fail;
+        font-size: 14px;
+        background-color: @color-fail-bg;
+        padding: 5px 10px;
+        position: relative;
+        border-radius: 5px;
+        border: 1px solid @color-fail;
+        text-align: center;
+
+        svg {
+            width: 14px;
+            height: 14px;
+            position: absolute;
+            left: 5px;
+            top: 7px;
+
+            path {
+                fill: @color-fail;
+            }
+
+            circle {
+                fill: @color-fail;
+            }
+        }
+    }
+}

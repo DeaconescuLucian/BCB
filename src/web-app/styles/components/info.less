@@ -1,0 +1,28 @@
+span {
+    &.info-message {
+        color: @color-info;
+        font-size: 14px;
+        background-color: @color-base;
+        padding: 5px 10px;
+        position: relative;
+        border-radius: 5px;
+        border: 1px solid @color-info;
+        text-align: center;
+    
+        svg {
+            width: 14px;
+            height: 14px;
+            position: absolute;
+            left: 5px;
+            top: 7px;
+    
+            path {
+                fill: @color-info;
+            }
+    
+            circle {
+                fill: @color-info;
+            }
+        }
+    }
+}

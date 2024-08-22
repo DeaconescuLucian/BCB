@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcRenderer } from 'electron';
+import { app, BrowserWindow, Tray, Menu } from 'electron';
 import * as path from 'path';
 import * as isDev from 'electron-is-dev';
 import * as remoteMain from '@electron/remote/main';
@@ -186,7 +186,7 @@ function createTray(): void {
       click: () => {
         if (mainWindow === null) {
           createWindow();
-          setupHandlers(mainWindow);
+          setupHandlers(mainWindow, dbConnection);
         } else {
           mainWindow.show();
         }
@@ -225,7 +225,7 @@ function registerHandlers() {
     }
   });
 
-  setupHandlers(mainWindow);
+  setupHandlers(mainWindow, dbConnection);
 
   registerHandler(ProcessType.MAIN.stopEvent, async () => {
     return await stopBackgroundProcess(mainBackgroundProcess);
