@@ -1,26 +1,73 @@
-import React, {useEffect, useState} from 'react';
-import Page from "../../components/Page/index.tsx";
+import React, { useEffect, useState } from 'react';
+import Page from '../../components/Page/index.tsx';
+import Input from '../../components/FormControls/Input.tsx';
+import Button from '../../components/FormControls/Button.tsx';
+import Info from '../../components/Info/index.tsx';
+import { CustomEvents } from '../../../ts/events.ts';
+import { useToast } from '../../contexts/ToastContext.tsx';
 
 function ImportWallet() {
-  const [message, setMessage] = useState('');
+  const { showToast } = useToast();
+  const [secretKey, setSecretKey] = useState(null);
 
-  useEffect(() => {
-    const unsubscribe = window.electron.on('wallet-imported', (msg) => {
-      setMessage(msg);
-    });
+  const handleImportWallet = async () => {
+    const result = await window.electron.invoke(CustomEvents.importWalletEvent, secretKey);
+    if (result) {
+      if(result.data.message)
+      {
+        showToast(result.data.message, 'success');
+      }
+      else {
+        if(result.data.error)
+        {
+          showToast(result.data.error, 'fail');
+        }
+      }
+    }
+  };
 
-    return unsubscribe;
-  }, []);
+  const validateInput = (value) => {
+    const numbers = value.split(',');
+    const errorMessage = 'Invalid secret key! ( Make sure your secret key contains 64 numbers separated by comma. )';
+    if (numbers.length !== 64) {
+      return errorMessage;
+    }
+    for (let num of numbers) {
+      if (isNaN(num) || num.trim() === '') {
+        return errorMessage;
+      }
+    }
 
-  const handleWalletWatch = async () => {
-    await window.electron.invoke('import-wallet', '209,109,21,95,197,211,87,15,247,87,148,53,230,242,21,251,14,235,249,44,8,188,142,219,198,153,143,92,156,147,75,192,27,53,210,83,201,208,5,168,74,128,64,68,130,153,117,117,231,0,9,15,177,170,149,205,222,158,26,134,164,17,212,27');
-  }
+    return null;
+  };
+
+  const onInputChange = (value) => {
+    setSecretKey(value);
+  };
 
   return (
-      <Page>
-        <button onClick={handleWalletWatch}>Watch Wallet</button>
-        <span>{message}</span>
-      </Page>
+    <Page>
+      <div className="import-wallet-page">
+        <div className="import-wallet-page-container">
+          <div className="label-with-copy">
+            {' '}
+            <span>Secret key: </span>
+          </div>
+          <Input type="text" validate={validateInput} onChange={onInputChange} theme="primary"></Input>
+          <Button
+            onClick={() => {
+              handleImportWallet();
+            }}
+            theme="primary"
+            type="import-wallet"
+            text="Import wallet"
+            disabled={!!!secretKey}
+            tooltipDisabled={'Enter a valid secret key.'}
+          ></Button>
+        </div>
+        <Info text="The secret key along with its public key will be stored locally."></Info>
+      </div>
+    </Page>
   );
 }
 

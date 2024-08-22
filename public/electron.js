@@ -176,16 +176,15 @@ function createWindow() {
     mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.on('ready-to-show', () => {
         mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.show();
     });
-    mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.on('show', () => {
-        transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
-            if (err) {
-                console.log('Error retrieving transaction history.');
-            }
-            else {
-                (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, rows);
-            }
-        });
-    });
+    mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.on('show', () => __awaiter(this, void 0, void 0, function* () {
+        try {
+            const rows = yield (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.webContents.executeJavaScript(`window.electron.invoke('get-latest-transactions')`));
+            (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, rows.data);
+        }
+        catch (error) {
+            console.log('Error retrieving transaction history:', error);
+        }
+    }));
 }
 function createTray() {
     const iconPath = path.join(__dirname, 'solana.png');
@@ -196,7 +195,7 @@ function createTray() {
             click: () => {
                 if (mainWindow === null) {
                     createWindow();
-                    (0, handlers_1.setupHandlers)(mainWindow);
+                    (0, handlers_1.setupHandlers)(mainWindow, dbConnection);
                 }
                 else {
                     mainWindow.show();
@@ -235,7 +234,7 @@ function registerHandlers() {
             return 'error';
         }
     }));
-    (0, handlers_1.setupHandlers)(mainWindow);
+    (0, handlers_1.setupHandlers)(mainWindow, dbConnection);
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess(mainBackgroundProcess);
     }));
@@ -244,6 +243,18 @@ function registerHandlers() {
     }));
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.TRANSACTION.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
         return yield startBackgroundProcess(null, events_1.ProcessType.TRANSACTION, arg);
+    }));
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getLatestTransactions, () => __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve(rows);
+                }
+            });
+        });
     }));
 }
 electron_1.app.on('ready', () => {

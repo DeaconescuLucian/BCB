@@ -1,9 +1,31 @@
 input[type="text"] {
     width: calc(100% - 20px);
     padding: 5px 10px;
-    color: @color-font-white;
-    background-color: @color-base;
     outline: none;
     border: none;
     border-radius: 5px;
+
+    &.theme-primary {
+        color: @color-font-white;
+        background-color: @color-base;
+    }
+
+    &.theme-secondary {
+        color: @color-black;
+        background-color: @color-font-gray;
+    }
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    input {
+        margin-bottom: 10px;
+    }
+
+    .error-message {
+        margin-bottom: 10px;
+    }
 }

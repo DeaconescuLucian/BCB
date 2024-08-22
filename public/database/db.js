@@ -8,6 +8,7 @@ exports.initDatabase = initDatabase;
 exports.closeConnection = closeConnection;
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const transactions_1 = require("./transactions");
+const wallets_1 = require("./wallets");
 function openConnection() {
     const db = new sqlite3_1.default.Database('blockchain-busters.db', (err) => {
         if (err) {
@@ -22,6 +23,7 @@ function openConnection() {
 function initDatabase(db) {
     db.serialize(() => {
         (0, transactions_1.createTableTransactions)(db);
+        (0, wallets_1.createTablWallets)(db);
     });
 }
 function closeConnection(db) {

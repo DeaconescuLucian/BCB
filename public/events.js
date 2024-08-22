@@ -26,8 +26,8 @@ exports.ProcessType = {
 exports.CustomEvents = {
     importWalletEvent: 'import-wallet',
     generateWalletEvent: 'generate-wallet',
-    walletGeneratedEvent: 'wallet-generated',
-    walletImportedEvent: 'wallet-imported',
+    saveWalletEvent: 'save-wallet',
+    getLatestTransactions: 'get-latest-transactions',
 };
 function verifyUniqueEvents(processType) {
     const eventSet = new Set(Object.values(exports.CustomEvents));

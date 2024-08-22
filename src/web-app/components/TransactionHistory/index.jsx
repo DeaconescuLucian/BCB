@@ -46,7 +46,7 @@ function TransactionHistory() {
               {leftArrowSvg}
             </div>
             <span>Transaction history </span>
-            <span className="transacations-count">( {transactionList.length} transactions )</span>
+            <span className="transacations-count">( Last {transactionList.length} transactions )</span>
           </div>
         </div>
       ) : (
@@ -57,7 +57,7 @@ function TransactionHistory() {
             </div>
             <div className="title">
               <span>Transaction history</span>
-              <span className="transacations-count">( {transactionList.length} transactions )</span>
+              <span className="transacations-count">( Last {transactionList.length} transactions )</span>
             </div>
           </div>
           <div className="content">

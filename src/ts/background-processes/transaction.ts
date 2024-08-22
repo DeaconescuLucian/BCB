@@ -16,7 +16,7 @@ function getRandomStatus() {
 
 function startTransactionProcess() {
   interval = setInterval(() => {
-    const signature = generateWallet().pub;
+    const signature = generateWallet().publicKey;
     const date = new Date();
     const value = generateRandomNumber();
     const status = getRandomStatus();
