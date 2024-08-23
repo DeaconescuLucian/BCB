@@ -36,6 +36,8 @@ const ipcHandler_1 = require("../ipcHandler");
 const wallet_1 = require("../solana/wallet");
 const events_1 = require("../events");
 const walletDb = __importStar(require("../database/wallets"));
+const web3_js_1 = require("@solana/web3.js");
+const utils_1 = require("../solana/utils");
 const ImportWalletHandler = (db) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.importWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -77,22 +79,34 @@ const SaveWalletHandler = (db) => {
 };
 const GetWalletsHandler = (db, solanaConnection) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getWalletsEvent, () => __awaiter(void 0, void 0, void 0, function* () {
-        return new Promise((resolve) => {
-            walletDb.getWallets(db, (err, rows) => {
+        return new Promise((resolve, reject) => {
+            walletDb.getWallets(db, (err, rows) => __awaiter(void 0, void 0, void 0, function* () {
                 if (err) {
-                    resolve(err);
+                    reject(err);
                 }
                 else {
-                    resolve(rows);
+                    try {
+                        const wallets = yield Promise.all((rows === null || rows === void 0 ? void 0 : rows.map((row) => __awaiter(void 0, void 0, void 0, function* () {
+                            const keyPair = web3_js_1.Keypair.fromSecretKey(Uint8Array.from(row.secretKey.split(',').map(Number)));
+                            console.log(keyPair);
+                            const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, keyPair.publicKey);
+                            console.log(solBalance);
+                            return Object.assign(Object.assign({}, row), { sol: solBalance });
+                        }))) || []);
+                        resolve(wallets);
+                    }
+                    catch (error) {
+                        reject(error);
+                    }
                 }
-            });
+            }));
         });
     }));
 };
-const handleWallet = (db, solanaConnection) => {
+const handleWallet = (db, solanaConnection) => __awaiter(void 0, void 0, void 0, function* () {
     ImportWalletHandler(db);
     GenerateWalletHandler();
     SaveWalletHandler(db);
     GetWalletsHandler(db, solanaConnection);
-};
+});
 exports.default = handleWallet;
