@@ -27,7 +27,8 @@ exports.CustomEvents = {
     importWalletEvent: 'import-wallet',
     generateWalletEvent: 'generate-wallet',
     saveWalletEvent: 'save-wallet',
-    getLatestTransactions: 'get-latest-transactions',
+    getLatestTransactionsEvent: 'get-latest-transactions',
+    getWalletsEvent: 'get-wallets'
 };
 function verifyUniqueEvents(processType) {
     const eventSet = new Set(Object.values(exports.CustomEvents));

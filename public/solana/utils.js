@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransferFeesDefault = void 0;
+exports.createConnection = createConnection;
 exports.getSolanaBalance = getSolanaBalance;
 exports.createSignedTransaction = createSignedTransaction;
 exports.simpleTransfer = simpleTransfer;
@@ -18,6 +19,9 @@ exports.TransferFeesDefault = {
     prioFee: 1000,
     cpuLimit: 1000
 };
+function createConnection() {
+    return new web3_js_1.Connection('https://api.devnet.solana.com');
+}
 function getSolanaBalance(connection, publicKey) {
     return __awaiter(this, void 0, void 0, function* () {
         return ((yield connection.getBalance(publicKey)) / web3_js_1.LAMPORTS_PER_SOL);

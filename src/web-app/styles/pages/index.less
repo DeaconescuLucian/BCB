@@ -1,5 +1,7 @@
 @import 'generate-wallet';
 @import 'import-wallet';
+@import 'wallet-list-page';
+@import 'wallets-page';
 
 .page-container {
     margin-top: @page-container-margin-top;
@@ -15,4 +17,8 @@
     border-radius: 10px;
     box-shadow: 0px 0px 12px @color-brand;
     padding: @default-page-container-padding;
+    
+    &.page-with-tabstrip {
+        padding: 0;
+    }
 }

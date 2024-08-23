@@ -1,0 +1,77 @@
+table {
+  width: 100%;
+  position: relative;
+
+  thead {
+    background-color: @color-dark;
+    display: block;
+    position: sticky;
+    z-index: 100;
+    top: 0;
+    width: calc(100% - 20px);
+    padding: 10px 10px;
+    tr {
+      position: relative;
+      width: 100%;
+      table-layout: fixed;
+      display: table;
+    }
+    th {
+      text-align: start;
+      color: @color-font-brand;
+    }
+  }
+
+  tbody {
+    display: block;
+    flex-grow: 1;
+    background-color: @color-base;
+    color: @color-font-white;
+
+    tr {
+      position: relative;
+      width: calc(100% - 10px);
+      table-layout: fixed;
+      display: table;
+      padding: 10px 5px;
+
+      td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &.action-cell {
+            text-align: end;
+        }
+
+        svg {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-right: 10px;
+
+            path {
+                fill: @color-font-white;
+            }
+
+            circle {
+                fill: @color-font-white;
+            }
+
+            &:hover {
+                path {
+                    fill: @color-font-brand;
+                }
+    
+                circle {
+                    fill: @color-font-brand;
+                }
+            }
+        }
+      }
+
+      &:nth-child(odd) {
+        background-color: @color-tertiary-base;
+      }
+    }
+  }
+}

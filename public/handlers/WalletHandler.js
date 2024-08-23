@@ -39,9 +39,9 @@ const walletDb = __importStar(require("../database/wallets"));
 const ImportWalletHandler = (db) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.importWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         try {
-            const response = (0, wallet_1.importKeypair)(arg);
+            const response = (0, wallet_1.importKeypair)(arg.secretKey);
             return new Promise((resolve) => {
-                walletDb.insertWallet(db, response.data, (result) => {
+                walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias }, (result) => {
                     resolve(result);
                 });
             });
@@ -75,9 +75,24 @@ const SaveWalletHandler = (db) => {
         });
     }));
 };
-const handleWallet = (db) => {
+const GetWalletsHandler = (db, solanaConnection) => {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getWalletsEvent, () => __awaiter(void 0, void 0, void 0, function* () {
+        return new Promise((resolve) => {
+            walletDb.getWallets(db, (err, rows) => {
+                if (err) {
+                    resolve(err);
+                }
+                else {
+                    resolve(rows);
+                }
+            });
+        });
+    }));
+};
+const handleWallet = (db, solanaConnection) => {
     ImportWalletHandler(db);
     GenerateWalletHandler();
     SaveWalletHandler(db);
+    GetWalletsHandler(db, solanaConnection);
 };
 exports.default = handleWallet;
