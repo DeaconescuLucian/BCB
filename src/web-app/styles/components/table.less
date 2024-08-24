@@ -5,7 +5,7 @@ table {
 
   thead {
     background-color: @color-dark;
-    display: table;
+    display: flex;
     position: sticky;
     z-index: 100;
     top: 0;
@@ -28,7 +28,8 @@ table {
   }
 
   tbody {
-    display: table;
+    display: flex;
+    flex-direction: column;
     background-color: @color-base;
     color: @color-font-white;
     width: calc(100% - 20px);
@@ -73,8 +74,6 @@ table {
         }
 
         svg {
-          width: 20px;
-          height: 20px;
           cursor: pointer;
           margin-right: 10px;
 
