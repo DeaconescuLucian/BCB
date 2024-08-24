@@ -10,6 +10,8 @@ import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './e
 import sqlite3 from 'sqlite3';
 import * as db from './database/db';
 import * as transactionsDb from './database/transactions'
+import { createConnection } from './solana/utils';
+import { Connection } from '@solana/web3.js';
 
 if (!verifyUniqueEvents(ProcessType)) {
   execSync('yarn run close-web-app');
@@ -21,6 +23,7 @@ electronReload.default(__dirname, {});
 let mainWindow: BrowserWindow | null;
 let tray: Tray;
 let dbConnection: sqlite3.Database;
+let solanaConnection: Connection;
 
 remoteMain.initialize();
 
@@ -186,7 +189,7 @@ function createTray(): void {
       click: () => {
         if (mainWindow === null) {
           createWindow();
-          setupHandlers(mainWindow, dbConnection);
+          setupHandlers(mainWindow, dbConnection, solanaConnection);
         } else {
           mainWindow.show();
         }
@@ -225,7 +228,7 @@ function registerHandlers() {
     }
   });
 
-  setupHandlers(mainWindow, dbConnection);
+  setupHandlers(mainWindow, dbConnection, solanaConnection);
 
   registerHandler(ProcessType.MAIN.stopEvent, async () => {
     return await stopBackgroundProcess(mainBackgroundProcess);
@@ -239,7 +242,7 @@ function registerHandlers() {
     return await startBackgroundProcess(null, ProcessType.TRANSACTION, arg);
   });
 
-  registerHandler(CustomEvents.getLatestTransactions, async () => {
+  registerHandler(CustomEvents.getLatestTransactionsEvent, async () => {
     return new Promise((resolve, reject) => {
       transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
         if (err) {
@@ -255,6 +258,7 @@ function registerHandlers() {
 app.on('ready', () => {
   createTray();
   createWindow();
+  solanaConnection = createConnection();
   dbConnection = db.openConnection();
   db.initDatabase(dbConnection);
   registerHandlers();

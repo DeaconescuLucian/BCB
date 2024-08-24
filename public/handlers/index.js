@@ -5,6 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.setupHandlers = setupHandlers;
 const WalletHandler_1 = __importDefault(require("./WalletHandler"));
-function setupHandlers(mainWindow, db) {
-    (0, WalletHandler_1.default)(db);
+function setupHandlers(mainWindow, db, solanaConnection) {
+    (0, WalletHandler_1.default)(db, solanaConnection);
 }

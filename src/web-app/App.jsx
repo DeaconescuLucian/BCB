@@ -3,11 +3,12 @@ import Menu from "./components/Menu";
 import TopBar from "./components/TopBar";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
-import ImportWallet from "./pages/ImportWallet";
-import GenerateWallet from "./pages/GenerateWallet";
+import ImportWallet from "./pages/Wallet/ImportWallet";
+import GenerateWallet from "./pages/Wallet/GenerateWallet";
 import Trade from "./pages/Trade";
 import Settings from "./pages/Settings";
 import TransactionHistory from "./components/TransactionHistory";
+import WalletPage from "./pages/Wallet";
 
 function App() {
   return (
@@ -17,8 +18,7 @@ function App() {
       <TransactionHistory></TransactionHistory>
       <Routes>
         <Route path="/" element={<Home></Home>} />
-        <Route path="/import-wallet" element={<ImportWallet></ImportWallet>} />
-        <Route path="/generate-wallet" element={<GenerateWallet></GenerateWallet>} />
+        <Route path="/wallet-page" element={<WalletPage></WalletPage>} />
         <Route path="/trade" element={<Trade></Trade>} />
         <Route path="/settings" element={<Settings></Settings>} />
       </Routes>

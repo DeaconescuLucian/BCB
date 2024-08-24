@@ -1,15 +1,17 @@
 import { registerHandler } from '../ipcHandler';
 import { importKeypair, generateWallet } from '../solana/wallet';
 import { CustomEvents } from '../events';
-import sqlite3  from 'sqlite3';
-import * as walletDb from "../database/wallets";
+import sqlite3 from 'sqlite3';
+import * as walletDb from '../database/wallets';
+import { Connection, Keypair } from '@solana/web3.js';
+import { getSolanaBalance } from '../solana/utils';
 
 const ImportWalletHandler = (db: sqlite3.Database) => {
-  registerHandler(CustomEvents.importWalletEvent, async (e: any, arg: string) => {
+  registerHandler(CustomEvents.importWalletEvent, async (e: any, arg: any) => {
     try {
-      const response = importKeypair(arg);
+      const response = importKeypair(arg.secretKey);
       return new Promise((resolve) => {
-        walletDb.insertWallet(db, response.data, (result: any) => {
+        walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias }, (result: any) => {
           resolve(result);
         });
       });
@@ -44,10 +46,39 @@ const SaveWalletHandler = (db: sqlite3.Database) => {
   });
 };
 
-const handleWallet = (db: sqlite3.Database) => {
+const GetWalletsHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
+  registerHandler(CustomEvents.getWalletsEvent, async () => {
+    return new Promise((resolve, reject) => {
+      walletDb.getWallets(db, async (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          try {
+            const wallets = await Promise.all(
+              rows?.map(async (row: any) => {
+                const keyPair = Keypair.fromSecretKey(Uint8Array.from(row.secretKey.split(',').map(Number)));
+                const solBalance = await getSolanaBalance(solanaConnection, keyPair.publicKey);
+                return {
+                  ...row,
+                  sol: solBalance,
+                };
+              }) || []
+            );
+            resolve(wallets);
+          } catch (error) {
+            reject(error);
+          }
+        }
+      });
+    });
+  });
+};
+
+const handleWallet = async (db: sqlite3.Database, solanaConnection: Connection) => {
   ImportWalletHandler(db);
   GenerateWalletHandler();
   SaveWalletHandler(db);
-}
+  GetWalletsHandler(db, solanaConnection);
+};
 
 export default handleWallet;

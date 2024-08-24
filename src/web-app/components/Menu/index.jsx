@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import wallet_arrow_icon from "../../assets/icons/wallet-arrow.svg";
+import wallet from "../../assets/icons/wallet.svg";
 import add_icon from "../../assets/icons/plus.svg";
 import trade_icon from "../../assets/icons/trade.svg";
 import settings_icon from "../../assets/icons/settings.svg";
@@ -74,26 +74,15 @@ function Menu() {
           <span>Home</span>
         </div>
         <div
-          id="import-wallet-menu-item"
+          id="wallets-menu-item"
           className="app-menu-item"
           onClick={(e) => {
             handleMenuItemClick(e);
-            navigate("/import-wallet");
+            navigate("/wallet-page");
           }}
         >
-          <img src={wallet_arrow_icon}></img>
-          <span>Import Wallet</span>
-        </div>
-        <div
-          id="generate-wallet-menu-item"
-          className="app-menu-item"
-          onClick={(e) => {
-            handleMenuItemClick(e);
-            navigate("/generate-wallet");
-          }}
-        >
-          <img src={add_icon}></img>
-          <span>Generate Wallet</span>
+          <img src={wallet}></img>
+          <span>Wallets</span>
         </div>
         <div
           id="trade-menu-item"

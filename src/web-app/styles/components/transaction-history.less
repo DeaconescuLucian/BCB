@@ -68,128 +68,128 @@
     padding-top: 15px;
     &::-webkit-scrollbar {
       display: none;
-  }
+    }
 
     .transaction-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-        width: calc(100% - 20px);
-        padding: 5px;
-        border-radius: 5px;
-        transition: 1s ease-in;
-        &.success {
-            background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-success-bg 100%);
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      width: calc(100% - 20px);
+      padding: 5px;
+      border-radius: 5px;
+      transition: 1s ease-in;
+      &.success {
+        background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-success-bg 100%);
 
-            &.animation {
-              background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-success-bg-bright 100%);
+        &.animation {
+          background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-success-bg-bright 100%);
+        }
+      }
+
+      &.fail {
+        background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-fail-bg 100%);
+
+        &.animation {
+          background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-fail-bg-bright 100%);
+        }
+      }
+
+      &.pending {
+        background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-pending-bg 100%);
+
+        &.animation {
+          background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-pending-bg-bright 100%);
+        }
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        svg {
+          width: 12px;
+          height: 12px;
+        }
+
+        &.success {
+          svg {
+            path {
+              fill: @color-success;
             }
+          }
         }
 
         &.fail {
-            background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-fail-bg 100%);
-
-            &.animation {
-              background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-fail-bg-bright 100%);
+          svg {
+            path {
+              fill: @color-fail;
             }
+            circle {
+              fill: @color-fail;
+            }
+          }
         }
 
         &.pending {
-            background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-pending-bg 100%);
-
-            &.animation {
-              background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-pending-bg-bright 100%);
+          svg {
+            path {
+              fill: @color-pending;
             }
+          }
+        }
+      }
+
+      .info {
+        display: flex;
+        justify-content: space-between;
+        .signature {
+          .truncate {
+            display: inline-block;
+            width: 70px;
+            max-width: 70px;
+          }
+        }
+      }
+
+      .view {
+        margin-right: 10px;
+
+        svg {
+          width: 12px;
+          height: 12px;
+          path {
+            fill: @color-font-white;
+          }
+          circle {
+            fill: @color-font-white;
+          }
+
+          &:hover {
+            path {
+              fill: @color-brand;
+            }
+            circle {
+              fill: @color-brand;
+            }
+          }
         }
 
-        .status {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            svg {
-                width: 12px;
-                height: 12px;
-            }
-
-            &.success {
-                svg {
-                    path {
-                        fill: @color-success;
-                    }
-                }
-            }
-
-            &.fail {
-                svg {
-                    path {
-                        fill: @color-fail;
-                    }
-                    circle {
-                      fill: @color-fail;
-                  }
-                }
-            }
-
-            &.pending {
-                svg {
-                    path {
-                        fill: @color-pending;
-                    }
-                }
-            }
+        &:hover {
+          cursor: pointer;
         }
+      }
 
+      .item-content {
+        width: 226px;
         .info {
-            display: flex;
-            justify-content: space-between;
-            .signature {
-                .truncate {
-                    display: inline-block;
-                    width: 70px;
-                    max-width: 70px;
-                }
+          .signature {
+            position: relative;
+            .copy-to-clipboard-message {
+              left: 70px;
             }
+          }
         }
-
-        .view {
-            margin-right: 10px;
-
-            svg {
-                width: 12px;
-                height: 12px;
-                path {
-                    fill: @color-font-white;
-                }
-                circle {
-                    fill: @color-font-white;
-                }
-
-                &:hover {
-                    path {
-                        fill: @color-brand;
-                    }
-                    circle {
-                        fill: @color-brand;
-                    }
-                }
-            }
-
-            &:hover {
-                cursor: pointer;
-            }
-        }
-
-        .item-content {
-            width: 226px;
-            .info {
-              .signature {
-                position: relative;
-                .copy-to-clipboard-message {
-                  left: 70px;
-                }
-              }
-            }
-        }
+      }
     }
   }
 
@@ -242,7 +242,7 @@
       text-wrap: nowrap;
       margin-left: 26px;
       margin-top: 15px;
-      
+
       &.transacations-count {
         margin-top: 200px;
         font-size: 20px;

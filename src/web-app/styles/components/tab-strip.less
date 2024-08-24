@@ -1,0 +1,23 @@
+.tab-strip {
+  position: relative;
+  width: calc(100% - 10px);
+  color: @color-font-gray;
+  padding-top: 10px;
+  padding-left: 10px;
+  background-color: @color-base;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+
+  .tab-item {
+    position: relative;
+    display: inline-block;
+    margin-right: 15px;
+    padding-bottom: 5px;
+    cursor: pointer;
+
+    &.active-tab {
+      border-bottom: 2px solid @color-font-brand;
+      color: @color-font-white;
+    }
+  }
+}

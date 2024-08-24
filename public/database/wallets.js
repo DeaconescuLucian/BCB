@@ -6,7 +6,8 @@ exports.getWallets = getWallets;
 function createTablWallets(db) {
     db.run(`CREATE TABLE IF NOT EXISTS wallets (
         publicKey TEXT PRIMARY KEY,
-        secretKey TEXT NOT NULL
+        secretKey TEXT NOT NULL,
+        alias TEXT UNIQUE CHECK(length(alias) >= 3 AND length(alias) <= 20)
     )`, (err) => {
         if (err) {
             console.error('Error creating table:', err.message);
@@ -18,7 +19,7 @@ function createTablWallets(db) {
 }
 function insertWallet(db, w, callback) {
     db.serialize(() => {
-        db.run(`INSERT INTO wallets (publicKey, secretKey) VALUES (?, ?)`, [w.publicKey, w.secretKey], (err) => {
+        db.run(`INSERT INTO wallets (publicKey, secretKey, alias) VALUES (?, ?, ?)`, [w.wallet.publicKey, w.wallet.secretKey, w.alias], (err) => {
             if (err) {
                 console.error('Error inserting wallet:', err.message);
                 callback({ error: err.message });
@@ -33,7 +34,7 @@ function insertWallet(db, w, callback) {
 }
 function getWallets(db, callback) {
     db.serialize(() => {
-        db.all(`SELECT * FROM wallets ORDER BY date DESC`, (err, rows) => {
+        db.all(`SELECT * FROM wallets`, (err, rows) => {
             if (err) {
                 console.error('Error retrieving wallets:', err.message);
                 callback(err);

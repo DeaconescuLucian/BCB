@@ -43,6 +43,7 @@ const handlers_1 = require("./handlers");
 const events_1 = require("./events");
 const db = __importStar(require("./database/db"));
 const transactionsDb = __importStar(require("./database/transactions"));
+const utils_1 = require("./solana/utils");
 if (!(0, events_1.verifyUniqueEvents)(events_1.ProcessType)) {
     (0, child_process_1.execSync)('yarn run close-web-app');
     process.exit(1);
@@ -51,6 +52,7 @@ electronReload.default(__dirname, {});
 let mainWindow;
 let tray;
 let dbConnection;
+let solanaConnection;
 remoteMain.initialize();
 let mainBackgroundProcess = null;
 let secondaryBackgroundProcesses = [];
@@ -195,7 +197,7 @@ function createTray() {
             click: () => {
                 if (mainWindow === null) {
                     createWindow();
-                    (0, handlers_1.setupHandlers)(mainWindow, dbConnection);
+                    (0, handlers_1.setupHandlers)(mainWindow, dbConnection, solanaConnection);
                 }
                 else {
                     mainWindow.show();
@@ -234,7 +236,7 @@ function registerHandlers() {
             return 'error';
         }
     }));
-    (0, handlers_1.setupHandlers)(mainWindow, dbConnection);
+    (0, handlers_1.setupHandlers)(mainWindow, dbConnection, solanaConnection);
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess(mainBackgroundProcess);
     }));
@@ -244,7 +246,7 @@ function registerHandlers() {
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.TRANSACTION.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
         return yield startBackgroundProcess(null, events_1.ProcessType.TRANSACTION, arg);
     }));
-    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getLatestTransactions, () => __awaiter(this, void 0, void 0, function* () {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getLatestTransactionsEvent, () => __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
             transactionsDb.getLatestTransactions(dbConnection, (err, rows) => {
                 if (err) {
@@ -260,6 +262,7 @@ function registerHandlers() {
 electron_1.app.on('ready', () => {
     createTray();
     createWindow();
+    solanaConnection = (0, utils_1.createConnection)();
     dbConnection = db.openConnection();
     db.initDatabase(dbConnection);
     registerHandlers();

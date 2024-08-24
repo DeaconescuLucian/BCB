@@ -15,6 +15,10 @@ export const TransferFeesDefault = {
     cpuLimit: 1000
 }
 
+export function createConnection() {
+    return new Connection('https://api.devnet.solana.com');
+}
+
 
 export async function getSolanaBalance(connection: Connection, publicKey: PublicKey):Promise<number> {
     return (await connection.getBalance(publicKey)/LAMPORTS_PER_SOL);
