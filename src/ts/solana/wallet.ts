@@ -1,4 +1,5 @@
 import { Keypair } from '@solana/web3.js';
+import * as bs58 from 'bs58';
 
 export const generateWallet = () => {
   const keyPair = Keypair.generate();
@@ -10,12 +11,19 @@ export function importKeypair(param: string) {
   try {
     secretKey = Uint8Array.from(param.split(',').map(Number));
     keyPair = Keypair.fromSecretKey(secretKey);
-    return {
-      status: 'success',
-      message: 'Wallet imported successfully.',
-      data: { keyPair: keyPair, publicKey: keyPair.publicKey.toBase58(), secretKey: param },
-    };
-  } catch {
+  } 
+  catch {
+    try{
+      secretKey = bs58.decode(param);
+      keyPair = Keypair.fromSecretKey(secretKey);
+    }
+    catch{
     return { status: 'fail', error: 'Invalid secret key.' };
   }
+  return {
+    status: 'success',
+    message: 'Wallet imported successfully.',
+    data: { keyPair: keyPair, publicKey: keyPair.publicKey.toBase58(), secretKey: param },
+  };
+}
 }
