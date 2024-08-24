@@ -16,6 +16,7 @@ function WalletList() {
       name: 'Public Key',
       propertyName: 'publicKey',
       percentWidth: 30,
+      canCopy: true
     },
     {
       name: 'Balance',

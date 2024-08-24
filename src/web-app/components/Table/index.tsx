@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import CopyToClipboard from '../CopyToClipboard';
 
 interface IColumn {
   name: string;
   propertyName: string;
   percentWidth: number;
+  canCopy?: boolean;
 }
 
 interface IAction {
@@ -23,13 +25,18 @@ interface ITable {
 }
 
 const Table = ({ columns, rows, actions }: ITable) => {
-  console.log(rows);
   return (
     <table>
       <thead>
         <tr>
           {columns.map((column, index) => (
-            <th style={{ width: `calc(${column.percentWidth}% - 10px)`, minWidth: `calc(${column.percentWidth}% - 10px)` }} key={`col-${index}`}>
+            <th
+              style={{
+                width: `calc(${column.percentWidth}% - 10px)`,
+                minWidth: `calc(${column.percentWidth}% - 10px)`,
+              }}
+              key={`col-${index}`}
+            >
               {column.name}
             </th>
           ))}
@@ -41,21 +48,47 @@ const Table = ({ columns, rows, actions }: ITable) => {
             {columns.map(
               (column, index1) =>
                 column.propertyName && (
-                  <td
-                    style={{ width: `calc(${column.percentWidth}% - 10px)`, minWidth: `calc(${column.percentWidth}% - 10px)` }}
-                    key={`cell-${index}-${index1}`}
-                  >
-                    {row[column.propertyName]}
-                  </td>
+                  <>
+                    {column.canCopy ? (
+                      <td
+                        style={{
+                          width: `calc(${column.percentWidth}% - 10px)`,
+                          minWidth: `calc(${column.percentWidth}% - 10px)`,
+                        }}
+                        key={`cell-${index}-${index1}`}
+                        className="copy-column"
+                      >
+                        <span>{row[column.propertyName]}</span>
+                        <CopyToClipboard text={row[column.propertyName]}></CopyToClipboard>
+                      </td>
+                    ) : (
+                      <td
+                        style={{
+                          width: `calc(${column.percentWidth}% - 10px)`,
+                          minWidth: `calc(${column.percentWidth}% - 10px)`,
+                        }}
+                        key={`cell-${index}-${index1}`}
+                      >
+                        {row[column.propertyName]}
+                      </td>
+                    )}
+                  </>
                 )
             )}
             {actions ? (
-              <td key={`action-cell-${index}`} className="action-cell">
+              <td
+                key={`action-cell-${index}`}
+                className="action-cell"
+                style={{
+                  width: `calc(${columns[columns.length - 1].percentWidth}% - 10px)`,
+                  minWidth: `calc(${columns[columns.length - 1].percentWidth}% - 10px)`,
+                }}
+              >
                 {actions.map((action) => (
                   <span
                     title={action.name}
                     onClick={() => {
-                        action.action(row);
+                      action.action(row);
                     }}
                   >
                     {action.icon}

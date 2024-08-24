@@ -5,18 +5,21 @@ table {
 
   thead {
     background-color: @color-dark;
-    display: block;
+    display: table;
     position: sticky;
     z-index: 100;
     top: 0;
-    width: calc(100% - 20px);
-    max-width: calc(100% - 20px);
-    padding: 10px 10px;
+    width: calc(100% - 30px);
+    max-width: calc(100% - 30px);
+    padding: 10px 5px;
     tr {
       position: relative;
-      width: 100%;
+      width: calc(100% - 10px);
+      max-width: calc(100% - 10px);
       table-layout: fixed;
-      display: table;
+      display: flex;
+      padding: 10px 0px;
+      gap: 10px;
     }
     th {
       text-align: start;
@@ -26,7 +29,6 @@ table {
 
   tbody {
     display: table;
-    flex-grow: 1;
     background-color: @color-base;
     color: @color-font-white;
     width: calc(100% - 20px);
@@ -39,39 +41,60 @@ table {
       table-layout: fixed;
       display: flex;
       padding: 10px 5px;
-      gap: 5px;
+      gap: 10px;
 
       td {
         overflow: hidden;
         text-overflow: ellipsis;
+        position: relative;
+        display: flex;
+
+        &.copy-column {
+          overflow: visible;
+          span:not(.copy-icon) {
+            position: relative;
+            max-width: calc(100% - 12px);
+            width: calc(100% - 12px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .copy-to-clipboard-message {
+            z-index: 101;
+            top: -5px;
+            left: 100%;
+            font-size: 12px;
+            padding: 5px;
+          }
+        }
 
         &.action-cell {
-            text-align: end;
+          text-align: end;
         }
 
         svg {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            margin-right: 10px;
+          width: 20px;
+          height: 20px;
+          cursor: pointer;
+          margin-right: 10px;
 
+          path {
+            fill: @color-font-white;
+          }
+
+          circle {
+            fill: @color-font-white;
+          }
+
+          &:hover {
             path {
-                fill: @color-font-white;
+              fill: @color-font-brand;
             }
 
             circle {
-                fill: @color-font-white;
+              fill: @color-font-brand;
             }
-
-            &:hover {
-                path {
-                    fill: @color-font-brand;
-                }
-    
-                circle {
-                    fill: @color-font-brand;
-                }
-            }
+          }
         }
       }
 
