@@ -29,7 +29,7 @@ const Table = ({ columns, rows, actions }: ITable) => {
       <thead>
         <tr>
           {columns.map((column, index) => (
-            <th style={{ width: `${column.percentWidth}%`, minWidth: `${column.percentWidth}%` }} key={`col-${index}`}>
+            <th style={{ width: `calc(${column.percentWidth}% - 10px)`, minWidth: `calc(${column.percentWidth}% - 10px)` }} key={`col-${index}`}>
               {column.name}
             </th>
           ))}
@@ -42,7 +42,7 @@ const Table = ({ columns, rows, actions }: ITable) => {
               (column, index1) =>
                 column.propertyName && (
                   <td
-                    style={{ width: `${column.percentWidth}%`, minWidth: `${column.percentWidth}%` }}
+                    style={{ width: `calc(${column.percentWidth}% - 10px)`, minWidth: `calc(${column.percentWidth}% - 10px)` }}
                     key={`cell-${index}-${index1}`}
                   >
                     {row[column.propertyName]}

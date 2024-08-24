@@ -36,14 +36,15 @@ const ipcHandler_1 = require("../ipcHandler");
 const wallet_1 = require("../solana/wallet");
 const events_1 = require("../events");
 const walletDb = __importStar(require("../database/wallets"));
-const web3_js_1 = require("@solana/web3.js");
 const utils_1 = require("../solana/utils");
-const ImportWalletHandler = (db) => {
+const ImportWalletHandler = (db, solanaConnection) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.importWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        var _a;
         try {
             const response = (0, wallet_1.importKeypair)(arg.secretKey);
+            const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, (_a = response.data) === null || _a === void 0 ? void 0 : _a.keyPair.publicKey);
             return new Promise((resolve) => {
-                walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias }, (result) => {
+                walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias, balance: solBalance }, (result) => {
                     resolve(result);
                 });
             });
@@ -70,6 +71,8 @@ const GenerateWalletHandler = () => {
 };
 const SaveWalletHandler = (db) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.saveWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!arg.balance)
+            arg.balance = 0;
         return new Promise((resolve) => {
             walletDb.insertWallet(db, arg, (result) => {
                 resolve(result);
@@ -80,18 +83,14 @@ const SaveWalletHandler = (db) => {
 const GetWalletsHandler = (db, solanaConnection) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getWalletsEvent, () => __awaiter(void 0, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
-            walletDb.getWallets(db, (err, rows) => __awaiter(void 0, void 0, void 0, function* () {
+            walletDb.getAllWalletsWithTokens(db, (err, rows) => __awaiter(void 0, void 0, void 0, function* () {
                 if (err) {
                     reject(err);
                 }
                 else {
                     try {
                         const wallets = yield Promise.all((rows === null || rows === void 0 ? void 0 : rows.map((row) => __awaiter(void 0, void 0, void 0, function* () {
-                            const keyPair = web3_js_1.Keypair.fromSecretKey(Uint8Array.from(row.secretKey.split(',').map(Number)));
-                            console.log(keyPair);
-                            const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, keyPair.publicKey);
-                            console.log(solBalance);
-                            return Object.assign(Object.assign({}, row), { sol: solBalance });
+                            return Object.assign({}, row);
                         }))) || []);
                         resolve(wallets);
                     }
@@ -104,7 +103,7 @@ const GetWalletsHandler = (db, solanaConnection) => {
     }));
 };
 const handleWallet = (db, solanaConnection) => __awaiter(void 0, void 0, void 0, function* () {
-    ImportWalletHandler(db);
+    ImportWalletHandler(db, solanaConnection);
     GenerateWalletHandler();
     SaveWalletHandler(db);
     GetWalletsHandler(db, solanaConnection);

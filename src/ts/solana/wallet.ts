@@ -13,7 +13,7 @@ export function importKeypair(param: string) {
     return {
       status: 'success',
       message: 'Wallet imported successfully.',
-      data: { publicKey: keyPair.publicKey.toBase58(), secretKey: param },
+      data: { keyPair: keyPair, publicKey: keyPair.publicKey.toBase58(), secretKey: param },
     };
   } catch {
     return { status: 'fail', message: 'Invalid secret key.' };

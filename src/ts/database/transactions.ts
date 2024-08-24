@@ -1,19 +1,14 @@
 import sqlite3 from 'sqlite3';
+import { runQuery } from './db';
 
 
-export function createTableTransactions(db: sqlite3.Database) {
-    db.run(`CREATE TABLE IF NOT EXISTS transactions (
+export async function createTableTransactions(db: sqlite3.Database) {
+    const sql = `CREATE TABLE IF NOT EXISTS transactions (
         signature TEXT PRIMARY KEY,
         value REAL NOT NULL,
         date TEXT NOT NULL,
-        status TEXT CHECK(status IN ('success', 'fail', 'pending'))
-    )`, (err: Error | null) => {
-        if (err) {
-            console.error('Error creating table:', err.message);
-        } else {
-            console.log('Table created or already exists.');
-        }
-    });
+        status TEXT CHECK(status IN ('success', 'fail', 'pending')))`;
+    await runQuery(db, sql);    
 }
 
 export function insertTransaction(db: sqlite3.Database, t: any): void {

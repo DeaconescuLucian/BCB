@@ -3,15 +3,16 @@ import { importKeypair, generateWallet } from '../solana/wallet';
 import { CustomEvents } from '../events';
 import sqlite3 from 'sqlite3';
 import * as walletDb from '../database/wallets';
-import { Connection, Keypair } from '@solana/web3.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { getSolanaBalance } from '../solana/utils';
 
-const ImportWalletHandler = (db: sqlite3.Database) => {
+const ImportWalletHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
   registerHandler(CustomEvents.importWalletEvent, async (e: any, arg: any) => {
     try {
       const response = importKeypair(arg.secretKey);
+      const solBalance = await getSolanaBalance(solanaConnection, response.data?.keyPair.publicKey as PublicKey);
       return new Promise((resolve) => {
-        walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias }, (result: any) => {
+        walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias, balance: solBalance }, (result: any) => {
           resolve(result);
         });
       });
@@ -38,6 +39,8 @@ const GenerateWalletHandler = () => {
 
 const SaveWalletHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.saveWalletEvent, async (e: any, arg: any) => {
+    if(!arg.balance)
+      arg.balance = 0;
     return new Promise((resolve) => {
       walletDb.insertWallet(db, arg, (result: any) => {
         resolve(result);
@@ -49,18 +52,15 @@ const SaveWalletHandler = (db: sqlite3.Database) => {
 const GetWalletsHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
   registerHandler(CustomEvents.getWalletsEvent, async () => {
     return new Promise((resolve, reject) => {
-      walletDb.getWallets(db, async (err, rows) => {
+      walletDb.getAllWalletsWithTokens(db, async (err, rows) => {
         if (err) {
           reject(err);
         } else {
           try {
             const wallets = await Promise.all(
               rows?.map(async (row: any) => {
-                const keyPair = Keypair.fromSecretKey(Uint8Array.from(row.secretKey.split(',').map(Number)));
-                const solBalance = await getSolanaBalance(solanaConnection, keyPair.publicKey);
                 return {
                   ...row,
-                  sol: solBalance,
                 };
               }) || []
             );
@@ -75,7 +75,7 @@ const GetWalletsHandler = (db: sqlite3.Database, solanaConnection: Connection) =
 };
 
 const handleWallet = async (db: sqlite3.Database, solanaConnection: Connection) => {
-  ImportWalletHandler(db);
+  ImportWalletHandler(db, solanaConnection);
   GenerateWalletHandler();
   SaveWalletHandler(db);
   GetWalletsHandler(db, solanaConnection);

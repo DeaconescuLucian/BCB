@@ -9,7 +9,7 @@ import { setupHandlers } from './handlers';
 import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './events';
 import sqlite3 from 'sqlite3';
 import * as db from './database/db';
-import * as transactionsDb from './database/transactions'
+import * as transactionsDb from './database/transactions';
 import { createConnection } from './solana/utils';
 import { Connection } from '@solana/web3.js';
 
@@ -36,7 +36,6 @@ type ProcessObject = {
 let mainBackgroundProcess: ChildProcess | null = null;
 let secondaryBackgroundProcesses: ProcessObject[] = [];
 
-
 async function startBackgroundProcess(
   backgroundProcess: ChildProcess | null,
   processType: ScriptConfig,
@@ -57,12 +56,20 @@ async function startBackgroundProcess(
   return new Promise((resolve, reject) => {
     console.log('Starting background process...');
     if (processType !== ProcessType.MAIN) {
-      if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) || (secondaryBackgroundProcesses.find((e) => e.type === "transaction") && processType.type === "transaction")) {
+      if (
+        (pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) ||
+        (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction') ||
+        (secondaryBackgroundProcesses.find((e) => e.type === 'wallet') && processType.type === 'wallet')
+      ) {
         console.log(`Process ${pid} already started!`);
         resolve({ message: `Process ${pid} already started!`, pid: pid });
       } else {
         backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
-        secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess?.pid, type: processType.type });
+        secondaryBackgroundProcesses.push({
+          process: backgroundProcess,
+          pid: backgroundProcess?.pid,
+          type: processType.type,
+        });
         registerHandler(processType.stopEvent, async () => {
           await stopBackgroundProcess(backgroundProcess);
         });
@@ -79,7 +86,10 @@ async function startBackgroundProcess(
     backgroundProcess?.once('message', (message) => {
       if (message === 'ready') {
         console.log('Background process is ready, sending start command');
-        if (!pid) backgroundProcess?.send('start');
+        if (!pid) {
+          backgroundProcess?.send({ type: 'init'});
+          backgroundProcess?.send('start');
+        }
         clearTimeout(timeout);
         resolve({ message: `Started process ${pid ?? backgroundProcess?.pid}.`, pid: pid ?? backgroundProcess?.pid });
       }
@@ -201,11 +211,11 @@ function createTray(): void {
         execSync('yarn run close-web-app');
         secondaryBackgroundProcesses.forEach((pr) => {
           pr.process?.kill();
-          console.log(`Process ${pr.pid} stopped.`)
+          console.log(`Process ${pr.pid} stopped.`);
         });
         if (mainBackgroundProcess) {
           mainBackgroundProcess.kill();
-          console.log("Main process stopped.");
+          console.log('Main process stopped.');
         }
         db.closeConnection(dbConnection);
         process.exit(1);
@@ -255,12 +265,20 @@ function registerHandlers() {
   });
 }
 
-app.on('ready', () => {
+app.on('ready', async () => {
   createTray();
   createWindow();
   solanaConnection = createConnection();
   dbConnection = db.openConnection();
-  db.initDatabase(dbConnection);
+  try {
+    await db.initDatabase(dbConnection);
+    console.log('Database initialized successfully.');
+  } catch (err) {
+    console.error('Error initializing database:', err);
+    db.closeConnection(dbConnection);
+    return;
+  }
+
   registerHandlers();
   startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);
 });

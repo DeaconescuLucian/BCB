@@ -72,13 +72,19 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
         return new Promise((resolve, reject) => {
             console.log('Starting background process...');
             if (processType !== events_1.ProcessType.MAIN) {
-                if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) || (secondaryBackgroundProcesses.find((e) => e.type === "transaction") && processType.type === "transaction")) {
+                if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) ||
+                    (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction') ||
+                    (secondaryBackgroundProcesses.find((e) => e.type === 'wallet') && processType.type === 'wallet')) {
                     console.log(`Process ${pid} already started!`);
                     resolve({ message: `Process ${pid} already started!`, pid: pid });
                 }
                 else {
                     backgroundProcess = (0, child_process_1.fork)(path.join(`${__dirname}/background-processes`, processType.file));
-                    secondaryBackgroundProcesses.push({ process: backgroundProcess, pid: backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid, type: processType.type });
+                    secondaryBackgroundProcesses.push({
+                        process: backgroundProcess,
+                        pid: backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid,
+                        type: processType.type,
+                    });
                     (0, ipcHandler_1.registerHandler)(processType.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
                         yield stopBackgroundProcess(backgroundProcess);
                     }));
@@ -94,8 +100,10 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
             backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.once('message', (message) => {
                 if (message === 'ready') {
                     console.log('Background process is ready, sending start command');
-                    if (!pid)
+                    if (!pid) {
+                        backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send({ type: 'init' });
                         backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send('start');
+                    }
                     clearTimeout(timeout);
                     resolve({ message: `Started process ${pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid}.`, pid: pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid });
                 }
@@ -215,7 +223,7 @@ function createTray() {
                 });
                 if (mainBackgroundProcess) {
                     mainBackgroundProcess.kill();
-                    console.log("Main process stopped.");
+                    console.log('Main process stopped.');
                 }
                 db.closeConnection(dbConnection);
                 process.exit(1);
@@ -259,15 +267,23 @@ function registerHandlers() {
         });
     }));
 }
-electron_1.app.on('ready', () => {
+electron_1.app.on('ready', () => __awaiter(void 0, void 0, void 0, function* () {
     createTray();
     createWindow();
     solanaConnection = (0, utils_1.createConnection)();
     dbConnection = db.openConnection();
-    db.initDatabase(dbConnection);
+    try {
+        yield db.initDatabase(dbConnection);
+        console.log('Database initialized successfully.');
+    }
+    catch (err) {
+        console.error('Error initializing database:', err);
+        db.closeConnection(dbConnection);
+        return;
+    }
     registerHandlers();
     startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
-});
+}));
 electron_1.app.on('window-all-closed', (event) => {
     if (process.platform !== 'darwin') {
         event.preventDefault();
