@@ -16,6 +16,6 @@ export function importKeypair(param: string) {
       data: { keyPair: keyPair, publicKey: keyPair.publicKey.toBase58(), secretKey: param },
     };
   } catch {
-    return { status: 'fail', message: 'Invalid secret key.' };
+    return { status: 'fail', error: 'Invalid secret key.' };
   }
 }

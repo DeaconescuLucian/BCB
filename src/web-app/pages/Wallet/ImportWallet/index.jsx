@@ -25,17 +25,6 @@ function ImportWallet() {
   };
 
   const validateSecretKey = (value) => {
-    const numbers = value.split(',');
-    const errorMessage = 'Invalid secret key! ( Make sure your secret key contains 64 numbers separated by comma. )';
-    if (numbers.length !== 64) {
-      return errorMessage;
-    }
-    for (let num of numbers) {
-      if (isNaN(num) || num.trim() === '') {
-        return errorMessage;
-      }
-    }
-
     return null;
   };
 

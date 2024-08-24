@@ -40,8 +40,9 @@ const utils_1 = require("../solana/utils");
 const ImportWalletHandler = (db, solanaConnection) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.importWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         var _a;
+        let response;
         try {
-            const response = (0, wallet_1.importKeypair)(arg.secretKey);
+            response = (0, wallet_1.importKeypair)(arg.secretKey);
             const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, (_a = response.data) === null || _a === void 0 ? void 0 : _a.keyPair.publicKey);
             return new Promise((resolve) => {
                 walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias, balance: solBalance }, (result) => {
@@ -50,8 +51,9 @@ const ImportWalletHandler = (db, solanaConnection) => {
             });
         }
         catch (error) {
-            console.error('Error in ImportWalletHandler:', error);
-            return 'error';
+            return new Promise((resolve) => {
+                resolve(response);
+            });
         }
     }));
 };

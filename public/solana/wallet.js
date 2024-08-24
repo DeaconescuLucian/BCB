@@ -13,6 +13,7 @@ function importKeypair(param) {
     try {
         secretKey = Uint8Array.from(param.split(',').map(Number));
         keyPair = web3_js_1.Keypair.fromSecretKey(secretKey);
+        console.log(keyPair);
         return {
             status: 'success',
             message: 'Wallet imported successfully.',
@@ -20,6 +21,6 @@ function importKeypair(param) {
         };
     }
     catch (_a) {
-        return { status: 'fail', message: 'Invalid secret key.' };
+        return { status: 'fail', error: 'Invalid secret key.' };
     }
 }

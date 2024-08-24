@@ -8,8 +8,9 @@ import { getSolanaBalance } from '../solana/utils';
 
 const ImportWalletHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
   registerHandler(CustomEvents.importWalletEvent, async (e: any, arg: any) => {
+    let response: any;
     try {
-      const response = importKeypair(arg.secretKey);
+      response = importKeypair(arg.secretKey);
       const solBalance = await getSolanaBalance(solanaConnection, response.data?.keyPair.publicKey as PublicKey);
       return new Promise((resolve) => {
         walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias, balance: solBalance }, (result: any) => {
@@ -17,8 +18,9 @@ const ImportWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
         });
       });
     } catch (error) {
-      console.error('Error in ImportWalletHandler:', error);
-      return 'error';
+      return new Promise((resolve) => {
+        resolve(response);
+      });
     }
   });
 };
@@ -39,8 +41,7 @@ const GenerateWalletHandler = () => {
 
 const SaveWalletHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.saveWalletEvent, async (e: any, arg: any) => {
-    if(!arg.balance)
-      arg.balance = 0;
+    if (!arg.balance) arg.balance = 0;
     return new Promise((resolve) => {
       walletDb.insertWallet(db, arg, (result: any) => {
         resolve(result);
