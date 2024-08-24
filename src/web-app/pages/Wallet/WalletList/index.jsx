@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { CustomEvents } from '../../../../ts/events.ts';
+import React, { useState } from 'react';
 import Table from '../../../components/Table/index.tsx';
 import { viewSvg, deleteSvg } from '../../../assets/svg/index.jsx';
 import Loading from '../../../components/Loading/index.tsx';
+import { useSelector } from 'react-redux';
 
 function WalletList() {
-  const [wallets, setWallets] = useState([]);
+  const { wallets, status } = useSelector((state) => state.wallets);
   const columns = [
     {
       name: 'Alias',
@@ -19,7 +19,7 @@ function WalletList() {
     },
     {
       name: 'Balance',
-      propertyName: 'sol',
+      propertyName: 'balance',
       percentWidth: 20,
     },
     {
@@ -28,29 +28,11 @@ function WalletList() {
       percentWidth: 20,
     },
   ];
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchWallets = async () => {
-      try {
-        const result = await window.electron.invoke(CustomEvents.getWalletsEvent);
-        if (result) {
-          if (result.success) {
-            setWallets(result.data);
-            setLoading(false);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching wallets:', error);
-      }
-    };
-
-    fetchWallets();
-  }, []);
 
   return (
     <div className="wallet-list-page">
-      {loading ? (
+      {status === 'idle' ? (
         <Loading></Loading>
       ) : (
         <>

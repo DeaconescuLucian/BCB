@@ -14,6 +14,7 @@ exports.ProcessType = {
         startEvent: 'start-wallet-process',
         stopEvent: 'stop-wallet-process',
         updateEvent: 'wallet-update',
+        type: 'wallet'
     },
     TRANSACTION: {
         file: 'transaction.js',

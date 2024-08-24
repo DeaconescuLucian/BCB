@@ -1,4 +1,5 @@
 table {
+  max-width: 100%;
   width: 100%;
   position: relative;
 
@@ -9,6 +10,7 @@ table {
     z-index: 100;
     top: 0;
     width: calc(100% - 20px);
+    max-width: calc(100% - 20px);
     padding: 10px 10px;
     tr {
       position: relative;
@@ -23,14 +25,17 @@ table {
   }
 
   tbody {
-    display: block;
+    display: table;
     flex-grow: 1;
     background-color: @color-base;
     color: @color-font-white;
+    width: calc(100% - 20px);
+    max-width: calc(100% - 20px);
 
     tr {
       position: relative;
       width: calc(100% - 10px);
+      max-width: calc(100% - 10px);
       table-layout: fixed;
       display: flex;
       padding: 10px 5px;

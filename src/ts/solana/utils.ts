@@ -1,4 +1,4 @@
-import { ComputeBudgetProgram,SystemProgram, TransactionInstruction, VersionedTransaction, TransactionMessage, Connection, PublicKey, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
+import { ComputeBudgetProgram,SystemProgram, TransactionInstruction, VersionedTransaction, TransactionMessage, Connection, PublicKey, LAMPORTS_PER_SOL, Keypair, clusterApiUrl } from "@solana/web3.js";
 
 export interface TransferParams {
     walletA : Keypair,
@@ -16,7 +16,8 @@ export const TransferFeesDefault = {
 }
 
 export function createConnection() {
-    return new Connection('https://api.devnet.solana.com');
+    return new Connection(clusterApiUrl("devnet"), "confirmed");
+    //return new Connection('https://solana-mainnet.api.syndica.io/api-key/aS1Y8g8LYE1fxcFBtrG6v5GfsTZNhpBnoLF3YVXwESwmRu1RkAxm32ctxkVGNRkxLF78T7PWaDn5y4UGTvXDWNShHatT92pTzK')
 }
 
 

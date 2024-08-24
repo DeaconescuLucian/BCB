@@ -20,7 +20,8 @@ exports.TransferFeesDefault = {
     cpuLimit: 1000
 };
 function createConnection() {
-    return new web3_js_1.Connection('https://api.devnet.solana.com');
+    return new web3_js_1.Connection((0, web3_js_1.clusterApiUrl)("devnet"), "confirmed");
+    //return new Connection('https://solana-mainnet.api.syndica.io/api-key/aS1Y8g8LYE1fxcFBtrG6v5GfsTZNhpBnoLF3YVXwESwmRu1RkAxm32ctxkVGNRkxLF78T7PWaDn5y4UGTvXDWNShHatT92pTzK')
 }
 function getSolanaBalance(connection, publicKey) {
     return __awaiter(this, void 0, void 0, function* () {

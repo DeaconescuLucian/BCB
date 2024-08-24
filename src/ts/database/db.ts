@@ -1,6 +1,19 @@
 import sqlite3 from 'sqlite3';
 import { createTableTransactions } from './transactions';
 import { createTablWallets } from './wallets';
+import { createTablWalletTokens } from './walletTokens';
+
+export function runQuery(db: sqlite3.Database, sql: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        db.run(sql, (err: Error | null) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
+        });
+    });
+}
 
 export function openConnection(): sqlite3.Database {
     const db = new sqlite3.Database('blockchain-busters.db', (err: Error | null) => {
@@ -13,10 +26,18 @@ export function openConnection(): sqlite3.Database {
     return db;
 }
 
-export function initDatabase(db: sqlite3.Database): void {
-    db.serialize(() => {
-        createTableTransactions(db);
-        createTablWallets(db);
+export async function initDatabase(db: sqlite3.Database): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        db.serialize(async () => {
+            try {
+                await createTableTransactions(db);
+                await createTablWallets(db);
+                await createTablWalletTokens(db);
+                resolve();
+            } catch (err) {
+                reject(err);
+            }
+        });
     });
 }
 
