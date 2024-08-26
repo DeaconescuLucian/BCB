@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { ProcessType } from '../../../ts/events';
+import React from 'react';
+import Page from '../../components/Page';
 
 function Home() {
   return (
-    <div className='main-container'>
-      <h2>Home Page</h2>
-    </div>
+    <Page>
+      <div className="home-page">Home Page</div>
+    </Page>
   );
 }
 

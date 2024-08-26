@@ -1,11 +1,13 @@
-import React, {useRef, useEffect} from "react";
+import React from 'react';
+import Page from '../../components/Page';
 
 function Trade() {
-
   return (
-    <div className="main-container">
-      <h2>Trade Page</h2>
-    </div>
+    <Page>
+      <div className="trade-page">
+        Trade Page
+      </div>
+    </Page>
   );
 }
 

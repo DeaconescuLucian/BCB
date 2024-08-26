@@ -1,10 +1,26 @@
 .wallet-list-page {
-    width: 100%;
-    height: calc(100% - 50px);
+    width: 96%;
+    height: calc(100% - 35px);
     position: relative;
 
     overflow-y: scroll;
     &::-webkit-scrollbar {
       display: none;
+  }
+
+  table {
+    font-size: 14px;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .copy-icon {
+      svg {
+        width: 12px !important;
+        height: 12px !important;
+      }
+    }
   }
 }
