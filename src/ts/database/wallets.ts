@@ -1,7 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { runQuery } from './db';
 
-export async function createTablWallets(db: sqlite3.Database) {
+export async function createTableWallets(db: sqlite3.Database) {
   const sql = `CREATE TABLE IF NOT EXISTS wallets (
         publicKey TEXT PRIMARY KEY,
         secretKey TEXT NOT NULL,

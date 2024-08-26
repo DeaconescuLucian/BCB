@@ -1,7 +1,8 @@
 import sqlite3 from 'sqlite3';
 import { createTableTransactions } from './transactions';
-import { createTablWallets } from './wallets';
-import { createTablWalletTokens } from './walletTokens';
+import { createTableWallets } from './wallets';
+import { createTableWalletTokenAccounts } from './walletTokenAccounts';
+import { createTableTokens } from './tokens';
 
 export function runQuery(db: sqlite3.Database, sql: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -31,8 +32,9 @@ export async function initDatabase(db: sqlite3.Database): Promise<void> {
         db.serialize(async () => {
             try {
                 await createTableTransactions(db);
-                await createTablWallets(db);
-                await createTablWalletTokens(db);
+                await createTableWallets(db);
+                await createTableTokens(db);
+                await createTableWalletTokenAccounts(db);
                 resolve();
             } catch (err) {
                 reject(err);

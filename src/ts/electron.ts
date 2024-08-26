@@ -10,8 +10,10 @@ import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './e
 import sqlite3 from 'sqlite3';
 import * as db from './database/db';
 import * as transactionsDb from './database/transactions';
-import { createConnection } from './solana/utils';
-import { Connection } from '@solana/web3.js';
+import { createConnection, getTokensOwnedByWallet } from './solana/utils';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { insertTokens } from './database/tokens';
+import { insertWalletTokenAccounts } from './database/walletTokenAccounts';
 
 if (!verifyUniqueEvents(ProcessType)) {
   execSync('yarn run close-web-app');
@@ -278,6 +280,17 @@ app.on('ready', async () => {
     db.closeConnection(dbConnection);
     return;
   }
+
+  getTokensOwnedByWallet(solanaConnection, new PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
+    insertTokens(dbConnection, result.tokens, (res) => {
+      if(!res.error)
+      {
+        insertWalletTokenAccounts(dbConnection, result.accounts, (r) => {
+          console.log(r)
+        })
+      }
+    });
+  });
 
   registerHandlers();
   startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);

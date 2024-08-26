@@ -44,6 +44,9 @@ const events_1 = require("./events");
 const db = __importStar(require("./database/db"));
 const transactionsDb = __importStar(require("./database/transactions"));
 const utils_1 = require("./solana/utils");
+const web3_js_1 = require("@solana/web3.js");
+const tokens_1 = require("./database/tokens");
+const walletTokenAccounts_1 = require("./database/walletTokenAccounts");
 if (!(0, events_1.verifyUniqueEvents)(events_1.ProcessType)) {
     (0, child_process_1.execSync)('yarn run close-web-app');
     process.exit(1);
@@ -281,6 +284,15 @@ electron_1.app.on('ready', () => __awaiter(void 0, void 0, void 0, function* () 
         db.closeConnection(dbConnection);
         return;
     }
+    (0, utils_1.getTokensOwnedByWallet)(solanaConnection, new web3_js_1.PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
+        (0, tokens_1.insertTokens)(dbConnection, result.tokens, (res) => {
+            if (!res.error) {
+                (0, walletTokenAccounts_1.insertWalletTokenAccounts)(dbConnection, result.accounts, (r) => {
+                    console.log(r);
+                });
+            }
+        });
+    });
     registerHandlers();
     startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
 }));

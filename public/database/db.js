@@ -19,7 +19,8 @@ exports.closeConnection = closeConnection;
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const transactions_1 = require("./transactions");
 const wallets_1 = require("./wallets");
-const walletTokens_1 = require("./walletTokens");
+const walletTokenAccounts_1 = require("./walletTokenAccounts");
+const tokens_1 = require("./tokens");
 function runQuery(db, sql) {
     return new Promise((resolve, reject) => {
         db.run(sql, (err) => {
@@ -50,7 +51,8 @@ function initDatabase(db) {
                 try {
                     yield (0, transactions_1.createTableTransactions)(db);
                     yield (0, wallets_1.createTablWallets)(db);
-                    yield (0, walletTokens_1.createTablWalletTokens)(db);
+                    yield (0, tokens_1.createTableTokens)(db);
+                    yield (0, walletTokenAccounts_1.createTableWalletTokenAccounts)(db);
                     resolve();
                 }
                 catch (err) {
