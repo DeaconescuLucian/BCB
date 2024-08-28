@@ -41,6 +41,7 @@ function insertWalletTokenAccounts(db, tokenAccs, callback) {
                     return;
                 }
                 if (row) {
+                    console.log(row);
                     console.log(`Token account ${tokenAcc.accountAddress} already exists. Skipping insert.`);
                 }
                 else {
@@ -114,7 +115,6 @@ function updateTokenAccountBalances(db, tokenAccounts, callback) {
       SET amount = ?
       WHERE accountAddress = ?
     `);
-        console.log(tokenAccounts);
         for (const account of tokenAccounts) {
             stmt.run(account.balance, account.accountAddress, function (err) {
                 if (err) {

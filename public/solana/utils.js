@@ -107,15 +107,15 @@ function getTokensOwnedByWallet(connection, publicKey) {
             if (!accData.amount.isZero()) {
                 mint = accData.mint;
                 accAddress = tokenAcc.pubkey.toBase58();
+                balance = (yield connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
+                amount = balance.uiAmount;
+                decimals = balance.decimals;
+                isNft = decimals === 0;
                 try {
                     const metadataPDA = yield Metadata.getPDA(accData.mint);
                     const metadataAccount = yield Metadata.load(connection, metadataPDA);
-                    balance = (yield connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
-                    amount = balance.uiAmount;
-                    decimals = balance.decimals;
                     name = metadataAccount.data.data.name;
                     symbol = metadataAccount.data.data.symbol;
-                    isNft = decimals === 0;
                     tokens.push({
                         mint: mint.toString(),
                         name: name,
@@ -131,6 +131,20 @@ function getTokensOwnedByWallet(connection, publicKey) {
                     });
                 }
                 catch (err) {
+                    console.log(err);
+                    accounts.push({
+                        publicKey: publicKey.toBase58(),
+                        accountAddress: accAddress,
+                        mint: mint.toString(),
+                        amount: amount,
+                    });
+                    tokens.push({
+                        mint: mint.toString(),
+                        name: null,
+                        symbol: null,
+                        decimals: decimals,
+                        isNft: isNft,
+                    });
                     continue;
                 }
             }

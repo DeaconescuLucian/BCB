@@ -38,6 +38,7 @@ export function insertWalletTokenAccounts(
         }
 
         if (row) {
+          console.log(row)
           console.log(`Token account ${tokenAcc.accountAddress} already exists. Skipping insert.`);
         } else {
           insertStatement.run(tokenAcc.publicKey, tokenAcc.accountAddress, tokenAcc.mint, tokenAcc.amount, (err: Error | null) => {

@@ -55,7 +55,6 @@ function getWallets(db, callback) {
 }
 function updateWalletBalance(db, arg, callback) {
     db.serialize(() => {
-        console.log(arg);
         db.all(`UPDATE wallets SET balance = ? WHERE publicKey = ?`, [arg.balance, arg.publicKey], (err) => {
             if (err) {
                 console.error('Error updating wallet:', err.message);

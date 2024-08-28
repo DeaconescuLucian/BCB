@@ -17,8 +17,8 @@ function createTableTokens(db) {
     return __awaiter(this, void 0, void 0, function* () {
         const sql = `CREATE TABLE IF NOT EXISTS tokens(
         mint TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        symbol TEXT NOT NULL,
+        name TEXT,
+        symbol TEXT,
         decimals INTEGER NOT NULL,
         isNft INTEGER CHECK(isNft IN (0, 1)) NOT NULL DEFAULT 0 )
         `;
