@@ -121,7 +121,7 @@ function getTokensOwnedByWallet(connection, publicKey) {
                         name: name,
                         symbol: symbol,
                         decimals: decimals,
-                        isNft: isNft
+                        isNft: isNft,
                     });
                     accounts.push({
                         publicKey: publicKey.toBase58(),
@@ -138,7 +138,7 @@ function getTokensOwnedByWallet(connection, publicKey) {
         return new Promise((resolve) => {
             resolve({
                 tokens: tokens,
-                accounts: accounts
+                accounts: accounts,
             });
         });
     });

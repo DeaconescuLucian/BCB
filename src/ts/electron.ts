@@ -60,8 +60,7 @@ async function startBackgroundProcess(
     if (processType !== ProcessType.MAIN) {
       if (
         (pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) ||
-        (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction') ||
-        (secondaryBackgroundProcesses.find((e) => e.type === 'wallet') && processType.type === 'wallet')
+        (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction')
       ) {
         console.log(`Process ${pid} already started!`);
         resolve({ message: `Process ${pid} already started!`, pid: pid });
@@ -89,7 +88,7 @@ async function startBackgroundProcess(
       if (message === 'ready') {
         console.log('Background process is ready, sending start command');
         if (!pid) {
-          backgroundProcess?.send({ type: 'init'});
+          //backgroundProcess?.send({ type: 'init'});
           backgroundProcess?.send('start');
         }
         clearTimeout(timeout);
@@ -246,9 +245,9 @@ function registerHandlers() {
     return await stopBackgroundProcess(mainBackgroundProcess);
   });
 
-  registerHandler(ProcessType.WALLET.startEvent, async (e: any, arg: number) => {
-    return await startBackgroundProcess(null, ProcessType.WALLET, arg);
-  });
+  // registerHandler(ProcessType.WALLET.startEvent, async (e: any, arg: number) => {
+  //   return await startBackgroundProcess(null, ProcessType.WALLET, arg);
+  // });
 
   registerHandler(ProcessType.TRANSACTION.startEvent, async (e: any, arg: number) => {
     return await startBackgroundProcess(null, ProcessType.TRANSACTION, arg);
@@ -281,16 +280,16 @@ app.on('ready', async () => {
     return;
   }
 
-  getTokensOwnedByWallet(solanaConnection, new PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
-    insertTokens(dbConnection, result.tokens, (res) => {
-      if(!res.error)
-      {
-        insertWalletTokenAccounts(dbConnection, result.accounts, (r) => {
-          console.log(r)
-        })
-      }
-    });
-  });
+  // getTokensOwnedByWallet(solanaConnection, new PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
+  //   insertTokens(dbConnection, result.tokens, (res) => {
+  //     if(!res.error)
+  //     {
+  //       insertWalletTokenAccounts(dbConnection, result.accounts, (r) => {
+  //         console.log(r)
+  //       })
+  //     }
+  //   });
+  // });
 
   registerHandlers();
   startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);

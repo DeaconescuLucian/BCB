@@ -50,7 +50,7 @@ function initDatabase(db) {
             db.serialize(() => __awaiter(this, void 0, void 0, function* () {
                 try {
                     yield (0, transactions_1.createTableTransactions)(db);
-                    yield (0, wallets_1.createTablWallets)(db);
+                    yield (0, wallets_1.createTableWallets)(db);
                     yield (0, tokens_1.createTableTokens)(db);
                     yield (0, walletTokenAccounts_1.createTableWalletTokenAccounts)(db);
                     resolve();

@@ -44,9 +44,6 @@ const events_1 = require("./events");
 const db = __importStar(require("./database/db"));
 const transactionsDb = __importStar(require("./database/transactions"));
 const utils_1 = require("./solana/utils");
-const web3_js_1 = require("@solana/web3.js");
-const tokens_1 = require("./database/tokens");
-const walletTokenAccounts_1 = require("./database/walletTokenAccounts");
 if (!(0, events_1.verifyUniqueEvents)(events_1.ProcessType)) {
     (0, child_process_1.execSync)('yarn run close-web-app');
     process.exit(1);
@@ -76,8 +73,7 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
             console.log('Starting background process...');
             if (processType !== events_1.ProcessType.MAIN) {
                 if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) ||
-                    (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction') ||
-                    (secondaryBackgroundProcesses.find((e) => e.type === 'wallet') && processType.type === 'wallet')) {
+                    (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction')) {
                     console.log(`Process ${pid} already started!`);
                     resolve({ message: `Process ${pid} already started!`, pid: pid });
                 }
@@ -104,7 +100,7 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
                 if (message === 'ready') {
                     console.log('Background process is ready, sending start command');
                     if (!pid) {
-                        backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send({ type: 'init' });
+                        //backgroundProcess?.send({ type: 'init'});
                         backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send('start');
                     }
                     clearTimeout(timeout);
@@ -251,9 +247,9 @@ function registerHandlers() {
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess(mainBackgroundProcess);
     }));
-    (0, ipcHandler_1.registerHandler)(events_1.ProcessType.WALLET.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
-        return yield startBackgroundProcess(null, events_1.ProcessType.WALLET, arg);
-    }));
+    // registerHandler(ProcessType.WALLET.startEvent, async (e: any, arg: number) => {
+    //   return await startBackgroundProcess(null, ProcessType.WALLET, arg);
+    // });
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.TRANSACTION.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
         return yield startBackgroundProcess(null, events_1.ProcessType.TRANSACTION, arg);
     }));
@@ -284,15 +280,16 @@ electron_1.app.on('ready', () => __awaiter(void 0, void 0, void 0, function* () 
         db.closeConnection(dbConnection);
         return;
     }
-    (0, utils_1.getTokensOwnedByWallet)(solanaConnection, new web3_js_1.PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
-        (0, tokens_1.insertTokens)(dbConnection, result.tokens, (res) => {
-            if (!res.error) {
-                (0, walletTokenAccounts_1.insertWalletTokenAccounts)(dbConnection, result.accounts, (r) => {
-                    console.log(r);
-                });
-            }
-        });
-    });
+    // getTokensOwnedByWallet(solanaConnection, new PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
+    //   insertTokens(dbConnection, result.tokens, (res) => {
+    //     if(!res.error)
+    //     {
+    //       insertWalletTokenAccounts(dbConnection, result.accounts, (r) => {
+    //         console.log(r)
+    //       })
+    //     }
+    //   });
+    // });
     registerHandlers();
     startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
 }));

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import Page from '../../../components/Page/index.tsx';
 import Input from '../../../components/FormControls/Input.tsx';
 import Button from '../../../components/FormControls/Button.tsx';
 import Info from '../../../components/Info/index.tsx';
 import { CustomEvents } from '../../../../ts/events.ts';
 import { useToast } from '../../../contexts/ToastContext.tsx';
+import { useDispatch } from "react-redux";
+import { fetchWallets } from "../../../store/reducers/wallets.js";
 
 function ImportWallet() {
   const { showToast } = useToast();
   const [secretKey, setSecretKey] = useState(null);
   const [walletAlias, setWalletAlias] = useState('');
+  const dispatch = useDispatch();
 
   const handleImportWallet = async () => {
     const result = await window.electron.invoke(CustomEvents.importWalletEvent, {secretKey: secretKey, alias: walletAlias});
@@ -21,6 +23,7 @@ function ImportWallet() {
           showToast(result.data.error, 'fail');
         }
       }
+      dispatch(fetchWallets());
     }
   };
 
@@ -51,12 +54,12 @@ function ImportWallet() {
           {' '}
           <span>Secret key: </span>
         </div>
-        <Input type="text" validate={validateSecretKey} onChange={onSecretKeyInputChange} theme="primary"></Input>
+        <Input type="text" validate={validateSecretKey} onChange={onSecretKeyInputChange} theme="primary" placeholder='Enter a valid secret key'></Input>
         <div className="label-with-copy">
           {' '}
           <span>Wallet alias: </span>
         </div>
-        <Input type="text" validate={validateWalletAlias} onChange={onWalletAliasInputChange} theme="primary"></Input>
+        <Input type="text" validate={validateWalletAlias} onChange={onWalletAliasInputChange} theme="primary" placeholder='Enter an alias for your wallet'></Input>
         <Button
           onClick={() => {
             handleImportWallet();

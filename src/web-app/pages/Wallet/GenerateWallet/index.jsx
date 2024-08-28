@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import Button from '../../../components/FormControls/Button.tsx';
 import CopyToClipboard from '../../../components/CopyToClipboard/index.tsx';
-import Page from '../../../components/Page/index.tsx';
 import Info from '../../../components/Info/index.tsx';
 import { useToast } from '../../../contexts/ToastContext.tsx';
 import Input from '../../../components/FormControls/Input.tsx';
 import { CustomEvents } from '../../../../ts/events.ts';
+import { useDispatch } from "react-redux";
+import { fetchWallets } from "../../../store/reducers/wallets.js";
 
 function GenerateWallet() {
   const { showToast } = useToast();
   const [wallet, setWallet] = useState(null);
   const [walletSaved, setWalletSaved] = useState(false);
   const [walletAlias, setWalletAlias] = useState('');
+  const dispatch = useDispatch();
 
   const saveWallet = async () => {
     const result = await window.electron.invoke(CustomEvents.saveWalletEvent, {wallet: wallet, alias: walletAlias});
@@ -26,6 +28,7 @@ function GenerateWallet() {
       }
       setWallet(null);
       setWalletAlias('');
+      dispatch(fetchWallets());
     }
   };
 
@@ -63,6 +66,7 @@ function GenerateWallet() {
               validate={validateWalletAlias}
               onChange={onWalletAliasInputChange}
               theme="primary"
+              placeholder='Enter an alias for your wallet'
             ></Input>
           </div>
           <div className="button-container">
@@ -94,6 +98,7 @@ function GenerateWallet() {
               readonly
               readOnlyValue={walletAlias}
               theme="primary"
+              placeholder="Enter an alias for your wallet"
             ></Input>
           </div>
             <div className="generated-wallet">

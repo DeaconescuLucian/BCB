@@ -32,17 +32,18 @@
 @color-pending-bg-bright: rgba(218, 153, 67, 0.5);
 
 @color-info: rgb(138, 180, 248);
+@color-link: #1a90ff;
 
 //paddings & margins
 @default-main-container-padding: 30px;
 @default-page-container-padding: 15px;
-@page-container-margin-top: calc(@menu-header-height - @default-main-container-padding);
+@page-container-margin-top: calc(@top-bar-height - @default-main-container-padding);
 
 
 //sizes
 @menu-width: 256px;
 @menu-header-height: 96px;
-@page-height: calc(100vh - @menu-header-height - @default-main-container-padding);
+@page-height: calc(100vh - @top-bar-height - @default-main-container-padding);
 @right-section-width: 256px;
 @right-section-hidden-width: 68px;
 @top-bar-height: 30px;
