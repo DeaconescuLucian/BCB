@@ -1,14 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { CustomEvents } from '../../../ts/events';
 
-// Define an initial state with appropriate structure
 const initialState = {
-  wallets: [], // Array to store wallet data
-  status: 'idle', // To track the status of the async operation
-  error: null, // To store any errors
+  wallets: [],
+  selectedWallet: null,
+  selectedWalletDetails: null,
+  selectedWalletAccounts: null,
+  status: 'idle',
+  error: null,
 };
 
-// Define an async thunk for fetching wallets
 export const fetchWallets = createAsyncThunk('wallets/fetchWallets', async () => {
   try {
     const result = await window.electron.invoke(CustomEvents.getWalletsEvent);
@@ -22,11 +23,32 @@ export const fetchWallets = createAsyncThunk('wallets/fetchWallets', async () =>
   }
 });
 
+export const getWalletDetails = createAsyncThunk('wallets/getWalletDetails', async (publicKey) => {
+  try {
+    const result = await window.electron.invoke(CustomEvents.getWalletDetailsEvent, publicKey);
+    if (result && result.success) {
+      return result.data;
+    }
+    throw new Error('Failed to get wallet details');
+  } catch (error) {
+    console.error('Error fetching wallet details:', error);
+    throw error;
+  }
+});
+
 const walletsSlice = createSlice({
   name: 'wallets',
   initialState,
   reducers: {
-    // Define synchronous reducers if needed
+    updateSelectedWallet: (state, action) => {
+      state.selectedWallet = action.payload;
+      state.selectedWalletDetails = state.wallets.find(w => w.publicKey === state.selectedWallet);
+    },
+    deselectWallet: (state) => {
+      state.selectedWallet = null;
+      state.selectedWalletDetails = null;
+      state.selectedWalletAccounts = null;
+    },
     updateWallets: (state, action) => {
       state.wallets = action.payload;
       state.status = 'succeeded';
@@ -45,14 +67,23 @@ const walletsSlice = createSlice({
       })
       .addCase(fetchWallets.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.wallets = action.payload.map(e => e.wallet);
+        state.wallets = action.payload;
+        state.selectedWalletDetails = state.wallets.find(w => w.publicKey === state.selectedWallet) || null;
       })
       .addCase(fetchWallets.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message;
-      });
+      })
+      .addCase(getWalletDetails.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(getWalletDetails.fulfilled, (state, action) => {
+        state.selectedWalletAccounts = action.payload;
+        state.status = 'succeeded'
+
+      })
   },
 });
 
-export const { updateWallets, addWallet, removeWallet } = walletsSlice.actions;
+export const { updateSelectedWallet, updateWallets, addWallet, removeWallet, deselectWallet } = walletsSlice.actions;
 export default walletsSlice.reducer;

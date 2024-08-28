@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTableWalletTokenAccounts = createTableWalletTokenAccounts;
 exports.insertWalletTokenAccounts = insertWalletTokenAccounts;
 exports.getWalletTokenAccounts = getWalletTokenAccounts;
+exports.updateTokenAccountBalances = updateTokenAccountBalances;
 const db_1 = require("./db");
 function createTableWalletTokenAccounts(db) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -40,6 +41,7 @@ function insertWalletTokenAccounts(db, tokenAccs, callback) {
                     return;
                 }
                 if (row) {
+                    console.log(row);
                     console.log(`Token account ${tokenAcc.accountAddress} already exists. Skipping insert.`);
                 }
                 else {
@@ -50,7 +52,6 @@ function insertWalletTokenAccounts(db, tokenAccs, callback) {
                         }
                     });
                 }
-                // Finalize after the last token account is processed
                 if (index === tokenAccs.length - 1) {
                     insertStatement.finalize((err) => {
                         if (err) {
@@ -78,13 +79,13 @@ function getWalletTokenAccounts(db, publicKey) {
         return new Promise((resolve, reject) => {
             const sql = `
       SELECT 
-        wta.accountAddress,
-        wta.mint,
-        wta.amount,
-        t.name,
-        t.symbol,
-        t.decimals,
-        t.isNft
+        wta.accountAddress AS accountAddress,
+        wta.mint AS mint,
+        wta.amount AS amount,
+        t.name AS name,
+        t.symbol AS symbol ,
+        t.decimals AS decimals,
+        t.isNft AS isNft
       FROM 
         walletTokenAccounts wta
       JOIN 
@@ -97,12 +98,47 @@ function getWalletTokenAccounts(db, publicKey) {
             db.all(sql, [publicKey], (err, rows) => {
                 if (err) {
                     console.error('Error retrieving wallet token accounts:', err.message);
-                    reject(err);
+                    resolve([]);
                 }
                 else {
                     resolve(rows);
                 }
             });
+        });
+    });
+}
+function updateTokenAccountBalances(db, tokenAccounts, callback) {
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        const stmt = db.prepare(`
+      UPDATE walletTokenAccounts
+      SET amount = ?
+      WHERE accountAddress = ?
+    `);
+        for (const account of tokenAccounts) {
+            stmt.run(account.balance, account.accountAddress, function (err) {
+                if (err) {
+                    db.run('ROLLBACK');
+                    console.error('Error updating token account balance:', err.message);
+                    if (callback)
+                        callback(err);
+                    return;
+                }
+            });
+        }
+        stmt.finalize((err) => {
+            if (err) {
+                db.run('ROLLBACK');
+                console.error('Error finalizing statement:', err.message);
+                if (callback)
+                    callback(err);
+            }
+            else {
+                db.run('COMMIT');
+                console.log('Updated token account balances.');
+                if (callback)
+                    callback(null);
+            }
         });
     });
 }

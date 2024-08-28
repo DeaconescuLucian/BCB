@@ -11,13 +11,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTableTokens = createTableTokens;
 exports.insertTokens = insertTokens;
+exports.updateTokens = updateTokens;
 const db_1 = require("./db");
 function createTableTokens(db) {
     return __awaiter(this, void 0, void 0, function* () {
         const sql = `CREATE TABLE IF NOT EXISTS tokens(
         mint TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        symbol TEXT NOT NULL,
+        name TEXT,
+        symbol TEXT,
         decimals INTEGER NOT NULL,
         isNft INTEGER CHECK(isNft IN (0, 1)) NOT NULL DEFAULT 0 )
         `;
@@ -48,7 +49,6 @@ function insertTokens(db, tokens, callback) {
                         }
                     });
                 }
-                // Finalize after the last token is processed
                 if (index === tokens.length - 1) {
                     insertStatement.finalize((err) => {
                         if (err) {
@@ -68,6 +68,40 @@ function insertTokens(db, tokens, callback) {
                     });
                 }
             });
+        });
+    });
+}
+function updateTokens(db, tokens, callback) {
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        const stmt = db.prepare(`
+      UPDATE tokens
+      SET name = ?, symbol = ?, decimals = ?, isNft = ?
+      WHERE mint = ?
+    `);
+        for (const token of tokens) {
+            stmt.run(token.name, token.symbol, token.decimals, token.isNft ? 1 : 0, token.mint, function (err) {
+                if (err) {
+                    if (callback) {
+                        callback(err);
+                    }
+                    return;
+                }
+            });
+        }
+        stmt.finalize(err => {
+            if (err) {
+                db.run('ROLLBACK');
+                if (callback) {
+                    callback(err);
+                }
+            }
+            else {
+                db.run('COMMIT');
+                if (callback) {
+                    callback(null);
+                }
+            }
         });
     });
 }

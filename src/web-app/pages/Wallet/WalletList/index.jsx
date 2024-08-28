@@ -4,7 +4,7 @@ import { viewSvg, deleteSvg } from '../../../assets/svg/index.jsx';
 import Loading from '../../../components/Loading/index.tsx';
 import { useSelector } from 'react-redux';
 
-function WalletList() {
+function WalletList(props) {
   const { wallets, status } = useSelector((state) => state.wallets);
   const columns = [
     {
@@ -16,7 +16,7 @@ function WalletList() {
       name: 'Public Key',
       propertyName: 'publicKey',
       percentWidth: 30,
-      canCopy: true
+      canCopy: true,
     },
     {
       name: 'Balance',
@@ -29,7 +29,6 @@ function WalletList() {
       percentWidth: 20,
     },
   ];
-
 
   return (
     <div className="wallet-list-page">
@@ -46,7 +45,7 @@ function WalletList() {
                   name: 'View',
                   icon: viewSvg,
                   action: (r) => {
-                    //window.electron.invoke(CustomEvents.watchWalletEvent, r.publicKey);
+                    props.onView(r.publicKey);
                     console.log(r.publicKey);
                   },
                 },
@@ -59,9 +58,10 @@ function WalletList() {
                   },
                 },
               ]}
+              pagination={{ pageSizes: [10, 20, 30, 40] }}
             ></Table>
           ) : (
-            <p>No wallets found.</p>
+            <div className="empty-page">No wallets found.</div>
           )}
         </>
       )}

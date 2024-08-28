@@ -36,7 +36,12 @@ const ipcHandler_1 = require("../ipcHandler");
 const wallet_1 = require("../solana/wallet");
 const events_1 = require("../events");
 const walletDb = __importStar(require("../database/wallets"));
+const walletTokenAccountDb = __importStar(require("../database/walletTokenAccounts"));
+const web3_js_1 = require("@solana/web3.js");
 const utils_1 = require("../solana/utils");
+const tokens_1 = require("../database/tokens");
+const walletTokenAccounts_1 = require("../database/walletTokenAccounts");
+const wallets_1 = require("../database/wallets");
 const ImportWalletHandler = (db, solanaConnection) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.importWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         var _a;
@@ -46,7 +51,20 @@ const ImportWalletHandler = (db, solanaConnection) => {
             const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, (_a = response.data) === null || _a === void 0 ? void 0 : _a.keyPair.publicKey);
             return new Promise((resolve) => {
                 walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias, balance: solBalance }, (result) => {
-                    resolve(result);
+                    var _a;
+                    if (!result.error)
+                        (0, utils_1.getTokensOwnedByWallet)(solanaConnection, new web3_js_1.PublicKey((_a = response.data) === null || _a === void 0 ? void 0 : _a.publicKey)).then((res) => {
+                            (0, tokens_1.insertTokens)(db, res.tokens, (r) => {
+                                if (!r.error) {
+                                    (0, walletTokenAccounts_1.insertWalletTokenAccounts)(db, res.accounts, (r) => {
+                                        resolve(result);
+                                    });
+                                }
+                            });
+                        });
+                    else {
+                        resolve(result);
+                    }
                 });
             });
         }
@@ -82,10 +100,10 @@ const SaveWalletHandler = (db) => {
         });
     }));
 };
-const GetWalletsHandler = (db, solanaConnection) => {
+const GetWalletsHandler = (db) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getWalletsEvent, () => __awaiter(void 0, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
-            walletDb.getAllWalletsWithTokens(db, (err, rows) => __awaiter(void 0, void 0, void 0, function* () {
+            walletDb.getWallets(db, (err, rows) => __awaiter(void 0, void 0, void 0, function* () {
                 if (err) {
                     reject(err);
                 }
@@ -104,10 +122,116 @@ const GetWalletsHandler = (db, solanaConnection) => {
         });
     }));
 };
-const handleWallet = (db, solanaConnection) => __awaiter(void 0, void 0, void 0, function* () {
+const UpdateWalletHandler = (db, solanaConnection) => {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.updateWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        const publicKey = new web3_js_1.PublicKey(arg);
+        const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, publicKey);
+        let error = null;
+        yield new Promise((resolve, reject) => {
+            (0, wallets_1.updateWalletBalance)(db, { publicKey: arg, balance: solBalance }, (err) => {
+                if (err) {
+                    error = err.message;
+                    reject(err);
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
+        yield (0, utils_1.getTokensOwnedByWallet)(solanaConnection, publicKey).then((res) => __awaiter(void 0, void 0, void 0, function* () {
+            const tokenAccs = yield (0, walletTokenAccounts_1.getWalletTokenAccounts)(db, arg);
+            let tokenAccsToInsert = [];
+            let tokenAccsToUpdate = [];
+            let tokensToInsert = [];
+            let tokensToUpdate = [];
+            res.accounts.forEach((acc) => {
+                let token = res.tokens.find((t) => t.mint === acc.mint);
+                if (tokenAccs === null || tokenAccs === void 0 ? void 0 : tokenAccs.find((a) => a.accountAddress === acc.accountAddress)) {
+                    tokenAccsToUpdate.push(acc);
+                    if (token)
+                        tokensToUpdate.push(token);
+                }
+                else {
+                    tokenAccsToInsert.push(acc);
+                    if (token)
+                        tokensToInsert.push(token);
+                }
+            });
+            try {
+                if (tokenAccsToInsert.length)
+                    yield new Promise((resolve, reject) => {
+                        (0, tokens_1.insertTokens)(db, tokensToInsert, (result) => {
+                            if (result.error) {
+                                error = result.error;
+                                reject(result.error);
+                            }
+                            else {
+                                resolve();
+                            }
+                        });
+                    });
+                if (tokensToUpdate.length)
+                    yield new Promise((resolve, reject) => {
+                        (0, tokens_1.updateTokens)(db, tokensToUpdate, (err) => {
+                            if (err) {
+                                error = err.message;
+                                reject(err.message);
+                            }
+                            else {
+                                resolve();
+                            }
+                        });
+                    });
+                if (tokenAccsToInsert.length)
+                    yield new Promise((resolve, reject) => {
+                        (0, walletTokenAccounts_1.insertWalletTokenAccounts)(db, tokenAccsToInsert, (result) => {
+                            if (result.error) {
+                                error = result.error;
+                                reject(result.error);
+                            }
+                            else {
+                                resolve();
+                            }
+                        });
+                    });
+                if (tokenAccsToUpdate.length)
+                    yield new Promise((resolve, reject) => {
+                        (0, walletTokenAccounts_1.updateTokenAccountBalances)(db, tokenAccsToUpdate.map((a) => {
+                            return { accountAddress: a.accountAddress, balance: a.amount };
+                        }), (err) => {
+                            if (err) {
+                                error = err.message;
+                                reject(err.message);
+                            }
+                            else {
+                                resolve();
+                            }
+                        });
+                    });
+            }
+            catch (err) {
+                console.error('An error occurred:', err);
+            }
+        }));
+        return new Promise((resolve) => {
+            resolve(error);
+        });
+    }));
+};
+const GetWalletDetailsHandler = (db) => {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getWalletDetailsEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        let details = yield walletTokenAccountDb.getWalletTokenAccounts(db, arg);
+        return new Promise((resolve) => {
+            resolve(details);
+        });
+    }));
+};
+const handleWallet = (db, solanaConnection) => {
     ImportWalletHandler(db, solanaConnection);
     GenerateWalletHandler();
     SaveWalletHandler(db);
-    GetWalletsHandler(db, solanaConnection);
-});
+    GetWalletsHandler(db);
+    UpdateWalletHandler(db, solanaConnection);
+    GetWalletDetailsHandler(db);
+};
 exports.default = handleWallet;

@@ -1,13 +1,14 @@
 
 import sqlite3 from 'sqlite3';
 import { runQuery } from './db';
+import { IToken } from '../solana/utils';
 
 
 export async function createTableTokens(db: sqlite3.Database) {
     const sql = `CREATE TABLE IF NOT EXISTS tokens(
         mint TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        symbol TEXT NOT NULL,
+        name TEXT,
+        symbol TEXT,
         decimals INTEGER NOT NULL,
         isNft INTEGER CHECK(isNft IN (0, 1)) NOT NULL DEFAULT 0 )
         `;
@@ -16,7 +17,7 @@ export async function createTableTokens(db: sqlite3.Database) {
 
 export function insertTokens(
     db: sqlite3.Database,
-    tokens: { mint: string; name: string; symbol: string; decimals: number; isNft: boolean }[],
+    tokens: IToken[],
     callback: (result: { error?: string; message?: string }) => void
   ): void {
     const insertStatement = db.prepare(
@@ -69,4 +70,52 @@ export function insertTokens(
         });
       });
     });
-  }
+}
+
+export function updateTokens(
+  db: sqlite3.Database,
+  tokens: IToken[],
+  callback?: (err: Error | null) => void
+): void {
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+
+    const stmt = db.prepare(`
+      UPDATE tokens
+      SET name = ?, symbol = ?, decimals = ?, isNft = ?
+      WHERE mint = ?
+    `);
+
+    for (const token of tokens) {
+      stmt.run(
+        token.name,
+        token.symbol,
+        token.decimals,
+        token.isNft ? 1 : 0,
+        token.mint,
+        function (err: any) {
+          if (err) {
+            if (callback) {
+              callback(err);
+            }
+            return;
+          }
+        }
+      );
+    }
+
+    stmt.finalize(err => {
+      if (err) {
+        db.run('ROLLBACK');
+        if (callback) {
+          callback(err);
+        }
+      } else {
+        db.run('COMMIT');
+        if (callback) {
+          callback(null);
+        }
+      }
+    });
+  });
+}

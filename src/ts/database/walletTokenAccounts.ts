@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { runQuery } from './db';
+import { ITokenAccount } from '../solana/utils';
 
 export async function createTableWalletTokenAccounts(db: sqlite3.Database) {
   const sql = `CREATE TABLE IF NOT EXISTS walletTokenAccounts (
@@ -15,7 +16,7 @@ export async function createTableWalletTokenAccounts(db: sqlite3.Database) {
 
 export function insertWalletTokenAccounts(
   db: sqlite3.Database,
-  tokenAccs: { publicKey: string; accountAddress: string; mint: string; amount: number }[],
+  tokenAccs: ITokenAccount[],
   callback: (result: { error?: string; message?: string }) => void
 ): void {
   const insertStatement = db.prepare(
@@ -37,6 +38,7 @@ export function insertWalletTokenAccounts(
         }
 
         if (row) {
+          console.log(row)
           console.log(`Token account ${tokenAcc.accountAddress} already exists. Skipping insert.`);
         } else {
           insertStatement.run(tokenAcc.publicKey, tokenAcc.accountAddress, tokenAcc.mint, tokenAcc.amount, (err: Error | null) => {
@@ -87,13 +89,13 @@ export async function getWalletTokenAccounts(
   return new Promise((resolve, reject) => {
     const sql = `
       SELECT 
-        wta.accountAddress,
-        wta.mint,
-        wta.amount,
-        t.name,
-        t.symbol,
-        t.decimals,
-        t.isNft
+        wta.accountAddress AS accountAddress,
+        wta.mint AS mint,
+        wta.amount AS amount,
+        t.name AS name,
+        t.symbol AS symbol ,
+        t.decimals AS decimals,
+        t.isNft AS isNft
       FROM 
         walletTokenAccounts wta
       JOIN 
@@ -107,9 +109,48 @@ export async function getWalletTokenAccounts(
     db.all(sql, [publicKey], (err, rows: any) => {
       if (err) {
         console.error('Error retrieving wallet token accounts:', err.message);
-        reject(err);
+        resolve([]);
       } else {
         resolve(rows);
+      }
+    });
+  });
+}
+
+export function updateTokenAccountBalances(
+  db: sqlite3.Database,
+  tokenAccounts: { accountAddress: string; balance: number }[],
+  callback?: (err: Error | null) => void
+): void {
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+
+    const stmt = db.prepare(`
+      UPDATE walletTokenAccounts
+      SET amount = ?
+      WHERE accountAddress = ?
+    `);
+
+    for (const account of tokenAccounts) {
+      stmt.run(account.balance, account.accountAddress, function (err: Error | null) {
+        if (err) {
+          db.run('ROLLBACK');
+          console.error('Error updating token account balance:', err.message);
+          if (callback) callback(err);
+          return;
+        }
+      });
+    }
+
+    stmt.finalize((err) => {
+      if (err) {
+        db.run('ROLLBACK');
+        console.error('Error finalizing statement:', err.message);
+        if (callback) callback(err);
+      } else {
+        db.run('COMMIT');
+        console.log('Updated token account balances.');
+        if (callback) callback(null);
       }
     });
   });

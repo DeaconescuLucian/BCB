@@ -76,8 +76,7 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
             console.log('Starting background process...');
             if (processType !== events_1.ProcessType.MAIN) {
                 if ((pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) ||
-                    (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction') ||
-                    (secondaryBackgroundProcesses.find((e) => e.type === 'wallet') && processType.type === 'wallet')) {
+                    (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction')) {
                     console.log(`Process ${pid} already started!`);
                     resolve({ message: `Process ${pid} already started!`, pid: pid });
                 }
@@ -104,7 +103,7 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
                 if (message === 'ready') {
                     console.log('Background process is ready, sending start command');
                     if (!pid) {
-                        backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send({ type: 'init' });
+                        //backgroundProcess?.send({ type: 'init'});
                         backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send('start');
                     }
                     clearTimeout(timeout);
@@ -251,9 +250,9 @@ function registerHandlers() {
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess(mainBackgroundProcess);
     }));
-    (0, ipcHandler_1.registerHandler)(events_1.ProcessType.WALLET.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
-        return yield startBackgroundProcess(null, events_1.ProcessType.WALLET, arg);
-    }));
+    // registerHandler(ProcessType.WALLET.startEvent, async (e: any, arg: number) => {
+    //   return await startBackgroundProcess(null, ProcessType.WALLET, arg);
+    // });
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.TRANSACTION.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
         return yield startBackgroundProcess(null, events_1.ProcessType.TRANSACTION, arg);
     }));

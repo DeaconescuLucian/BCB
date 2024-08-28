@@ -8,11 +8,21 @@ input[type="text"] {
     &.theme-primary {
         color: @color-font-white;
         background-color: @color-base;
+
+        &::placeholder {
+            color: @color-font-gray;
+            letter-spacing: 1px;
+        }
     }
 
     &.theme-secondary {
         color: @color-black;
         background-color: @color-font-gray;
+
+        &::placeholder {
+            color: @color-black;
+            letter-spacing: 1px;
+        }
     }
 }
 

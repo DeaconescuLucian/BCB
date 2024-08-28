@@ -8,30 +8,13 @@ import Settings from "./pages/Settings";
 import TransactionHistory from "./components/TransactionHistory";
 import WalletPage from "./pages/Wallet";
 import { useDispatch } from "react-redux";
-import { updateWallets } from "./store/reducers/wallets";
-import { ProcessType } from "../ts/events";
+import { fetchWallets } from "./store/reducers/wallets";
 
 function App() {
   const dispatch = useDispatch();
 
-  const walletProcess = ProcessType.WALLET;
-
   useEffect(() => {
-    handleStartBackgroundProcess();
-  }, []);
-
-  const handleStartBackgroundProcess = async () => {
-    await window.electron.invoke(walletProcess.startEvent, undefined);
-  };
-
-  useEffect(() => {
-    const unsubscribe = window.electron.on(walletProcess.updateEvent, (msg) => {
-      dispatch(updateWallets(msg));
-    });
-
-    return () => {
-      unsubscribe();
-    };
+    dispatch(fetchWallets())
   }, []);
 
   return (

@@ -6,20 +6,20 @@ type InputTheme = 'primary' | 'secondary';
 
 interface IInput {
   type: InputType;
-   /**
+  /**
    * A function to validate the input value.
    * It will be called when the input loses focus
    * after the user has interacted with it.
    * It returns an errorMessage: string if there is
    * an issue or null if it isn't any.
-   * 
+   *
    * @param value - The current value of the input.
    */
   validate?: (value: any) => string | null;
   /**
    * Use this to set a value in your component,
    * when the input value changes.
-   * 
+   *
    * @param value - The current value of the input.
    */
   onChange?: (value: any) => void;
@@ -34,6 +34,7 @@ interface IInput {
    * Set the value only if readonly is set to true
    */
   readOnlyValue?: any;
+  placeholder?: string;
 }
 
 function Input(props: IInput) {
@@ -44,15 +45,11 @@ function Input(props: IInput) {
   const handleBlur = () => {
     if (touched) {
       let error;
-      if(props.validate)
-        error = props.validate(value)
+      if (props.validate) error = props.validate(value);
       setErrorMessage(error);
-      if(props.onChange)
-      {
-        if(!error)
-          props.onChange(value);
-        else
-          props.onChange(null)
+      if (props.onChange) {
+        if (!error) props.onChange(value);
+        else props.onChange(null);
       }
     }
   };
@@ -64,12 +61,20 @@ function Input(props: IInput) {
     }
   };
 
-  return <div className={`input-container`}>
-    <input className={`${props.theme ? `theme-${props.theme}` : null}`} type={props.type} value={value || props.readOnlyValue} onChange={handleChange} onBlur={handleBlur} readOnly={props.readonly ?? false}/>
-    {
-        errorMessage && <ErrorMessage text={errorMessage}></ErrorMessage>
-    }
-  </div>;
+  return (
+    <div className={`input-container`}>
+      <input
+        className={`${props.theme ? `theme-${props.theme}` : null}`}
+        type={props.type}
+        value={value || props.readOnlyValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        readOnly={props.readonly ?? false}
+        placeholder={props.placeholder}
+      />
+      {errorMessage && <ErrorMessage text={errorMessage}></ErrorMessage>}
+    </div>
+  );
 }
 
 export default Input;

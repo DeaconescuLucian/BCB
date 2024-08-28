@@ -1,0 +1,105 @@
+.view-wallet-page {
+    width: 96%;
+    height: calc(100% - 35px);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    overflow-y: scroll;
+    &::-webkit-scrollbar {
+      display: none;
+  }
+
+  table {
+    font-size: 14px;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .copy-icon {
+      svg {
+        width: 12px !important;
+        height: 12px !important;
+      }
+    }
+  }
+
+  .overview-panel {
+    width: calc(100% - 30px);
+    padding: 15px;
+    background-color: @color-tertiary-base;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    position: relative;
+
+    h3 {
+      color: @color-font-brand;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    .overview-item {
+      width: 100%;
+      margin-bottom: 5px;
+
+      span {
+        display: inline-block;
+      }
+
+      .label {
+        width: 20%;
+        font-weight: lighter !important;
+      }
+
+      .value {
+        color: @color-font-white;
+        max-width: calc(80% - 50px);
+      }
+
+      .copy-icon {
+        position: relative;
+      }
+
+      .copy-to-clipboard-message {
+        font-size: 12px; 
+      }
+    }
+  }
+
+  .token-type-selector {
+      display: flex;
+      background-color: @color-tertiary-base;
+      width: fit-content;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      
+      .token-type {
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: 0.5s ease;
+
+        &.selected {
+          background-color: @color-dark;
+          border: 1px solid @color-brand;
+          color: @color-brand;
+        }
+      }
+  }
+
+  .total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-family: none;
+  }
+
+  .search-bar {
+    min-width: 350px;
+    width: 35%;
+  }
+}

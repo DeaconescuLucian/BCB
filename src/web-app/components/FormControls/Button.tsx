@@ -1,7 +1,7 @@
 import React from 'react';
-import { addSvg, saveSvg, importWalletSvg } from '../../assets/svg/index.jsx';
+import { addSvg, saveSvg, importWalletSvg, reloadSvg } from '../../assets/svg/index.jsx';
 
-type ButtonType = 'add' | 'save' | 'import-wallet';
+type ButtonType = 'add' | 'save' | 'import-wallet' | 'reload';
 type ButtonTheme = 'primary' | 'secondary';
 
  /**
@@ -45,6 +45,8 @@ function Button(props: IButton) {
         return saveSvg;
       case 'import-wallet':
         return importWalletSvg;
+      case 'reload':
+        return reloadSvg;
       default:
         return null;
     }

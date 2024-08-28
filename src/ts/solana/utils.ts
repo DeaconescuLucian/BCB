@@ -123,43 +123,77 @@ export async function simpleTransfer(connection: Connection, TransferParams: Tra
   return;
 }
 
-export async function getTokensOwnedByWallet(connection: Connection, publicKey: PublicKey): Promise<{tokens: any[], accounts: any[]}> {
+export interface IToken {
+  mint: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  isNft: boolean;
+}
+
+export interface ITokenAccount {
+  publicKey: string;
+  accountAddress: string;
+  mint: string;
+  amount: number;
+}
+
+export async function getTokensOwnedByWallet(
+  connection: Connection,
+  publicKey: PublicKey
+): Promise<{
+  tokens: IToken[];
+  accounts: ITokenAccount[];
+}> {
   const {
     metadata: { Metadata },
   } = programs;
   const tokensAccs = await connection.getTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID });
   let name, symbol, mint, accAddress, balance, amount, decimals, isNft;
-  let tokens:any = [];
-  let accounts:any = [];
+  let tokens: any = [];
+  let accounts: any = [];
 
   for (const tokenAcc of tokensAccs.value) {
     const accData = SPL_ACCOUNT_LAYOUT.decode(tokenAcc.account.data);
     if (!accData.amount.isZero()) {
       mint = accData.mint;
       accAddress = tokenAcc.pubkey.toBase58();
+      balance = (await connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
+      amount = balance.uiAmount;
+      decimals = balance.decimals;
+      isNft = decimals === 0;
       try {
         const metadataPDA = await Metadata.getPDA(accData.mint);
         const metadataAccount = await Metadata.load(connection, metadataPDA);
-        balance = (await connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
-        amount = balance.uiAmount;
-        decimals = balance.decimals;
         name = metadataAccount.data.data.name;
         symbol = metadataAccount.data.data.symbol;
-        isNft = decimals === 0;
         tokens.push({
           mint: mint.toString(),
           name: name,
           symbol: symbol,
           decimals: decimals,
-          isNft: isNft
-        })
+          isNft: isNft,
+        });
         accounts.push({
           publicKey: publicKey.toBase58(),
           accountAddress: accAddress,
           mint: mint.toString(),
           amount: amount,
-        })
+        });
       } catch (err) {
+        accounts.push({
+          publicKey: publicKey.toBase58(),
+          accountAddress: accAddress,
+          mint: mint.toString(),
+          amount: amount,
+        });
+        tokens.push({
+          mint: mint.toString(),
+          name: null,
+          symbol: null,
+          decimals: decimals,
+          isNft: isNft,
+        });
         continue;
       }
     }
@@ -168,7 +202,7 @@ export async function getTokensOwnedByWallet(connection: Connection, publicKey: 
   return new Promise((resolve) => {
     resolve({
       tokens: tokens,
-      accounts: accounts
+      accounts: accounts,
     });
   });
 }

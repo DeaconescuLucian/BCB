@@ -1,0 +1,107 @@
+.search-bar {
+  position: relative;
+  display: flex;
+  align-self: center;
+  align-items: center;
+  background-color: @color-dark;
+  font-size: 14px;
+  width: 500px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid @color-font-brand;
+
+  input {
+    width: calc(100% - 80px);
+    background-color: @color-dark;
+    outline: none;
+    border: none;
+    border-radius: 5px;
+    padding-right: 40px;
+    color: @color-font-white;
+
+    &::placeholder {
+        color: @color-font-gray;
+        letter-spacing: 1px;
+    }
+  }
+
+  .clear-input {
+    position: absolute;
+    padding: 2px;
+    top: calc(50% - 12px);
+    left: calc(100% - 60px);
+    border-right: 1px solid @color-tertiary-base;
+    cursor: pointer;
+
+    &:hover {
+        svg {
+            fill: @color-font-white;
+        }
+    }
+
+    svg {
+        width: 20px;
+        height: 20px;
+        fill: @color-font-gray;
+    }
+  }
+
+  .search-button {
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    border-radius: 10px;
+
+    &:hover {
+        background-color: @color-tertiary-base;
+    }
+
+    svg {
+        width: 16px;
+        height: 16px;
+        fill: @color-font-white;
+      }
+  }
+
+  .search-dropdown {
+    z-index: 102;
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0px;
+    width: calc(100% - 10px);
+    background-color: @color-dark;
+    border-radius: 5px;
+    color: @color-font-white;
+    height: 100px;
+    max-height: 100px;
+    overflow-y: scroll;
+    padding: 5px;
+
+    &::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: @color-dark;
+        border-radius: 5px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: @color-font-brand;
+        border-radius: 5px;
+    }
+
+    .search-dropdown-item {
+        padding: 5px;
+        width: calc(100% - 20px);
+        border-radius: 5px;
+
+        &:hover {
+            background-color: @color-tertiary-base;
+            cursor: pointer;
+        }
+    }
+  }
+}
