@@ -35,7 +35,7 @@ export function insertWallet(
 
 export function getWallets(db: sqlite3.Database, callback: (err: Error | null, rows?: any[]) => void): void {
   db.serialize(() => {
-    db.all(`SELECT * FROM wallets`, (err: Error | null, rows: any[]) => {
+    db.all(`SELECT publicKey, alias, balance FROM wallets`, (err: Error | null, rows: any[]) => {
       if (err) {
         console.error('Error retrieving wallets:', err.message);
         callback(err);
@@ -60,6 +60,26 @@ export function updateWalletBalance(
       } else {
         console.log('Updated wallet balance.');
         if (callback) callback(null);
+      }
+    });
+  });
+}
+
+export function deleteWallet(
+  db: sqlite3.Database,
+  publicKey: string,
+  callback?: (result: { error?: string; message?: string }) => void
+): void {
+  db.serialize(() => {
+    db.run(`DELETE FROM wallets WHERE publicKey = ?`, [publicKey], (err: Error | null) => {
+      if (err) {
+        console.error('Error deleting wallet:', err.message);
+        if(callback)
+          callback({ error: err.message });
+      } else {
+        console.log('Wallet inserted successfully.');
+        if(callback)
+          callback({ message: 'Wallet successfully deleted' });
       }
     });
   });

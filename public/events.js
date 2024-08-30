@@ -31,7 +31,8 @@ exports.CustomEvents = {
     getLatestTransactionsEvent: 'get-latest-transactions',
     getWalletsEvent: 'get-wallets',
     getWalletDetailsEvent: 'get-wallet-details',
-    updateWalletEvent: 'update-wallet-info'
+    updateWalletEvent: 'update-wallet-info',
+    deleteWalletEvent: 'delete-wallet'
 };
 function verifyUniqueEvents(processType) {
     const eventSet = new Set(Object.values(exports.CustomEvents));

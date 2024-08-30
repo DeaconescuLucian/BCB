@@ -97,12 +97,12 @@ const GetWalletsHandler = (db: sqlite3.Database) => {
 };
 
 const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
-  registerHandler(CustomEvents.updateWalletEvent, async (e: any, arg: string) => {
-    const publicKey = new PublicKey(arg);
+  registerHandler(CustomEvents.updateWalletEvent, async (e: any, arg: {publicKey: string, existingMints: {mint: string, icon?: string}[]}) => {
+    const publicKey = new PublicKey(arg.publicKey);
     const solBalance = await getSolanaBalance(solanaConnection, publicKey);
     let error: string | undefined | null = null;
     await new Promise<void>((resolve, reject) => {
-      updateWalletBalance(db, { publicKey: arg, balance: solBalance }, (err: Error | null) => {
+      updateWalletBalance(db, { publicKey: arg.publicKey, balance: solBalance }, (err: Error | null) => {
         if (err) {
           error = err.message;
           reject(err);
@@ -112,8 +112,8 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
       });
     });
 
-    await getTokensOwnedByWallet(solanaConnection, publicKey).then(async (res) => {
-      const tokenAccs = await getWalletTokenAccounts(db, arg);
+    await getTokensOwnedByWallet(solanaConnection, publicKey, arg.existingMints).then(async (res) => {
+      const tokenAccs = await getWalletTokenAccounts(db, arg.publicKey);
       let tokenAccsToInsert: ITokenAccount[] = [];
       let tokenAccsToUpdate: ITokenAccount[] = [];
       let tokensToInsert: IToken[] = [];
@@ -130,8 +130,9 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
         }
       });
 
+      console.log('insert tokens')
       try {
-        if (tokenAccsToInsert.length)
+        if (tokensToInsert.length)
           await new Promise<void>((resolve, reject) => {
             insertTokens(db, tokensToInsert, (result) => {
               if (result.error) {
@@ -143,6 +144,7 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
             });
           });
 
+        console.log('update tokens')
         if (tokensToUpdate.length)
           await new Promise<void>((resolve, reject) => {
             updateTokens(db, tokensToUpdate, (err: Error | null) => {
@@ -155,6 +157,7 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
             });
           });
 
+          console.log('insert token accs')
         if (tokenAccsToInsert.length)
           await new Promise<void>((resolve, reject) => {
             insertWalletTokenAccounts(db, tokenAccsToInsert, (result) => {
@@ -167,6 +170,7 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
             });
           });
 
+          console.log('update token accs')
         if (tokenAccsToUpdate.length)
           await new Promise<void>((resolve, reject) => {
             updateTokenAccountBalances(
@@ -204,6 +208,16 @@ const GetWalletDetailsHandler = (db: sqlite3.Database) => {
   });
 };
 
+const DeleteWalletHandler = (db: sqlite3.Database) => {
+  registerHandler(CustomEvents.deleteWalletEvent, async (e: any, arg: string) => {
+    return new Promise((resolve) => {
+      walletDb.deleteWallet(db, arg, (result: any) => {
+        resolve(result);
+      });
+    });
+  });
+};
+
 const handleWallet = (db: sqlite3.Database, solanaConnection: Connection) => {
   ImportWalletHandler(db, solanaConnection);
   GenerateWalletHandler();
@@ -211,6 +225,7 @@ const handleWallet = (db: sqlite3.Database, solanaConnection: Connection) => {
   GetWalletsHandler(db);
   UpdateWalletHandler(db, solanaConnection);
   GetWalletDetailsHandler(db);
+  DeleteWalletHandler(db);
 };
 
 export default handleWallet;

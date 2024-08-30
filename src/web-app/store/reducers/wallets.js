@@ -14,6 +14,7 @@ export const fetchWallets = createAsyncThunk('wallets/fetchWallets', async () =>
   try {
     const result = await window.electron.invoke(CustomEvents.getWalletsEvent);
     if (result && result.success) {
+      console.log(result.data)
       return result.data;
     }
     throw new Error('Failed to fetch wallets');
@@ -78,7 +79,7 @@ const walletsSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(getWalletDetails.fulfilled, (state, action) => {
-        state.selectedWalletAccounts = action.payload;
+        state.selectedWalletAccounts = action.payload || [];
         state.status = 'succeeded'
 
       })

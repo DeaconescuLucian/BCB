@@ -43,7 +43,8 @@ export const CustomEvents = {
   getLatestTransactionsEvent: 'get-latest-transactions',
   getWalletsEvent: 'get-wallets',
   getWalletDetailsEvent: 'get-wallet-details',
-  updateWalletEvent: 'update-wallet-info'
+  updateWalletEvent: 'update-wallet-info',
+  deleteWalletEvent: 'delete-wallet'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

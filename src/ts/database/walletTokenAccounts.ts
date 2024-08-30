@@ -93,7 +93,8 @@ export async function getWalletTokenAccounts(
         wta.mint AS mint,
         wta.amount AS amount,
         t.name AS name,
-        t.symbol AS symbol ,
+        t.symbol AS symbol,
+        t.icon AS icon,
         t.decimals AS decimals,
         t.isNft AS isNft
       FROM 

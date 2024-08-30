@@ -16,7 +16,7 @@ import { SPL_ACCOUNT_LAYOUT } from '@raydium-io/raydium-sdk';
 
 import { programs } from '@metaplex/js';
 import BN from 'bn.js';
-const { TokenListProvider, TokenInfo } = require('@solana/spl-token-registry');
+const { TokenListProvider } = require('@solana/spl-token-registry');
 
 export interface TransferParams {
   walletA: Keypair;
@@ -125,8 +125,9 @@ export async function simpleTransfer(connection: Connection, TransferParams: Tra
 
 export interface IToken {
   mint: string;
-  name: string;
-  symbol: string;
+  name?: string;
+  symbol?: string;
+  icon?:string;
   decimals: number;
   isNft: boolean;
 }
@@ -138,9 +139,24 @@ export interface ITokenAccount {
   amount: number;
 }
 
+async function fetchData(uri: string) {
+  try {
+    const response = await fetch(uri);
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.log('There was a problem with the fetch operation:');
+    return null;
+  }
+}
+
 export async function getTokensOwnedByWallet(
   connection: Connection,
-  publicKey: PublicKey
+  publicKey: PublicKey,
+  existingMints?: {mint: string, icon?: string}[]
 ): Promise<{
   tokens: IToken[];
   accounts: ITokenAccount[];
@@ -149,50 +165,75 @@ export async function getTokensOwnedByWallet(
     metadata: { Metadata },
   } = programs;
   const tokensAccs = await connection.getTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID });
-  let name, symbol, mint, accAddress, balance, amount, decimals, isNft;
+  let name, symbol, mint: string, accAddress, balance, amount, decimals, isNft, icon, uri;
   let tokens: any = [];
   let accounts: any = [];
+
+  //LOAD SPL TOKENS
+  let tokenList: any[] = [];
+  const provider = new TokenListProvider();
+  provider.resolve().then((tokens: any) => {
+    tokenList = tokens.filterByClusterSlug('mainnet-beta').getList();
+  });
 
   for (const tokenAcc of tokensAccs.value) {
     const accData = SPL_ACCOUNT_LAYOUT.decode(tokenAcc.account.data);
     if (!accData.amount.isZero()) {
-      mint = accData.mint;
+      mint = accData.mint.toString();
+      icon = tokenList?.find(e => e.address === mint)?.logoURI || existingMints?.find(e => e.mint === mint)?.icon || null;
       accAddress = tokenAcc.pubkey.toBase58();
       balance = (await connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
       amount = balance.uiAmount;
       decimals = balance.decimals;
       isNft = decimals === 0;
       try {
-        const metadataPDA = await Metadata.getPDA(accData.mint);
-        const metadataAccount = await Metadata.load(connection, metadataPDA);
-        name = metadataAccount.data.data.name;
-        symbol = metadataAccount.data.data.symbol;
-        tokens.push({
-          mint: mint.toString(),
-          name: name,
-          symbol: symbol,
-          decimals: decimals,
-          isNft: isNft,
-        });
+        if(!existingMints?.find(e => e.mint === mint))
+        {
+          const metadataPDA = await Metadata.getPDA(accData.mint);
+          const metadataAccount = await Metadata.load(connection, metadataPDA);
+          name = metadataAccount.data.data.name;
+          symbol = metadataAccount.data.data.symbol;
+          uri = metadataAccount.data.data.uri;
+          if(uri && !isNft && !icon)
+          {
+            let response = await fetchData(uri);
+            if(response)
+            {
+              if(response.image)
+              {
+                icon = response.image;
+              }
+            }
+          }
+          tokens.push({
+            mint: mint,
+            name: name,
+            symbol: symbol,
+            decimals: decimals,
+            isNft: isNft,
+            icon: icon
+          });
+        }
         accounts.push({
           publicKey: publicKey.toBase58(),
           accountAddress: accAddress,
-          mint: mint.toString(),
+          mint: mint,
           amount: amount,
         });
       } catch (err) {
         accounts.push({
           publicKey: publicKey.toBase58(),
           accountAddress: accAddress,
-          mint: mint.toString(),
+          mint: mint,
           amount: amount,
         });
         tokens.push({
-          mint: mint.toString(),
+          mint: mint,
           name: null,
           symbol: null,
           decimals: decimals,
           isNft: isNft,
+          icon: icon
         });
         continue;
       }
@@ -206,10 +247,3 @@ export async function getTokensOwnedByWallet(
     });
   });
 }
-
-//LOAD SPL TOKENS
-// const provider = new TokenListProvider();
-// provider.resolve().then((tokens: any) => {
-//   const tokenList = tokens.filterByClusterSlug('mainnet-beta').getList();
-//   console.log(tokenList.length)
-// });

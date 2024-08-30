@@ -19,6 +19,7 @@ function createTableTokens(db) {
         mint TEXT PRIMARY KEY,
         name TEXT,
         symbol TEXT,
+        icon TEXT,
         decimals INTEGER NOT NULL,
         isNft INTEGER CHECK(isNft IN (0, 1)) NOT NULL DEFAULT 0 )
         `;
@@ -26,7 +27,7 @@ function createTableTokens(db) {
     });
 }
 function insertTokens(db, tokens, callback) {
-    const insertStatement = db.prepare(`INSERT INTO tokens (mint, name, symbol, decimals, isNft) VALUES (?, ?, ?, ?, ?)`);
+    const insertStatement = db.prepare(`INSERT INTO tokens (mint, name, symbol, icon, decimals, isNft) VALUES (?, ?, ?, ?, ?, ?)`);
     db.serialize(() => {
         db.run('BEGIN TRANSACTION');
         let hasError = false;
@@ -42,7 +43,7 @@ function insertTokens(db, tokens, callback) {
                     console.log(`Token with mint ${token.mint} already exists. Skipping insert.`);
                 }
                 else {
-                    insertStatement.run(token.mint, token.name, token.symbol, token.decimals, token.isNft ? 1 : 0, (err) => {
+                    insertStatement.run(token.mint, token.name, token.symbol, token.icon, token.decimals, token.isNft ? 1 : 0, (err) => {
                         if (err) {
                             console.error('Error inserting token:', err.message);
                             hasError = true;
@@ -76,11 +77,11 @@ function updateTokens(db, tokens, callback) {
         db.run('BEGIN TRANSACTION');
         const stmt = db.prepare(`
       UPDATE tokens
-      SET name = ?, symbol = ?, decimals = ?, isNft = ?
+      SET name = ?, symbol = ?, icon = ?, decimals = ?, isNft = ?
       WHERE mint = ?
     `);
         for (const token of tokens) {
-            stmt.run(token.name, token.symbol, token.decimals, token.isNft ? 1 : 0, token.mint, function (err) {
+            stmt.run(token.name, token.symbol, token.icon, token.decimals, token.isNft ? 1 : 0, token.mint, function (err) {
                 if (err) {
                     if (callback) {
                         callback(err);

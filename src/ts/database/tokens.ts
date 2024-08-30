@@ -9,6 +9,7 @@ export async function createTableTokens(db: sqlite3.Database) {
         mint TEXT PRIMARY KEY,
         name TEXT,
         symbol TEXT,
+        icon TEXT,
         decimals INTEGER NOT NULL,
         isNft INTEGER CHECK(isNft IN (0, 1)) NOT NULL DEFAULT 0 )
         `;
@@ -21,7 +22,7 @@ export function insertTokens(
     callback: (result: { error?: string; message?: string }) => void
   ): void {
     const insertStatement = db.prepare(
-      `INSERT INTO tokens (mint, name, symbol, decimals, isNft) VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO tokens (mint, name, symbol, icon, decimals, isNft) VALUES (?, ?, ?, ?, ?, ?)`
     );
   
     db.serialize(() => {
@@ -41,7 +42,7 @@ export function insertTokens(
           if (row) {
             console.log(`Token with mint ${token.mint} already exists. Skipping insert.`);
           } else {
-            insertStatement.run(token.mint, token.name, token.symbol, token.decimals, token.isNft ? 1 : 0, (err: Error | null) => {
+            insertStatement.run(token.mint, token.name, token.symbol, token.icon, token.decimals, token.isNft ? 1 : 0, (err: Error | null) => {
               if (err) {
                 console.error('Error inserting token:', err.message);
                 hasError = true;
@@ -82,7 +83,7 @@ export function updateTokens(
 
     const stmt = db.prepare(`
       UPDATE tokens
-      SET name = ?, symbol = ?, decimals = ?, isNft = ?
+      SET name = ?, symbol = ?, icon = ?, decimals = ?, isNft = ?
       WHERE mint = ?
     `);
 
@@ -90,6 +91,7 @@ export function updateTokens(
       stmt.run(
         token.name,
         token.symbol,
+        token.icon,
         token.decimals,
         token.isNft ? 1 : 0,
         token.mint,

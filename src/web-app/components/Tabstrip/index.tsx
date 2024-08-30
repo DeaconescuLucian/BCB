@@ -1,9 +1,9 @@
 import React from 'react';
 
 interface ITabstrip {
-  tabs: string[];
-  activeTab: string;
-  onChange: (tab: string) => void;
+  tabs: { name: string; url: string }[];
+  activeTab: { name: string; url: string };
+  onChange: (tab: { name: string; url: string }) => void;
 }
 
 const Tabstrip = ({ tabs, activeTab, onChange }: ITabstrip) => {
@@ -11,11 +11,11 @@ const Tabstrip = ({ tabs, activeTab, onChange }: ITabstrip) => {
     <div className="tab-strip">
       {tabs.map((tab) => (
         <div
-          className={`tab-item ${tab === activeTab ? 'active-tab' : ''}`}
+          className={`tab-item ${tab.name === activeTab.name ? 'active-tab' : ''}`}
           onClick={() => onChange(tab)}
-          key={`tab-${tab}`}
+          key={`tab-${tab.name}`}
         >
-          {tab}
+          {tab.name}
         </div>
       ))}
     </div>
