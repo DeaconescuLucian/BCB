@@ -76,14 +76,14 @@ function ConnectionSettings() {
     const result = await window.electron.invoke(CustomEvents.updateActiveConnectionEvent, 'mainnet-beta');
     if (result) {
       if (result.success) {
-        const result1 = await window.electron.invoke(CustomEvents.deleteConnectionEvent, c.connection);
+        const result1 = await window.electron.invoke(CustomEvents.deleteConnectionEvent, c);
         if (result1) {
           setLoading(false);
           if (result1.data.message) {
             showToast(result1.data.message, 'success');
           } else {
             if (result1.data.error) {
-              showToast(result.data.error, 'fail');
+              showToast(result1.data.error, 'fail');
             }
           }
           fetchConnections();

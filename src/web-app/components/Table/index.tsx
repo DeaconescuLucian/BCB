@@ -46,7 +46,6 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
     setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
     setCurrentPage(1);
     setTotalPages(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0);
-    console.log(rows)
   }, [rows]);
 
   return (

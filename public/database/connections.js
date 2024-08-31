@@ -87,6 +87,7 @@ function insertConnection(db, connection, callback) {
     });
 }
 function deleteConnection(db, connection, callback) {
+    console.log(connection);
     db.serialize(() => {
         db.run(`DELETE FROM connections WHERE connection = ?`, [connection], (err) => {
             if (err) {
@@ -95,7 +96,7 @@ function deleteConnection(db, connection, callback) {
                     callback({ error: err.message });
             }
             else {
-                console.log('Connection inserted successfully.');
+                console.log('Connection deleted successfully.');
                 if (callback)
                     callback({ message: 'Connection successfully deleted' });
             }

@@ -92,8 +92,6 @@ const DeleteConnectionHandler = (db) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.deleteConnectionEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         return new Promise((resolve) => {
             connectionDb.deleteConnection(db, arg, (result) => {
-                if (process.send)
-                    process.send({ type: 'update-solana-connection', connection: arg });
                 resolve(result);
             });
         });

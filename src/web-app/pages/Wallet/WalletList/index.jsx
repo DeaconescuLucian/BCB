@@ -82,7 +82,6 @@ function WalletList(props) {
                 action: (r) => {
                   window.localStorage.setItem('url', `wallet-page/view?pub=${r.publicKey}`);
                   props.onView(r.publicKey);
-                  console.log(r.publicKey);
                 },
               },
               {

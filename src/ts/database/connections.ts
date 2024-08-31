@@ -85,7 +85,7 @@ export function deleteConnection(
         console.error('Error deleting connection:', err.message);
         if (callback) callback({ error: err.message });
       } else {
-        console.log('Connection inserted successfully.');
+        console.log('Connection deleted successfully.');
         if (callback) callback({ message: 'Connection successfully deleted' });
       }
     });

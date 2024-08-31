@@ -64,7 +64,6 @@ const DeleteConnectionHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.deleteConnectionEvent, async (e: any, arg: string) => {
     return new Promise((resolve) => {
       connectionDb.deleteConnection(db, arg, (result: any) => {
-        if (process.send) process.send({ type: 'update-solana-connection', connection: arg });
         resolve(result);
       });
     });
