@@ -61,6 +61,21 @@
             background-color: @color-base;
         }
     }
+
+    &.theme-error {
+        background-color: @color-fail-bg;
+        border: 1px solid @color-fail;
+        color: @color-font-white;
+
+        path {
+            fill: @color-fail;
+        }
+
+        &:hover {
+            box-shadow: 0px 0px 12px @color-fail;
+            color: @color-font-white;
+        }
+    }
 }
 
 .buttons-container-end-of-block {

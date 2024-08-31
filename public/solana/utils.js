@@ -24,12 +24,15 @@ exports.TransferFeesDefault = {
     prioFee: 1000,
     cpuLimit: 1000,
 };
-function createConnection() {
-    //return new Connection(clusterApiUrl("devnet"), "confirmed");
-    return new web3_js_1.Connection('https://solana-mainnet.api.syndica.io/api-key/aS1Y8g8LYE1fxcFBtrG6v5GfsTZNhpBnoLF3YVXwESwmRu1RkAxm32ctxkVGNRkxLF78T7PWaDn5y4UGTvXDWNShHatT92pTzK');
+function createConnection(connection) {
+    if (connection.startsWith('http'))
+        return new web3_js_1.Connection(connection);
+    else
+        return new web3_js_1.Connection((0, web3_js_1.clusterApiUrl)(connection), 'confirmed');
 }
 function getSolanaBalance(connection, publicKey) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log(connection);
         return (yield connection.getBalance(publicKey)) / web3_js_1.LAMPORTS_PER_SOL;
     });
 }
@@ -129,14 +132,17 @@ function getTokensOwnedByWallet(connection, publicKey, existingMints) {
             const accData = raydium_sdk_1.SPL_ACCOUNT_LAYOUT.decode(tokenAcc.account.data);
             if (!accData.amount.isZero()) {
                 mint = accData.mint.toString();
-                icon = ((_a = tokenList === null || tokenList === void 0 ? void 0 : tokenList.find(e => e.address === mint)) === null || _a === void 0 ? void 0 : _a.logoURI) || ((_b = existingMints === null || existingMints === void 0 ? void 0 : existingMints.find(e => e.mint === mint)) === null || _b === void 0 ? void 0 : _b.icon) || null;
+                icon =
+                    ((_a = tokenList === null || tokenList === void 0 ? void 0 : tokenList.find((e) => e.address === mint)) === null || _a === void 0 ? void 0 : _a.logoURI) ||
+                        ((_b = existingMints === null || existingMints === void 0 ? void 0 : existingMints.find((e) => e.mint === mint)) === null || _b === void 0 ? void 0 : _b.icon) ||
+                        null;
                 accAddress = tokenAcc.pubkey.toBase58();
                 balance = (yield connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
                 amount = balance.uiAmount;
                 decimals = balance.decimals;
                 isNft = decimals === 0;
                 try {
-                    if (!(existingMints === null || existingMints === void 0 ? void 0 : existingMints.find(e => e.mint === mint))) {
+                    if (!(existingMints === null || existingMints === void 0 ? void 0 : existingMints.find((e) => e.mint === mint))) {
                         const metadataPDA = yield Metadata.getPDA(accData.mint);
                         const metadataAccount = yield Metadata.load(connection, metadataPDA);
                         name = metadataAccount.data.data.name;
@@ -156,7 +162,7 @@ function getTokensOwnedByWallet(connection, publicKey, existingMints) {
                             symbol: symbol,
                             decimals: decimals,
                             isNft: isNft,
-                            icon: icon
+                            icon: icon,
                         });
                     }
                     accounts.push({
@@ -179,7 +185,7 @@ function getTokensOwnedByWallet(connection, publicKey, existingMints) {
                         symbol: null,
                         decimals: decimals,
                         isNft: isNft,
-                        icon: icon
+                        icon: icon,
                     });
                     continue;
                 }

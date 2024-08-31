@@ -148,13 +148,15 @@ function ViewWallet() {
       publicKey: selectedWalletDetails.publicKey,
       existingMints: selectedWalletAccounts.map((e) => ({ mint: e.mint, icon: e.icon })),
     });
-    if (result.success) {
-      dispatch(getWalletDetails(selectedWalletDetails.publicKey));
-      dispatch(fetchWallets());
-      showToast('Wallet updated successfully', 'success');
+    if (result) {
+      if (result.success) {
+        dispatch(getWalletDetails(selectedWalletDetails.publicKey));
+        dispatch(fetchWallets());
+        showToast('Wallet updated successfully', 'success');
+      } else {
+        showToast(result.error, 'fail');
+      }
       setLoading(false);
-    } else {
-      showToast(result.error, 'fail');
     }
   };
 

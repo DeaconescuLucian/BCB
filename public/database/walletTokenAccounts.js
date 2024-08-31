@@ -41,7 +41,6 @@ function insertWalletTokenAccounts(db, tokenAccs, callback) {
                     return;
                 }
                 if (row) {
-                    console.log(row);
                     console.log(`Token account ${tokenAcc.accountAddress} already exists. Skipping insert.`);
                 }
                 else {

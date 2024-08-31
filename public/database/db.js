@@ -21,6 +21,7 @@ const transactions_1 = require("./transactions");
 const wallets_1 = require("./wallets");
 const walletTokenAccounts_1 = require("./walletTokenAccounts");
 const tokens_1 = require("./tokens");
+const connections_1 = require("./connections");
 function runQuery(db, sql) {
     return new Promise((resolve, reject) => {
         db.run(sql, (err) => {
@@ -54,6 +55,8 @@ function initDatabase(db) {
                     yield (0, wallets_1.createTableWallets)(db);
                     yield (0, tokens_1.createTableTokens)(db);
                     yield (0, walletTokenAccounts_1.createTableWalletTokenAccounts)(db);
+                    yield (0, connections_1.createTableConnections)(db);
+                    yield (0, connections_1.insertDefaultConnection)(db, 'mainnet-beta');
                     resolve();
                 }
                 catch (err) {

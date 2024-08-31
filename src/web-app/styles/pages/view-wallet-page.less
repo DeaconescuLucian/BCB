@@ -1,13 +1,13 @@
 .view-wallet-page {
-    width: 96%;
-    height: calc(100% - 35px);
-    position: relative;
-    display: flex;
-    flex-direction: column;
+  width: 96%;
+  height: calc(100% - 35px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
 
-    overflow-y: scroll;
-    &::-webkit-scrollbar {
-      display: none;
+  overflow-y: scroll;
+  &::-webkit-scrollbar {
+    display: none;
   }
 
   table {
@@ -63,31 +63,31 @@
       }
 
       .copy-to-clipboard-message {
-        font-size: 12px; 
+        font-size: 12px;
       }
     }
   }
 
   .token-type-selector {
-      display: flex;
-      background-color: @color-tertiary-base;
-      width: fit-content;
-      height: fit-content;
-      border-radius: 5px;
-      
-      .token-type {
-        padding: 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: 0.5s ease;
+    display: flex;
+    background-color: @color-tertiary-base;
+    width: fit-content;
+    height: fit-content;
+    border-radius: 5px;
 
-        &.selected {
-          background-color: @color-dark;
-          border: 1px solid @color-brand;
-          color: @color-brand;
-        }
+    .token-type {
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.5s ease;
+
+      &.selected {
+        background-color: @color-dark;
+        border: 1px solid @color-brand;
+        color: @color-brand;
       }
+    }
   }
 
   .total {

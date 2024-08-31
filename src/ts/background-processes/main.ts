@@ -16,7 +16,7 @@ function stopMainProcess() {
   process.exit(0);
 }
 
-process.on('message', (msg) => {
+process.on('message', (msg: any) => {
   if (msg === 'start') {
     startMainProcess();
   } else if (msg === 'stop') {

@@ -32,7 +32,11 @@ exports.CustomEvents = {
     getWalletsEvent: 'get-wallets',
     getWalletDetailsEvent: 'get-wallet-details',
     updateWalletEvent: 'update-wallet-info',
-    deleteWalletEvent: 'delete-wallet'
+    deleteWalletEvent: 'delete-wallet',
+    createConnectionEvent: 'create-connection',
+    updateActiveConnectionEvent: 'update-active-connection',
+    deleteConnectionEvent: 'delete-connection',
+    getConnectionsEvent: 'get-connections'
 };
 function verifyUniqueEvents(processType) {
     const eventSet = new Set(Object.values(exports.CustomEvents));

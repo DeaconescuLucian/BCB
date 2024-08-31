@@ -44,7 +44,11 @@ export const CustomEvents = {
   getWalletsEvent: 'get-wallets',
   getWalletDetailsEvent: 'get-wallet-details',
   updateWalletEvent: 'update-wallet-info',
-  deleteWalletEvent: 'delete-wallet'
+  deleteWalletEvent: 'delete-wallet',
+  createConnectionEvent: 'create-connection',
+  updateActiveConnectionEvent: 'update-active-connection',
+  deleteConnectionEvent: 'delete-connection',
+  getConnectionsEvent: 'get-connections'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

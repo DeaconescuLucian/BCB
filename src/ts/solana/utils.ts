@@ -8,6 +8,8 @@ import {
   PublicKey,
   LAMPORTS_PER_SOL,
   Keypair,
+  clusterApiUrl,
+  Cluster,
 } from '@solana/web3.js';
 
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -32,14 +34,13 @@ export const TransferFeesDefault = {
   cpuLimit: 1000,
 };
 
-export function createConnection() {
-  //return new Connection(clusterApiUrl("devnet"), "confirmed");
-  return new Connection(
-    'https://solana-mainnet.api.syndica.io/api-key/aS1Y8g8LYE1fxcFBtrG6v5GfsTZNhpBnoLF3YVXwESwmRu1RkAxm32ctxkVGNRkxLF78T7PWaDn5y4UGTvXDWNShHatT92pTzK'
-  );
+export function createConnection(connection: string) {
+  if (connection.startsWith('http')) return new Connection(connection);
+  else return new Connection(clusterApiUrl(connection as Cluster), 'confirmed');
 }
 
 export async function getSolanaBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
+  console.log(connection)
   return (await connection.getBalance(publicKey)) / LAMPORTS_PER_SOL;
 }
 
@@ -127,7 +128,7 @@ export interface IToken {
   mint: string;
   name?: string;
   symbol?: string;
-  icon?:string;
+  icon?: string;
   decimals: number;
   isNft: boolean;
 }
@@ -156,7 +157,7 @@ async function fetchData(uri: string) {
 export async function getTokensOwnedByWallet(
   connection: Connection,
   publicKey: PublicKey,
-  existingMints?: {mint: string, icon?: string}[]
+  existingMints?: { mint: string; icon?: string }[]
 ): Promise<{
   tokens: IToken[];
   accounts: ITokenAccount[];
@@ -180,27 +181,26 @@ export async function getTokensOwnedByWallet(
     const accData = SPL_ACCOUNT_LAYOUT.decode(tokenAcc.account.data);
     if (!accData.amount.isZero()) {
       mint = accData.mint.toString();
-      icon = tokenList?.find(e => e.address === mint)?.logoURI || existingMints?.find(e => e.mint === mint)?.icon || null;
+      icon =
+        tokenList?.find((e) => e.address === mint)?.logoURI ||
+        existingMints?.find((e) => e.mint === mint)?.icon ||
+        null;
       accAddress = tokenAcc.pubkey.toBase58();
       balance = (await connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
       amount = balance.uiAmount;
       decimals = balance.decimals;
       isNft = decimals === 0;
       try {
-        if(!existingMints?.find(e => e.mint === mint))
-        {
+        if (!existingMints?.find((e) => e.mint === mint)) {
           const metadataPDA = await Metadata.getPDA(accData.mint);
           const metadataAccount = await Metadata.load(connection, metadataPDA);
           name = metadataAccount.data.data.name;
           symbol = metadataAccount.data.data.symbol;
           uri = metadataAccount.data.data.uri;
-          if(uri && !isNft && !icon)
-          {
+          if (uri && !isNft && !icon) {
             let response = await fetchData(uri);
-            if(response)
-            {
-              if(response.image)
-              {
+            if (response) {
+              if (response.image) {
                 icon = response.image;
               }
             }
@@ -211,7 +211,7 @@ export async function getTokensOwnedByWallet(
             symbol: symbol,
             decimals: decimals,
             isNft: isNft,
-            icon: icon
+            icon: icon,
           });
         }
         accounts.push({
@@ -233,7 +233,7 @@ export async function getTokensOwnedByWallet(
           symbol: null,
           decimals: decimals,
           isNft: isNft,
-          icon: icon
+          icon: icon,
         });
         continue;
       }

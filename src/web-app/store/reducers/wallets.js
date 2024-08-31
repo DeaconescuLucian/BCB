@@ -14,7 +14,6 @@ export const fetchWallets = createAsyncThunk('wallets/fetchWallets', async () =>
   try {
     const result = await window.electron.invoke(CustomEvents.getWalletsEvent);
     if (result && result.success) {
-      console.log(result.data)
       return result.data;
     }
     throw new Error('Failed to fetch wallets');

@@ -65,7 +65,7 @@ function Menu() {
       case '/trade':
         changeSelectedTab('trade-menu-item');
         break;
-      case '/settings/account':
+      case '/settings/license':
       case '/settings/connection':
         changeSelectedTab('settings-menu-item');
         break;
@@ -135,7 +135,7 @@ function Menu() {
             onClick={(e) => {
               handleMenuItemClick(e);
               window.localStorage.setItem('url', '/settings');
-              navigate('/settings/account');
+              navigate('/settings/license');
             }}
           >
             <img src={settings_icon}></img>
