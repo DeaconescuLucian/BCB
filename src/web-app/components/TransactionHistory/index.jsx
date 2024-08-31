@@ -37,6 +37,11 @@ function TransactionHistory() {
     else document.querySelector('.main-container').classList.remove('hidden-right-section');
   };
 
+  useEffect(() => {
+    if (hidden) document.querySelector('.main-container')?.classList.add('hidden-right-section');
+    else document.querySelector('.main-container')?.classList.remove('hidden-right-section');
+  }, [window.location.href])
+
   return (
     <>
       {hidden ? (

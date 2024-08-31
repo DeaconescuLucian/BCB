@@ -132,6 +132,7 @@ function ConnectionSettings() {
             theme="primary"
             type="add"
             text="Create"
+            disabled={!newConnection.length > 0}
           ></Button>
         </div>
       </div>
