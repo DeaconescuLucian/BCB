@@ -44,9 +44,7 @@ const events_1 = require("./events");
 const db = __importStar(require("./database/db"));
 const transactionsDb = __importStar(require("./database/transactions"));
 const utils_1 = require("./solana/utils");
-const web3_js_1 = require("@solana/web3.js");
-const tokens_1 = require("./database/tokens");
-const walletTokenAccounts_1 = require("./database/walletTokenAccounts");
+const connectionDb = __importStar(require("./database/connections"));
 if (!(0, events_1.verifyUniqueEvents)(events_1.ProcessType)) {
     (0, child_process_1.execSync)('yarn run close-web-app');
     process.exit(1);
@@ -204,15 +202,23 @@ function createTray() {
     const contextMenu = electron_1.Menu.buildFromTemplate([
         {
             label: 'Show App',
-            click: () => {
+            click: () => __awaiter(this, void 0, void 0, function* () {
                 if (mainWindow === null) {
                     createWindow();
-                    (0, handlers_1.setupHandlers)(mainWindow, dbConnection, solanaConnection);
+                    try {
+                        const result = yield connectionDb.getActiveConnection(dbConnection);
+                        if (result)
+                            solanaConnection = (0, utils_1.createConnection)(result);
+                        (0, handlers_1.setupHandlers)(dbConnection, solanaConnection);
+                    }
+                    catch (error) {
+                        console.log(error);
+                    }
                 }
                 else {
                     mainWindow.show();
                 }
-            },
+            }),
         },
         {
             label: 'Quit',
@@ -246,7 +252,7 @@ function registerHandlers() {
             return 'error';
         }
     }));
-    (0, handlers_1.setupHandlers)(mainWindow, dbConnection, solanaConnection);
+    (0, handlers_1.setupHandlers)(dbConnection, solanaConnection);
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess(mainBackgroundProcess);
     }));
@@ -272,26 +278,19 @@ function registerHandlers() {
 electron_1.app.on('ready', () => __awaiter(void 0, void 0, void 0, function* () {
     createTray();
     createWindow();
-    solanaConnection = (0, utils_1.createConnection)();
     dbConnection = db.openConnection();
     try {
         yield db.initDatabase(dbConnection);
         console.log('Database initialized successfully.');
+        const result = yield connectionDb.getActiveConnection(dbConnection);
+        if (result)
+            solanaConnection = (0, utils_1.createConnection)(result);
     }
     catch (err) {
         console.error('Error initializing database:', err);
         db.closeConnection(dbConnection);
         return;
     }
-    (0, utils_1.getTokensOwnedByWallet)(solanaConnection, new web3_js_1.PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
-        (0, tokens_1.insertTokens)(dbConnection, result.tokens, (res) => {
-            if (!res.error) {
-                (0, walletTokenAccounts_1.insertWalletTokenAccounts)(dbConnection, result.accounts, (r) => {
-                    console.log(r);
-                });
-            }
-        });
-    });
     registerHandlers();
     startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
 }));

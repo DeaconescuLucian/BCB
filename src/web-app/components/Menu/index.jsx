@@ -1,24 +1,23 @@
-import React, { useState } from "react";
-import wallet from "../../assets/icons/wallet.svg";
-import add_icon from "../../assets/icons/plus.svg";
-import trade_icon from "../../assets/icons/trade.svg";
-import settings_icon from "../../assets/icons/settings.svg";
-import logout_icon from "../../assets/icons/logout.svg";
-import home_icon from "../../assets/icons/home.svg";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import wallet from '../../assets/icons/wallet.svg';
+import trade_icon from '../../assets/icons/trade.svg';
+import settings_icon from '../../assets/icons/settings.svg';
+import logout_icon from '../../assets/icons/logout.svg';
+import home_icon from '../../assets/icons/home.svg';
+import { useNavigate } from 'react-router-dom';
 
 function Menu() {
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState("home-menu-item");
+  const [selectedTab, setSelectedTab] = useState('home-menu-item');
 
   const handleMenuItemClick = (e) => {
-    document.getElementById(selectedTab)?.classList?.remove("menu-item-selected");
+    document.getElementById(selectedTab)?.classList?.remove('menu-item-selected');
     if (e.target.id) {
-      document.getElementById(e.target.id)?.classList?.add("menu-item-selected");
+      document.getElementById(e.target.id)?.classList?.add('menu-item-selected');
       setSelectedTab(e.target.id);
     } else {
-      document.getElementById("home-menu-item")?.classList?.add("menu-item-selected");
-      setSelectedTab("home-menu-item");
+      document.getElementById('home-menu-item')?.classList?.add('menu-item-selected');
+      setSelectedTab('home-menu-item');
     }
   };
 
@@ -46,13 +45,44 @@ function Menu() {
     </svg>
   );
 
+  const changeSelectedTab = (id) => {
+    document.getElementById(selectedTab)?.classList?.remove('menu-item-selected');
+    document.getElementById(id)?.classList?.add('menu-item-selected');
+    setSelectedTab(id);
+  };
+
+  useEffect(() => {
+    switch (window.localStorage.getItem('url').split('?')[0]) {
+      case '/':
+        changeSelectedTab('home-menu-item');
+        break;
+      case '/wallet-page/list':
+      case '/wallet-page/import':
+      case '/wallet-page/generate':
+      case '/wallet-page/view':
+        changeSelectedTab('wallets-menu-item');
+        break;
+      case '/trade':
+        changeSelectedTab('trade-menu-item');
+        break;
+      case '/settings/license':
+      case '/settings/connection':
+        changeSelectedTab('settings-menu-item');
+        break;
+      default:
+        changeSelectedTab('home-menu-item');
+        break;
+    }
+  }, []);
+
   return (
     <div className="app-menu">
       <div
         className="app-menu-header"
         onClick={(e) => {
           handleMenuItemClick(e);
-          navigate("/");
+          window.localStorage.setItem('url', '/home');
+          navigate('/');
         }}
       >
         <div className="app-menu-title">
@@ -67,7 +97,8 @@ function Menu() {
           className="app-menu-item menu-item-selected"
           onClick={(e) => {
             handleMenuItemClick(e);
-            navigate("/");
+            window.localStorage.setItem('url', '/home');
+            navigate('/home');
           }}
         >
           <img src={home_icon}></img>
@@ -78,7 +109,8 @@ function Menu() {
           className="app-menu-item"
           onClick={(e) => {
             handleMenuItemClick(e);
-            navigate("/wallet-page");
+            window.localStorage.setItem('url', '/wallet-page/list');
+            navigate('/wallet-page/list');
           }}
         >
           <img src={wallet}></img>
@@ -89,7 +121,8 @@ function Menu() {
           className="app-menu-item"
           onClick={(e) => {
             handleMenuItemClick(e);
-            navigate("/trade");
+            window.localStorage.setItem('url', '/trade');
+            navigate('/trade');
           }}
         >
           <img src={trade_icon}></img>
@@ -101,7 +134,8 @@ function Menu() {
             className="app-menu-item"
             onClick={(e) => {
               handleMenuItemClick(e);
-              navigate("/settings");
+              window.localStorage.setItem('url', '/settings');
+              navigate('/settings/license');
             }}
           >
             <img src={settings_icon}></img>

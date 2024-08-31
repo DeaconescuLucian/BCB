@@ -78,7 +78,7 @@ const walletsSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(getWalletDetails.fulfilled, (state, action) => {
-        state.selectedWalletAccounts = action.payload;
+        state.selectedWalletAccounts = action.payload || [];
         state.status = 'succeeded'
 
       })

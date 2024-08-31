@@ -95,7 +95,7 @@ function GenerateWallet() {
             </div>
             <Input
               type="text"
-              readonly
+              readonly={true}
               readOnlyValue={walletAlias}
               theme="primary"
               placeholder="Enter an alias for your wallet"
@@ -108,7 +108,7 @@ function GenerateWallet() {
                 <CopyToClipboard text={wallet.publicKey}></CopyToClipboard>
               </div>
 
-              <Input type="text" theme="primary" readOnly readOnlyValue={wallet.publicKey}></Input>
+              <Input type="text" theme="primary" readonly={true} readOnlyValue={wallet.publicKey}></Input>
             </div>
             <div className="generated-wallet">
               <div className="label-with-copy">
@@ -116,7 +116,7 @@ function GenerateWallet() {
                 <span>Secret key: </span>
                 <CopyToClipboard text={wallet.secretKey}></CopyToClipboard>
               </div>
-              <Input type="text" theme="primary" readOnly readOnlyValue={wallet.secretKey}></Input>
+              <Input type="text" theme="primary" readonly={true} readOnlyValue={wallet.secretKey}></Input>
             </div>
             <div className="buttons-container-end-of-block two-buttons">
               <Button

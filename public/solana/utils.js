@@ -19,17 +19,20 @@ const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const raydium_sdk_1 = require("@raydium-io/raydium-sdk");
 const js_1 = require("@metaplex/js");
-const { TokenListProvider, TokenInfo } = require('@solana/spl-token-registry');
+const { TokenListProvider } = require('@solana/spl-token-registry');
 exports.TransferFeesDefault = {
     prioFee: 1000,
     cpuLimit: 1000,
 };
-function createConnection() {
-    //return new Connection(clusterApiUrl("devnet"), "confirmed");
-    return new web3_js_1.Connection('https://solana-mainnet.api.syndica.io/api-key/aS1Y8g8LYE1fxcFBtrG6v5GfsTZNhpBnoLF3YVXwESwmRu1RkAxm32ctxkVGNRkxLF78T7PWaDn5y4UGTvXDWNShHatT92pTzK');
+function createConnection(connection) {
+    if (connection.startsWith('http'))
+        return new web3_js_1.Connection(connection);
+    else
+        return new web3_js_1.Connection((0, web3_js_1.clusterApiUrl)(connection), 'confirmed');
 }
 function getSolanaBalance(connection, publicKey) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log(connection);
         return (yield connection.getBalance(publicKey)) / web3_js_1.LAMPORTS_PER_SOL;
     });
 }
@@ -95,55 +98,94 @@ function simpleTransfer(connection, TransferParams) {
         return;
     });
 }
-function getTokensOwnedByWallet(connection, publicKey) {
+function fetchData(uri) {
     return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const response = yield fetch(uri);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = yield response.json();
+            return data;
+        }
+        catch (error) {
+            console.log('There was a problem with the fetch operation:');
+            return null;
+        }
+    });
+}
+function getTokensOwnedByWallet(connection, publicKey, existingMints) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b;
         const { metadata: { Metadata }, } = js_1.programs;
         const tokensAccs = yield connection.getTokenAccountsByOwner(publicKey, { programId: spl_token_1.TOKEN_PROGRAM_ID });
-        let name, symbol, mint, accAddress, balance, amount, decimals, isNft;
+        let name, symbol, mint, accAddress, balance, amount, decimals, isNft, icon, uri;
         let tokens = [];
         let accounts = [];
+        //LOAD SPL TOKENS
+        let tokenList = [];
+        const provider = new TokenListProvider();
+        provider.resolve().then((tokens) => {
+            tokenList = tokens.filterByClusterSlug('mainnet-beta').getList();
+        });
         for (const tokenAcc of tokensAccs.value) {
             const accData = raydium_sdk_1.SPL_ACCOUNT_LAYOUT.decode(tokenAcc.account.data);
             if (!accData.amount.isZero()) {
-                mint = accData.mint;
+                mint = accData.mint.toString();
+                icon =
+                    ((_a = tokenList === null || tokenList === void 0 ? void 0 : tokenList.find((e) => e.address === mint)) === null || _a === void 0 ? void 0 : _a.logoURI) ||
+                        ((_b = existingMints === null || existingMints === void 0 ? void 0 : existingMints.find((e) => e.mint === mint)) === null || _b === void 0 ? void 0 : _b.icon) ||
+                        null;
                 accAddress = tokenAcc.pubkey.toBase58();
                 balance = (yield connection.getTokenAccountBalance(tokenAcc.pubkey)).value;
                 amount = balance.uiAmount;
                 decimals = balance.decimals;
                 isNft = decimals === 0;
                 try {
-                    const metadataPDA = yield Metadata.getPDA(accData.mint);
-                    const metadataAccount = yield Metadata.load(connection, metadataPDA);
-                    name = metadataAccount.data.data.name;
-                    symbol = metadataAccount.data.data.symbol;
-                    tokens.push({
-                        mint: mint.toString(),
-                        name: name,
-                        symbol: symbol,
-                        decimals: decimals,
-                        isNft: isNft,
-                    });
+                    if (!(existingMints === null || existingMints === void 0 ? void 0 : existingMints.find((e) => e.mint === mint))) {
+                        const metadataPDA = yield Metadata.getPDA(accData.mint);
+                        const metadataAccount = yield Metadata.load(connection, metadataPDA);
+                        name = metadataAccount.data.data.name;
+                        symbol = metadataAccount.data.data.symbol;
+                        uri = metadataAccount.data.data.uri;
+                        if (uri && !isNft && !icon) {
+                            let response = yield fetchData(uri);
+                            if (response) {
+                                if (response.image) {
+                                    icon = response.image;
+                                }
+                            }
+                        }
+                        tokens.push({
+                            mint: mint,
+                            name: name,
+                            symbol: symbol,
+                            decimals: decimals,
+                            isNft: isNft,
+                            icon: icon,
+                        });
+                    }
                     accounts.push({
                         publicKey: publicKey.toBase58(),
                         accountAddress: accAddress,
-                        mint: mint.toString(),
+                        mint: mint,
                         amount: amount,
                     });
                 }
                 catch (err) {
-                    console.log(err);
                     accounts.push({
                         publicKey: publicKey.toBase58(),
                         accountAddress: accAddress,
-                        mint: mint.toString(),
+                        mint: mint,
                         amount: amount,
                     });
                     tokens.push({
-                        mint: mint.toString(),
+                        mint: mint,
                         name: null,
                         symbol: null,
                         decimals: decimals,
                         isNft: isNft,
+                        icon: icon,
                     });
                     continue;
                 }
@@ -157,9 +199,3 @@ function getTokensOwnedByWallet(connection, publicKey) {
         });
     });
 }
-//LOAD SPL TOKENS
-// const provider = new TokenListProvider();
-// provider.resolve().then((tokens: any) => {
-//   const tokenList = tokens.filterByClusterSlug('mainnet-beta').getList();
-//   console.log(tokenList.length)
-// });

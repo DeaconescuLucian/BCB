@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ErrorMessage from '../ErrorMessage';
 
 type InputType = 'text' | 'number';
@@ -35,12 +35,14 @@ interface IInput {
    */
   readOnlyValue?: any;
   placeholder?: string;
+  clearFlag?: string;
 }
 
 function Input(props: IInput) {
   const [value, setValue] = useState(undefined as any);
   const [touched, setTouched] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null as string | null);
+  const ref = useRef<HTMLInputElement>(null);
 
   const handleBlur = () => {
     if (touched) {
@@ -48,8 +50,11 @@ function Input(props: IInput) {
       if (props.validate) error = props.validate(value);
       setErrorMessage(error);
       if (props.onChange) {
-        if (!error) props.onChange(value);
-        else props.onChange(null);
+        if (!error) {
+          {
+            props.onChange(value);
+          }
+        } else props.onChange(null);
       }
     }
   };
@@ -61,12 +66,25 @@ function Input(props: IInput) {
     }
   };
 
+  useEffect(() => {
+    if(props.clearFlag)
+      if(ref.current)
+        ref.current.value = ''
+  }, [props.clearFlag])
+
+  useEffect(() => {
+    if(ref.current && props.readonly)
+        ref.current.value = props.readOnlyValue;
+  }, [props.readOnlyValue])
+
   return (
     <div className={`input-container`}>
       <input
+        ref={ref}
         className={`${props.theme ? `theme-${props.theme}` : null}`}
         type={props.type}
-        value={value || props.readOnlyValue}
+        //value={value || props.readOnlyValue}
+        defaultValue={props.readonly ? props.readOnlyValue : ''}
         onChange={handleChange}
         onBlur={handleBlur}
         readOnly={props.readonly ?? false}

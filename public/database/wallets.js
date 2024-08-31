@@ -13,6 +13,7 @@ exports.createTableWallets = createTableWallets;
 exports.insertWallet = insertWallet;
 exports.getWallets = getWallets;
 exports.updateWalletBalance = updateWalletBalance;
+exports.deleteWallet = deleteWallet;
 const db_1 = require("./db");
 function createTableWallets(db) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -41,7 +42,7 @@ function insertWallet(db, w, callback) {
 }
 function getWallets(db, callback) {
     db.serialize(() => {
-        db.all(`SELECT * FROM wallets`, (err, rows) => {
+        db.all(`SELECT publicKey, alias, balance FROM wallets`, (err, rows) => {
             if (err) {
                 console.error('Error retrieving wallets:', err.message);
                 callback(err);
@@ -65,6 +66,22 @@ function updateWalletBalance(db, arg, callback) {
                 console.log('Updated wallet balance.');
                 if (callback)
                     callback(null);
+            }
+        });
+    });
+}
+function deleteWallet(db, publicKey, callback) {
+    db.serialize(() => {
+        db.run(`DELETE FROM wallets WHERE publicKey = ?`, [publicKey], (err) => {
+            if (err) {
+                console.error('Error deleting wallet:', err.message);
+                if (callback)
+                    callback({ error: err.message });
+            }
+            else {
+                console.log('Wallet inserted successfully.');
+                if (callback)
+                    callback({ message: 'Wallet successfully deleted' });
             }
         });
     });

@@ -124,11 +124,11 @@ const GetWalletsHandler = (db) => {
 };
 const UpdateWalletHandler = (db, solanaConnection) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.updateWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
-        const publicKey = new web3_js_1.PublicKey(arg);
+        const publicKey = new web3_js_1.PublicKey(arg.publicKey);
         const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, publicKey);
         let error = null;
         yield new Promise((resolve, reject) => {
-            (0, wallets_1.updateWalletBalance)(db, { publicKey: arg, balance: solBalance }, (err) => {
+            (0, wallets_1.updateWalletBalance)(db, { publicKey: arg.publicKey, balance: solBalance }, (err) => {
                 if (err) {
                     error = err.message;
                     reject(err);
@@ -138,8 +138,8 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                 }
             });
         });
-        yield (0, utils_1.getTokensOwnedByWallet)(solanaConnection, publicKey).then((res) => __awaiter(void 0, void 0, void 0, function* () {
-            const tokenAccs = yield (0, walletTokenAccounts_1.getWalletTokenAccounts)(db, arg);
+        yield (0, utils_1.getTokensOwnedByWallet)(solanaConnection, publicKey, arg.existingMints).then((res) => __awaiter(void 0, void 0, void 0, function* () {
+            const tokenAccs = yield (0, walletTokenAccounts_1.getWalletTokenAccounts)(db, arg.publicKey);
             let tokenAccsToInsert = [];
             let tokenAccsToUpdate = [];
             let tokensToInsert = [];
@@ -157,8 +157,9 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                         tokensToInsert.push(token);
                 }
             });
+            console.log('insert tokens');
             try {
-                if (tokenAccsToInsert.length)
+                if (tokensToInsert.length)
                     yield new Promise((resolve, reject) => {
                         (0, tokens_1.insertTokens)(db, tokensToInsert, (result) => {
                             if (result.error) {
@@ -170,6 +171,7 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                             }
                         });
                     });
+                console.log('update tokens');
                 if (tokensToUpdate.length)
                     yield new Promise((resolve, reject) => {
                         (0, tokens_1.updateTokens)(db, tokensToUpdate, (err) => {
@@ -182,6 +184,7 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                             }
                         });
                     });
+                console.log('insert token accs');
                 if (tokenAccsToInsert.length)
                     yield new Promise((resolve, reject) => {
                         (0, walletTokenAccounts_1.insertWalletTokenAccounts)(db, tokenAccsToInsert, (result) => {
@@ -194,6 +197,7 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                             }
                         });
                     });
+                console.log('update token accs');
                 if (tokenAccsToUpdate.length)
                     yield new Promise((resolve, reject) => {
                         (0, walletTokenAccounts_1.updateTokenAccountBalances)(db, tokenAccsToUpdate.map((a) => {
@@ -226,6 +230,15 @@ const GetWalletDetailsHandler = (db) => {
         });
     }));
 };
+const DeleteWalletHandler = (db) => {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.deleteWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        return new Promise((resolve) => {
+            walletDb.deleteWallet(db, arg, (result) => {
+                resolve(result);
+            });
+        });
+    }));
+};
 const handleWallet = (db, solanaConnection) => {
     ImportWalletHandler(db, solanaConnection);
     GenerateWalletHandler();
@@ -233,5 +246,6 @@ const handleWallet = (db, solanaConnection) => {
     GetWalletsHandler(db);
     UpdateWalletHandler(db, solanaConnection);
     GetWalletDetailsHandler(db);
+    DeleteWalletHandler(db);
 };
 exports.default = handleWallet;

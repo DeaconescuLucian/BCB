@@ -2,6 +2,8 @@
     width: 96%;
     height: calc(100% - 35px);
     position: relative;
+    display: flex;
+    flex-direction: column;
 
     overflow-y: scroll;
     &::-webkit-scrollbar {
@@ -22,5 +24,10 @@
         height: 12px !important;
       }
     }
+  }
+
+  .search-bar-wrapper {
+    min-width: 350px;
+    width: 35%;
   }
 }

@@ -6,16 +6,20 @@ import { CustomEvents } from '../../../../ts/events.ts';
 import { useToast } from '../../../contexts/ToastContext.tsx';
 import { useDispatch } from "react-redux";
 import { fetchWallets } from "../../../store/reducers/wallets.js";
+import Loading from '../../../components/Loading/index.tsx';
 
 function ImportWallet() {
   const { showToast } = useToast();
   const [secretKey, setSecretKey] = useState(null);
   const [walletAlias, setWalletAlias] = useState('');
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
 
   const handleImportWallet = async () => {
+    setLoading(true);
     const result = await window.electron.invoke(CustomEvents.importWalletEvent, {secretKey: secretKey, alias: walletAlias});
     if (result) {
+      setLoading(false);
       if (result.data.message) {
         showToast(result.data.message, 'success');
       } else {
@@ -72,6 +76,7 @@ function ImportWallet() {
         ></Button>
       </div>
       <Info text="The secret key along with its public key will be stored locally."></Info>
+      {loading  && <Loading></Loading>}
     </div>
   );
 }

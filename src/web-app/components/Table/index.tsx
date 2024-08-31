@@ -6,6 +6,8 @@ import ClickOutside from '../ClickOutside';
 interface IColumn {
   name: string;
   propertyName: string;
+  iconProperty?: string;
+  iconDefault?: string;
   percentWidth: number;
   canCopy?: boolean;
 }
@@ -13,6 +15,7 @@ interface IColumn {
 interface IAction {
   name: string;
   icon?: React.JSX.Element;
+  image?: string;
   action: Function;
 }
 
@@ -35,13 +38,16 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
   const [paginationOptionsHidden, setPaginationOptionsHidden] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
-  const [totalPages, setTotalPages] = useState(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0);
-  
+  const [totalPages, setTotalPages] = useState(
+    pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0
+  );
+
   useEffect(() => {
     setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
-    setCurrentPage(1)
-    setTotalPages(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0)
-  }, rows)
+    setCurrentPage(1);
+    setTotalPages(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0);
+  }, [rows]);
+
   return (
     <>
       <table>
@@ -87,7 +93,13 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
                           }}
                           key={`cell-${index}-${index1}`}
                         >
-                          {row[column.propertyName]}
+                          {column.iconProperty && row[column.iconProperty] && (
+                            <img className='no-hover' src={row[column.iconProperty]}></img>
+                          )}
+                          {column.iconProperty && column.iconDefault && !row[column.iconProperty] && (
+                            <img className='no-hover' src={column.iconDefault}></img>
+                          )}
+                          {row[column.propertyName] ?? '-'}
                         </td>
                       )}
                     </>
@@ -109,7 +121,8 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
                         action.action(row);
                       }}
                     >
-                      {action.icon}
+                      {action.icon && action.icon}
+                      {action.image && <img style={{cursor: 'pointer'}} src={action.image}></img>}
                     </span>
                   ))}
                 </td>

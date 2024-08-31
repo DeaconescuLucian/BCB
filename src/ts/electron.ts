@@ -12,8 +12,7 @@ import * as db from './database/db';
 import * as transactionsDb from './database/transactions';
 import { createConnection, getTokensOwnedByWallet } from './solana/utils';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { insertTokens } from './database/tokens';
-import { insertWalletTokenAccounts } from './database/walletTokenAccounts';
+import * as connectionDb from './database/connections';
 
 if (!verifyUniqueEvents(ProcessType)) {
   execSync('yarn run close-web-app');
@@ -108,7 +107,7 @@ async function startBackgroundProcess(
       backgroundProcess = null;
     });
 
-    backgroundProcess?.on('message', (message) => {
+    backgroundProcess?.on('message', (message: any) => {
       if (message !== 'ready') {
         if (processType.type === 'transaction') {
           transactionsDb.insertTransaction(dbConnection, message);
@@ -197,10 +196,16 @@ function createTray(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Show App',
-      click: () => {
+      click: async () => {
         if (mainWindow === null) {
           createWindow();
-          setupHandlers(mainWindow, dbConnection, solanaConnection);
+          try {
+            const result = await connectionDb.getActiveConnection(dbConnection);
+            if (result) solanaConnection = createConnection(result);
+            setupHandlers(dbConnection, solanaConnection);
+          } catch (error) {
+            console.log(error);
+          }
         } else {
           mainWindow.show();
         }
@@ -239,7 +244,7 @@ function registerHandlers() {
     }
   });
 
-  setupHandlers(mainWindow, dbConnection, solanaConnection);
+  setupHandlers(dbConnection, solanaConnection);
 
   registerHandler(ProcessType.MAIN.stopEvent, async () => {
     return await stopBackgroundProcess(mainBackgroundProcess);
@@ -269,27 +274,17 @@ function registerHandlers() {
 app.on('ready', async () => {
   createTray();
   createWindow();
-  solanaConnection = createConnection();
   dbConnection = db.openConnection();
   try {
     await db.initDatabase(dbConnection);
     console.log('Database initialized successfully.');
+    const result = await connectionDb.getActiveConnection(dbConnection);
+    if (result) solanaConnection = createConnection(result);
   } catch (err) {
     console.error('Error initializing database:', err);
     db.closeConnection(dbConnection);
     return;
   }
-
-  // getTokensOwnedByWallet(solanaConnection, new PublicKey("tenEpSp5GQM3Ko211Nrugvt7fk6cL7VUwAHmAY9rFNq")).then(result => {
-  //   insertTokens(dbConnection, result.tokens, (res) => {
-  //     if(!res.error)
-  //     {
-  //       insertWalletTokenAccounts(dbConnection, result.accounts, (r) => {
-  //         console.log(r)
-  //       })
-  //     }
-  //   });
-  // });
 
   registerHandlers();
   startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);

@@ -1,7 +1,7 @@
 import React from 'react';
-import { addSvg, saveSvg, importWalletSvg, reloadSvg } from '../../assets/svg/index.jsx';
+import { addSvg, saveSvg, importWalletSvg, reloadSvg, powerSvg, deleteSvg, cancelSvg } from '../../assets/svg/index.jsx';
 
-type ButtonType = 'add' | 'save' | 'import-wallet' | 'reload';
+type ButtonType = 'add' | 'save' | 'import-wallet' | 'reload' | 'power' | 'delete' | 'cancel';
 type ButtonTheme = 'primary' | 'secondary';
 
  /**
@@ -47,6 +47,12 @@ function Button(props: IButton) {
         return importWalletSvg;
       case 'reload':
         return reloadSvg;
+      case 'power':
+        return powerSvg;
+      case 'delete':
+        return deleteSvg;
+      case 'cancel':
+        return cancelSvg;
       default:
         return null;
     }

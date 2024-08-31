@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { searchSvg, crossSvg } from '../../assets/svg';
+import ClickOutside from '../ClickOutside';
 
 interface ISearchProps {
   onSearch?: (item: any) => void;
@@ -33,59 +34,83 @@ export default function SearchBar(props: ISearchProps) {
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="search-bar"
-      onFocus={(event) => {
-        if (containerRef.current && containerRef.current.contains(event.target)) {
-          setIsFocused(true);
-        }
-      }}
-      onBlur={(event) => {
-        if (containerRef.current && !containerRef.current.contains(event.target)) {
-          setIsFocused(false);
-        }
+    <ClickOutside
+      className="column-self-center search-bar-wrapper"
+      onClickOutside={() => {
+        setIsFocused(false);
       }}
     >
-      <input
-        type="text"
-        placeholder="Search wallets by name or public key"
-        onChange={(e) => {
-          setValue(e.target.value);
-          matchValues(e.target.value);
+      <div
+        ref={containerRef}
+        className="search-bar"
+        onFocus={(event) => {
+          if (containerRef.current && containerRef.current.contains(event.target)) {
+            setIsFocused(true);
+          }
         }}
-        value={value}
-      ></input>
-      {value && (
-        <span
-          className="clear-input"
-          onClick={() => {
+        onBlur={(event) => {
+          if (containerRef.current && !containerRef.current.contains(event.target)) {
+            setIsFocused(false);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            setIsFocused(false);
             setValue('');
+            if (props.onSearch && matchingValues.length) 
+              props.onSearch(matchingValues[0]);
+          }
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search wallets by name or public key"
+          onChange={(e) => {
+            setValue(e.target.value);
+            matchValues(e.target.value);
+          }}
+          value={value}
+        ></input>
+        {value && (
+          <span
+            className="clear-input"
+            onClick={() => {
+              setValue('');
+            }}
+          >
+            {crossSvg}
+          </span>
+        )}
+        <div
+          className="search-button"
+          onClick={() => {
+            setIsFocused(false);
+            setValue('');
+            if (props.onSearch) props.onSearch(matchingValues[0]);
           }}
         >
-          {crossSvg}
-        </span>
-      )}
-      <div className="search-button">{searchSvg}</div>
-      {value && isFocused && (
-        <div className="search-dropdown">
-          {matchingValues.map((item, index) => {
-            return (
-              <div
-                key={index}
-                className="search-dropdown-item truncate"
-                onClick={() => {
-                  setIsFocused(false);
-                  setValue('');
-                  if (props.onSearch) props.onSearch(item);
-                }}
-              >
-                {props.displayTemplate && <span>{props.displayTemplate(item)}</span>}
-              </div>
-            );
-          })}
+          {searchSvg}
         </div>
-      )}
-    </div>
+        {value && isFocused && (
+          <div className="search-dropdown">
+            {matchingValues.map((item, index) => {
+              return (
+                <div
+                  key={index}
+                  className="search-dropdown-item truncate"
+                  onClick={() => {
+                    setIsFocused(false);
+                    setValue('');
+                    if (props.onSearch && matchingValues.length) props.onSearch(item);
+                  }}
+                >
+                  {props.displayTemplate && <span>{props.displayTemplate(item)}</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </ClickOutside>
   );
 }

@@ -41,7 +41,6 @@ function insertWalletTokenAccounts(db, tokenAccs, callback) {
                     return;
                 }
                 if (row) {
-                    console.log(row);
                     console.log(`Token account ${tokenAcc.accountAddress} already exists. Skipping insert.`);
                 }
                 else {
@@ -83,7 +82,8 @@ function getWalletTokenAccounts(db, publicKey) {
         wta.mint AS mint,
         wta.amount AS amount,
         t.name AS name,
-        t.symbol AS symbol ,
+        t.symbol AS symbol,
+        t.icon AS icon,
         t.decimals AS decimals,
         t.isNft AS isNft
       FROM 
