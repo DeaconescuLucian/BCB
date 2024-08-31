@@ -116,7 +116,6 @@ async function startBackgroundProcess(
           sendToRenderer(mainWindow, processType.updateEvent, message);
         }
       }
-
     });
   });
 }
@@ -197,10 +196,16 @@ function createTray(): void {
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Show App',
-      click: () => {
+      click: async () => {
         if (mainWindow === null) {
           createWindow();
-          setupHandlers(dbConnection, solanaConnection);
+          try {
+            const result = await connectionDb.getActiveConnection(dbConnection);
+            if (result) solanaConnection = createConnection(result);
+            setupHandlers(dbConnection, solanaConnection);
+          } catch (error) {
+            console.log(error);
+          }
         } else {
           mainWindow.show();
         }
@@ -274,9 +279,7 @@ app.on('ready', async () => {
     await db.initDatabase(dbConnection);
     console.log('Database initialized successfully.');
     const result = await connectionDb.getActiveConnection(dbConnection);
-    console.log(result)
-    if(result)
-      solanaConnection = createConnection(result);
+    if (result) solanaConnection = createConnection(result);
   } catch (err) {
     console.error('Error initializing database:', err);
     db.closeConnection(dbConnection);

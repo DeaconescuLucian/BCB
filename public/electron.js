@@ -202,15 +202,23 @@ function createTray() {
     const contextMenu = electron_1.Menu.buildFromTemplate([
         {
             label: 'Show App',
-            click: () => {
+            click: () => __awaiter(this, void 0, void 0, function* () {
                 if (mainWindow === null) {
                     createWindow();
-                    (0, handlers_1.setupHandlers)(dbConnection, solanaConnection);
+                    try {
+                        const result = yield connectionDb.getActiveConnection(dbConnection);
+                        if (result)
+                            solanaConnection = (0, utils_1.createConnection)(result);
+                        (0, handlers_1.setupHandlers)(dbConnection, solanaConnection);
+                    }
+                    catch (error) {
+                        console.log(error);
+                    }
                 }
                 else {
                     mainWindow.show();
                 }
-            },
+            }),
         },
         {
             label: 'Quit',
@@ -275,7 +283,6 @@ electron_1.app.on('ready', () => __awaiter(void 0, void 0, void 0, function* () 
         yield db.initDatabase(dbConnection);
         console.log('Database initialized successfully.');
         const result = yield connectionDb.getActiveConnection(dbConnection);
-        console.log(result);
         if (result)
             solanaConnection = (0, utils_1.createConnection)(result);
     }
