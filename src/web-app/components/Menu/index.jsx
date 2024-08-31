@@ -52,30 +52,29 @@ function Menu() {
   };
 
   useEffect(() => {
-    console.log(window.localStorage.getItem('url').split('?')[0]);
-    switch (window.localStorage.getItem('url').split('?')[0]) {
-      case '/':
-        changeSelectedTab('home-menu-item');
-        break;
-      case '/wallet-page/list':
-      case '/wallet-page/import':
-      case '/wallet-page/generate':
-      case '/wallet-page/view':
-        console.log("here")
-        changeSelectedTab('wallets-menu-item');
-        break;
-      case '/trade':
-        changeSelectedTab('trade-menu-item');
-        break;
-      case '/settings/license':
-      case '/settings/connection':
-        changeSelectedTab('settings-menu-item');
-        break;
-      default:
-        console.log("here1")
-        changeSelectedTab('home-menu-item');
-        break;
-    }
+    if (window.localStorage.getItem('url'))
+      switch (window.localStorage.getItem('url').split('?')[0]) {
+        case '/':
+          changeSelectedTab('home-menu-item');
+          break;
+        case '/wallet-page/list':
+        case '/wallet-page/import':
+        case '/wallet-page/generate':
+        case '/wallet-page/view':
+          changeSelectedTab('wallets-menu-item');
+          break;
+        case '/trade':
+          changeSelectedTab('trade-menu-item');
+          break;
+        case '/settings/license':
+        case '/settings/connection':
+          changeSelectedTab('settings-menu-item');
+          break;
+        default:
+          console.log('here1');
+          changeSelectedTab('home-menu-item');
+          break;
+      }
   }, []);
 
   return (
