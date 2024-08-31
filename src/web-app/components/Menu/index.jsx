@@ -52,6 +52,7 @@ function Menu() {
   };
 
   useEffect(() => {
+    console.log(window.localStorage.getItem('url').split('?')[0]);
     switch (window.localStorage.getItem('url').split('?')[0]) {
       case '/':
         changeSelectedTab('home-menu-item');
@@ -60,6 +61,7 @@ function Menu() {
       case '/wallet-page/import':
       case '/wallet-page/generate':
       case '/wallet-page/view':
+        console.log("here")
         changeSelectedTab('wallets-menu-item');
         break;
       case '/trade':
@@ -70,6 +72,7 @@ function Menu() {
         changeSelectedTab('settings-menu-item');
         break;
       default:
+        console.log("here1")
         changeSelectedTab('home-menu-item');
         break;
     }

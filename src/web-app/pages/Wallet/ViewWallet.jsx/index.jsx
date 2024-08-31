@@ -215,7 +215,7 @@ function ViewWallet() {
         { name: 'publicKey', fullMatch: true },
       ]}
       onSearch={(wallet) => {
-        window.localStorage.setItem('url', `wallet-page/view?pub=${wallet.publicKey}`);
+        window.localStorage.setItem('url', `/wallet-page/view?pub=${wallet.publicKey}`);
         dispatch(deselectWallet());
         dispatch(updateSelectedWallet(wallet.publicKey));
         dispatch(getWalletDetails(wallet.publicKey));
