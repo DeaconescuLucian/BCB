@@ -8,6 +8,10 @@
     "moduleResolution": "node",
     "outDir": "./public",
     "rootDir": "./src/ts",
+    "baseUrl": ".",
+    "paths": {
+      "@solana/spl-token": ["node_modules/@solana/spl-token"]
+    }
   },
   "include": ["src/ts/**/*.ts"],
 } 

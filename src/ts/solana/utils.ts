@@ -1,9 +1,4 @@
 import {
-  ComputeBudgetProgram,
-  SystemProgram,
-  TransactionInstruction,
-  VersionedTransaction,
-  TransactionMessage,
   Connection,
   PublicKey,
   LAMPORTS_PER_SOL,
@@ -12,27 +7,97 @@ import {
   Cluster,
 } from '@solana/web3.js';
 
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID} from '@solana/spl-token';
 
-import { SPL_ACCOUNT_LAYOUT } from '@raydium-io/raydium-sdk';
+import * as raydium from '@raydium-io/raydium-sdk';
 
 import { programs } from '@metaplex/js';
 import BN from 'bn.js';
+import e from 'express';
 const { TokenListProvider } = require('@solana/spl-token-registry');
 
-export interface TransferParams {
-  walletA: Keypair;
-  walletB: Keypair | PublicKey;
-  amount: number;
-  cpuLimit?: number;
-  prioFee?: number;
-  jitoFee?: number;
-}
+export async function findRaydiumPoolInfo(baseMint: string, quoteMint: string, connection:Connection): Promise<raydium.LiquidityPoolKeys | undefined> {
+    const layout = raydium.LIQUIDITY_STATE_LAYOUT_V4
 
-export const TransferFeesDefault = {
-  prioFee: 1000,
-  cpuLimit: 1000,
-};
+    const programData = await connection.getProgramAccounts(raydium.MAINNET_PROGRAM_ID.AmmV4, {
+      filters: [
+        { dataSize: layout.span },
+        {
+          memcmp: {
+            offset: layout.offsetOf('baseMint'),
+            bytes: new PublicKey(baseMint).toBase58(),
+          },
+        },
+        {
+          memcmp: {
+            offset: layout.offsetOf('quoteMint'),
+            bytes: new PublicKey(quoteMint).toBase58(),
+          },
+        },
+      ],
+    })
+  
+    const collectedPoolResults = programData
+      .map((info) => ({
+        id: new PublicKey(info.pubkey),
+        version: 4,
+        programId: raydium.MAINNET_PROGRAM_ID.AmmV4,
+        ...layout.decode(info.account.data),
+      }))
+      .flat()
+
+    const pool = collectedPoolResults[0]
+
+    if (!pool) {    
+        console.log('Pool not found')
+        return undefined
+    }
+
+    const market = await connection.getAccountInfo(pool.marketId).then((item) => ({
+      programId: item!.owner,
+      ...raydium.MARKET_STATE_LAYOUT_V3.decode(item!.data),
+    }))
+
+    const authority = raydium.Liquidity.getAssociatedAuthority({
+      programId: raydium.MAINNET_PROGRAM_ID.AmmV4,
+    }).publicKey
+
+    const marketProgramId = market.programId
+
+    const poolKeys = {
+      id: pool.id,
+      baseMint: pool.baseMint,
+      quoteMint: pool.quoteMint,
+      lpMint: pool.lpMint,
+      baseDecimals: Number.parseInt(pool.baseDecimal.toString()),
+      quoteDecimals: Number.parseInt(pool.quoteDecimal.toString()),
+      lpDecimals: Number.parseInt(pool.baseDecimal.toString()),
+      version: pool.version,
+      programId: pool.programId,
+      openOrders: pool.openOrders,
+      targetOrders: pool.targetOrders,
+      baseVault: pool.baseVault,
+      quoteVault: pool.quoteVault,
+      marketVersion: 3,
+      authority: authority,
+      marketProgramId,
+      marketId: market.ownAddress,
+      marketAuthority: raydium.Market.getAssociatedAuthority({
+        programId: marketProgramId,
+        marketId: market.ownAddress,
+      }).publicKey,
+      marketBaseVault: market.baseVault,
+      marketQuoteVault: market.quoteVault,
+      marketBids: market.bids,
+      marketAsks: market.asks,
+      marketEventQueue: market.eventQueue,
+      withdrawQueue: pool.withdrawQueue,
+      lpVault: pool.lpVault,
+      lookupTableAccount: PublicKey.default,
+    } as raydium.LiquidityPoolKeys
+
+    return poolKeys
+}
 
 export function createConnection(connection: string) {
   if (connection.startsWith('http')) return new Connection(connection);
@@ -42,86 +107,6 @@ export function createConnection(connection: string) {
 export async function getSolanaBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
   console.log(connection)
   return (await connection.getBalance(publicKey)) / LAMPORTS_PER_SOL;
-}
-
-export async function createSignedTransaction(
-  wallet: Keypair,
-  connection: Connection,
-  instructions: TransactionInstruction[],
-  signers?: Keypair[],
-  blockhash?: string
-): Promise<VersionedTransaction> {
-  if (!blockhash) {
-    blockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
-  }
-
-  let payerKey: PublicKey;
-
-  if (signers && !signers.some((signer) => signer.publicKey.equals(wallet.publicKey))) {
-    payerKey = signers[0].publicKey;
-  } else {
-    payerKey = wallet.publicKey;
-  }
-
-  const tx_msg = new TransactionMessage({
-    payerKey: payerKey,
-    instructions: instructions,
-    recentBlockhash: blockhash,
-  }).compileToV0Message();
-
-  const tx = new VersionedTransaction(tx_msg);
-  let fsigners = signers || [wallet];
-  tx.sign(fsigners);
-
-  return tx;
-}
-
-export async function simpleTransfer(connection: Connection, TransferParams: TransferParams): Promise<void> {
-  let { walletA, walletB, amount, cpuLimit, prioFee } = TransferParams;
-
-  const [lastbk, accountBalance, rent] = await Promise.all([
-    connection.getLatestBlockhash('finalized').then((res) => res.blockhash),
-    connection.getBalance(walletA.publicKey, 'confirmed'),
-    connection.getMinimumBalanceForRentExemption(0),
-  ]);
-
-  if (!prioFee) {
-    prioFee = TransferFeesDefault.prioFee;
-  }
-
-  if (!cpuLimit) {
-    cpuLimit = TransferFeesDefault.cpuLimit;
-  }
-
-  if (amount > accountBalance) {
-    console.log('Insufficient funds');
-    return;
-  }
-
-  const toPubkey = walletB instanceof PublicKey ? walletB : walletB.publicKey;
-
-  let instructions = [
-    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: cpuLimit }),
-    ComputeBudgetProgram.setComputeUnitLimit({ units: prioFee }),
-    SystemProgram.transfer({
-      fromPubkey: walletA.publicKey,
-      toPubkey: toPubkey,
-      lamports: amount,
-    }),
-  ];
-
-  const tx = await createSignedTransaction(walletA, connection, instructions, undefined, lastbk);
-
-  const sim = await connection.simulateTransaction(tx, { commitment: 'confirmed' });
-
-  if (sim.value.err) {
-    console.log(sim.value.logs);
-    console.log(sim.value.err);
-    return;
-  }
-
-  console.log(`Simulation successful`);
-  return;
 }
 
 export interface IToken {
@@ -178,7 +163,7 @@ export async function getTokensOwnedByWallet(
   });
 
   for (const tokenAcc of tokensAccs.value) {
-    const accData = SPL_ACCOUNT_LAYOUT.decode(tokenAcc.account.data);
+    const accData = raydium.SPL_ACCOUNT_LAYOUT.decode(tokenAcc.account.data);
     if (!accData.amount.isZero()) {
       mint = accData.mint.toString();
       icon =
@@ -247,3 +232,4 @@ export async function getTokensOwnedByWallet(
     });
   });
 }
+
