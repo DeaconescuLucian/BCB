@@ -3,6 +3,7 @@ import { CustomEvents } from '../../../ts/events';
 
 const initialState = {
   wallets: [],
+  tokenPrices: [],
   selectedWallet: null,
   selectedWalletDetails: null,
   selectedWalletAccounts: null,
@@ -32,6 +33,19 @@ export const getWalletDetails = createAsyncThunk('wallets/getWalletDetails', asy
     throw new Error('Failed to get wallet details');
   } catch (error) {
     console.error('Error fetching wallet details:', error);
+    throw error;
+  }
+});
+
+export const getTokensPrices = createAsyncThunk('wallets/getTokensPrices', async (mints) => {
+  try {
+    const result = await window.electron.invoke(CustomEvents.getTokensPricesEvent, mints);
+    if (result && result.success) {
+      return result.data;
+    }
+    throw new Error('Failed to get tokens prices');
+  } catch (error) {
+    console.error('Error getting tokens prices:', error);
     throw error;
   }
 });
@@ -79,8 +93,12 @@ const walletsSlice = createSlice({
       })
       .addCase(getWalletDetails.fulfilled, (state, action) => {
         state.selectedWalletAccounts = action.payload || [];
+        //console.log(state.selectedWalletAccounts.filter(e => e.isNft === 0).map(e => e.mint))
         state.status = 'succeeded'
-
+      })
+      .addCase(getTokensPrices.fulfilled, (state, action) => {
+        state.tokenPrices = action.payload || [];
+        state.status = 'succeeded'
       })
   },
 });

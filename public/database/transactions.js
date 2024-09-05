@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTableTransactions = createTableTransactions;
 exports.insertTransaction = insertTransaction;
 exports.getLatestTransactions = getLatestTransactions;
+exports.updateTransaction = updateTransaction;
 const db_1 = require("./db");
 function createTableTransactions(db) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -45,6 +46,18 @@ function getLatestTransactions(db, callback) {
             else {
                 console.log('Retrieved latest 100 transactions.');
                 callback(null, rows);
+            }
+        });
+    });
+}
+function updateTransaction(db, t) {
+    db.serialize(() => {
+        db.run(`UPDATE transactions SET "date" = ? , status = ? WHERE signature = ?`, [t.date, t.status, t.signature], (err) => {
+            if (err) {
+                console.error('Error updating transaction:', err.message);
+            }
+            else {
+                console.log('Transaction updated successfully.');
             }
         });
     });

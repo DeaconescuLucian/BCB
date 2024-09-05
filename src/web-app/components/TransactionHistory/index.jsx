@@ -12,7 +12,14 @@ function TransactionHistory() {
   useEffect(() => {
     const unsubscribe = window.electron.on(transactionProcess.updateEvent, (msg) => {
       if (!Array.isArray(msg)) {
-        setTransactionList((prevList) => [msg, ...prevList]);
+        let index = transactionList.findIndex((e) => e.signature === msg.signature);
+        if (index === -1) {
+          setTransactionList((prevList) => [msg, ...prevList]);
+        } else {
+         let newList = [...transactionList];
+         newList.splice(index, 1);
+         setTransactionList([msg, ...newList]);
+        }
       } else {
         setTransactionList(msg);
       }
@@ -21,10 +28,10 @@ function TransactionHistory() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [transactionList]);
 
   useEffect(() => {
-    handleStartBackgroundProcess();
+    //handleStartBackgroundProcess();
   }, []);
 
   const handleStartBackgroundProcess = async () => {
@@ -40,7 +47,7 @@ function TransactionHistory() {
   useEffect(() => {
     if (hidden) document.querySelector('.main-container')?.classList.add('hidden-right-section');
     else document.querySelector('.main-container')?.classList.remove('hidden-right-section');
-  }, [window.location.href])
+  }, [window.location.href]);
 
   return (
     <>

@@ -62,6 +62,36 @@
         }
     }
 
+    &.theme-primary {
+        background-color: @color-tertiary-base;
+        border: 1px solid @color-tertiary-base;
+        color: @color-font-white;
+
+        path {
+            fill: @color-brand;
+        }
+
+        &:hover {
+            box-shadow: 0px 0px 12px @color-brand;
+            color: @color-brand;
+        }
+    }
+
+    &.theme-dark {
+        background-color: @color-dark;
+        border: 1px solid @color-dark;
+        color: @color-font-white;
+
+        path {
+            fill: @color-brand;
+        }
+
+        &:hover {
+            box-shadow: 0px 0px 12px @color-brand;
+            color: @color-brand;
+        }
+    }
+
     &.theme-error {
         background-color: @color-fail-bg;
         border: 1px solid @color-fail;
@@ -75,6 +105,10 @@
             box-shadow: 0px 0px 12px @color-fail;
             color: @color-font-white;
         }
+    }
+
+    &.round {
+        border-radius: 50%;
     }
 }
 

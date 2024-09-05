@@ -130,7 +130,6 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
         }
       });
 
-      console.log('insert tokens')
       try {
         if (tokensToInsert.length)
           await new Promise<void>((resolve, reject) => {
@@ -144,7 +143,6 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
             });
           });
 
-        console.log('update tokens')
         if (tokensToUpdate.length)
           await new Promise<void>((resolve, reject) => {
             updateTokens(db, tokensToUpdate, (err: Error | null) => {
@@ -157,7 +155,6 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
             });
           });
 
-          console.log('insert token accs')
         if (tokenAccsToInsert.length)
           await new Promise<void>((resolve, reject) => {
             insertWalletTokenAccounts(db, tokenAccsToInsert, (result) => {
@@ -170,7 +167,6 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
             });
           });
 
-          console.log('update token accs')
         if (tokenAccsToUpdate.length)
           await new Promise<void>((resolve, reject) => {
             updateTokenAccountBalances(

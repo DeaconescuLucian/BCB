@@ -13,12 +13,12 @@ exports.updateSolanaConnection = updateSolanaConnection;
 exports.testConnection = testConnection;
 const web3_js_1 = require("@solana/web3.js");
 const handlers_1 = require("../handlers");
-function updateSolanaConnection(dbConnection, connection, newConnection) {
+function updateSolanaConnection(dbConnection, connection, mainProcess, mainWindow, newConnection) {
     if (newConnection.startsWith('http'))
         connection = new web3_js_1.Connection(newConnection);
     else
         connection = new web3_js_1.Connection((0, web3_js_1.clusterApiUrl)(newConnection), 'confirmed');
-    (0, handlers_1.setupHandlers)(dbConnection, connection);
+    (0, handlers_1.setupHandlers)(dbConnection, connection, mainProcess, mainWindow);
 }
 function testConnection(connectionString) {
     return __awaiter(this, void 0, void 0, function* () {

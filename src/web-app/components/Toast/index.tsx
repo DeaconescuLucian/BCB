@@ -40,9 +40,9 @@ const Toast: React.FC<ToastProps> = ({ message, onClose, type }) => {
   };
 
   return (
-    <div className={`toast toast-${type}`}>
+    <div className={`toast toast-${type} truncate`}>
       {renderView()}
-      <span>{message}</span>
+      <span className='truncate'>{message}</span>
     </div>
   );
 };

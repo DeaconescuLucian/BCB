@@ -70,6 +70,7 @@ function WalletList(props) {
             dispatch(deselectWallet());
             props.onView(wallet.publicKey);
           }}
+          placeholder='Search wallets by name or public key'
         ></SearchBar>
         {wallets.length > 0 ? (
           <Table

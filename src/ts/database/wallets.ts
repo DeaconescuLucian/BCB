@@ -84,3 +84,28 @@ export function deleteWallet(
     });
   });
 }
+
+export async function getWalletSecret(
+  db: sqlite3.Database,
+  publicKey: string
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT secretKey FROM wallets WHERE publicKey = ?`,
+      [publicKey],
+      (err: Error | null, row: any) => {
+        if (err) {
+          console.error('Error retrieving wallet:', err.message);
+          reject(err);
+        } else {
+          if (row) {
+            console.log('Retrieved wallet.');
+          } else {
+            console.log('No wallet found with the given publicKey.');
+          }
+          resolve(row);
+        }
+      }
+    );
+  });
+}

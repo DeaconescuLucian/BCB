@@ -4,6 +4,8 @@ import sqlite3 from 'sqlite3';
 import { Connection } from '@solana/web3.js';
 import * as connectionDb from '../database/connections';
 import { updateSolanaConnection, testConnection } from '../solana/connection';
+import { ChildProcess } from 'child_process';
+import { BrowserWindow } from 'electron';
 
 const CreateConnectionHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.createConnectionEvent, async (e: any, arg: any) => {
@@ -43,13 +45,13 @@ const GetConnectionsHandler = (db: sqlite3.Database) => {
   });
 };
 
-const UpdateActiveConnectionHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
+const UpdateActiveConnectionHandler = (db: sqlite3.Database, solanaConnection: Connection, mainProcess: ChildProcess | null, mainWindow: BrowserWindow | null) => {
   registerHandler(CustomEvents.updateActiveConnectionEvent, async (e: any, arg: any) => {
     return new Promise((resolve) => {
       connectionDb.updateActiveConnection(db, arg, (result: any) => {
         if (!result) {
           try {
-            updateSolanaConnection(db, solanaConnection, arg);
+            updateSolanaConnection(db, solanaConnection, mainProcess, mainWindow, arg);
           } catch (error) {
             console.log(error);
           }
@@ -70,10 +72,10 @@ const DeleteConnectionHandler = (db: sqlite3.Database) => {
   });
 };
 
-const handleConnection = (db: sqlite3.Database, solanaConnection: Connection) => {
+const handleConnection = (db: sqlite3.Database, solanaConnection: Connection, mainProcess: ChildProcess | null, mainWindow: BrowserWindow | null) => {
   CreateConnectionHandler(db);
   GetConnectionsHandler(db);
-  UpdateActiveConnectionHandler(db, solanaConnection);
+  UpdateActiveConnectionHandler(db, solanaConnection, mainProcess, mainWindow);
   DeleteConnectionHandler(db);
 };
 

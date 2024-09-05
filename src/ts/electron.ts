@@ -38,22 +38,10 @@ let mainBackgroundProcess: ChildProcess | null = null;
 let secondaryBackgroundProcesses: ProcessObject[] = [];
 
 async function startBackgroundProcess(
-  backgroundProcess: ChildProcess | null,
   processType: ScriptConfig,
   pid?: number
 ): Promise<{ message: string; pid: number | undefined }> {
-  console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
-
-  if (backgroundProcess) {
-    if (backgroundProcess.connected) {
-      console.log('Background process is already running');
-      return { message: 'Process already started!', pid: pid };
-    } else {
-      console.log('Cleaning up disconnected background process');
-      backgroundProcess = null;
-    }
-  }
-
+  let backgroundProcess: ChildProcess | null;
   return new Promise((resolve, reject) => {
     console.log('Starting background process...');
     if (processType !== ProcessType.MAIN) {
@@ -83,40 +71,77 @@ async function startBackgroundProcess(
       resolve({ message: 'Process started but no confirmation received', pid: undefined });
     }, 5000);
 
-    backgroundProcess?.once('message', (message) => {
-      if (message === 'ready') {
-        console.log('Background process is ready, sending start command');
-        if (!pid) {
-          //backgroundProcess?.send({ type: 'init'});
-          backgroundProcess?.send('start');
-        }
-        clearTimeout(timeout);
-        resolve({ message: `Started process ${pid ?? backgroundProcess?.pid}.`, pid: pid ?? backgroundProcess?.pid });
-      }
-    });
-
-    backgroundProcess?.on('error', (error) => {
+    const onError = (error: any) => {
       console.error('Background process error:', error);
       clearTimeout(timeout);
       backgroundProcess = null;
       reject(error);
-    });
+    };
 
-    backgroundProcess?.on('exit', (code, signal) => {
+    backgroundProcess?.on('error', onError);
+
+    const onExit = (code: any, signal: any) => {
       console.log(`Background process exited with code ${code} and signal ${signal}`);
       backgroundProcess = null;
-    });
+    };
 
-    backgroundProcess?.on('message', (message: any) => {
+    backgroundProcess?.on('exit', onExit);
+
+    const onMessage = (message: any) => {
       if (message !== 'ready') {
         if (processType.type === 'transaction') {
           transactionsDb.insertTransaction(dbConnection, message);
+          if (mainWindow?.isVisible()) {
+            sendToRenderer(mainWindow, processType.updateEvent, message);
+          }
         }
-        if (mainWindow?.isVisible()) {
-          sendToRenderer(mainWindow, processType.updateEvent, message);
+        if (message.type === 'confirm-transaction') {
+            connectionDb.getActiveConnection(dbConnection).then((r) => {
+            const confirmTransactionProcess = fork(path.join(`${__dirname}/background-processes`, 'confirm-transaction.js'));
+            console.log("start already madafaka")
+            confirmTransactionProcess?.once('message', (msg: any) => {
+              if (msg === 'ready') {
+                confirmTransactionProcess?.send({
+                  type: 'start',
+                  data: { transactionData: message.data, connection: r },
+                });
+              }
+            });
+            confirmTransactionProcess?.on('message', (msg: any) => {
+              if (msg.type === 'transaction-confirmation-done') {
+                console.log('Transaction confirmed successfully');
+                transactionsDb.updateTransaction(dbConnection, msg.data);
+                if (mainWindow?.isVisible()) {
+                  sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
+                }
+              }
+            });
+          });
         }
       }
-    });
+    };
+
+    backgroundProcess?.on('message', onMessage);
+
+    const onceMessage = (message: any) => {
+      if (message === 'ready') {
+        console.log('Background process is ready, sending start command');
+        if (!pid) {
+          backgroundProcess?.send('start');
+        }
+        clearTimeout(timeout);
+        if (processType === ProcessType.MAIN) {
+          registerHandlers(backgroundProcess);
+        }
+        resolve({ message: `Started process ${pid ?? backgroundProcess?.pid}.`, pid: pid ?? backgroundProcess?.pid });
+      }
+    };
+
+    backgroundProcess?.once('message', onceMessage);
+
+    if (processType === ProcessType.MAIN) {
+      mainBackgroundProcess = backgroundProcess;
+    }
   });
 }
 
@@ -157,9 +182,9 @@ async function stopBackgroundProcess(backgroundProcess: ChildProcess | null): Pr
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     minWidth: 1156,
-    minHeight: 680,
+    minHeight: 780,
     width: 1156,
-    height: 680,
+    height: 787,
     frame: false,
     show: false,
     webPreferences: {
@@ -202,7 +227,7 @@ function createTray(): void {
           try {
             const result = await connectionDb.getActiveConnection(dbConnection);
             if (result) solanaConnection = createConnection(result);
-            setupHandlers(dbConnection, solanaConnection);
+            setupHandlers(dbConnection, solanaConnection, mainBackgroundProcess, mainWindow);
           } catch (error) {
             console.log(error);
           }
@@ -233,29 +258,15 @@ function createTray(): void {
   tray.setToolTip('Blockchain Busters');
 }
 
-function registerHandlers() {
-  registerHandler('start-background-process', async () => {
-    try {
-      const result = await startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);
-      return result;
-    } catch (error) {
-      console.error('Error in startBackgroundProcess:', error);
-      return 'error';
-    }
-  });
-
-  setupHandlers(dbConnection, solanaConnection);
+function registerHandlers(backgroundProcess: ChildProcess | null) {
+  setupHandlers(dbConnection, solanaConnection, backgroundProcess, mainWindow);
 
   registerHandler(ProcessType.MAIN.stopEvent, async () => {
     return await stopBackgroundProcess(mainBackgroundProcess);
   });
 
-  // registerHandler(ProcessType.WALLET.startEvent, async (e: any, arg: number) => {
-  //   return await startBackgroundProcess(null, ProcessType.WALLET, arg);
-  // });
-
   registerHandler(ProcessType.TRANSACTION.startEvent, async (e: any, arg: number) => {
-    return await startBackgroundProcess(null, ProcessType.TRANSACTION, arg);
+    return await startBackgroundProcess(ProcessType.TRANSACTION, arg);
   });
 
   registerHandler(CustomEvents.getLatestTransactionsEvent, async () => {
@@ -286,8 +297,7 @@ app.on('ready', async () => {
     return;
   }
 
-  registerHandlers();
-  startBackgroundProcess(mainBackgroundProcess, ProcessType.MAIN);
+  await startBackgroundProcess(ProcessType.MAIN);
 });
 
 app.on('window-all-closed', (event: any) => {

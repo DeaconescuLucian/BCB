@@ -7,6 +7,8 @@ interface ISearchProps {
   searchArray?: any[];
   displayTemplate?: (value: any) => any;
   matchProperties?: { name: string; fullMatch: boolean }[] | [];
+  placeholder?: string;
+  remoteSearch?: boolean;
 }
 
 export default function SearchBar(props: ISearchProps) {
@@ -44,6 +46,9 @@ export default function SearchBar(props: ISearchProps) {
         ref={containerRef}
         className="search-bar"
         onFocus={(event) => {
+          if (value === '') {
+            if (props.searchArray) setMatchingValues(props.searchArray || []);
+          }
           if (containerRef.current && containerRef.current.contains(event.target)) {
             setIsFocused(true);
           }
@@ -57,14 +62,14 @@ export default function SearchBar(props: ISearchProps) {
           if (event.key === 'Enter') {
             setIsFocused(false);
             setValue('');
-            if (props.onSearch && matchingValues.length) 
-              props.onSearch(matchingValues[0]);
+            if (props.remoteSearch && props.onSearch) props.onSearch(value);
+            if (props.onSearch && matchingValues.length) props.onSearch(matchingValues[0]);
           }
         }}
       >
         <input
           type="text"
-          placeholder="Search wallets by name or public key"
+          placeholder={props.placeholder}
           onChange={(e) => {
             setValue(e.target.value);
             matchValues(e.target.value);
@@ -86,12 +91,13 @@ export default function SearchBar(props: ISearchProps) {
           onClick={() => {
             setIsFocused(false);
             setValue('');
-            if (props.onSearch) props.onSearch(matchingValues[0]);
+            if (props.remoteSearch && props.onSearch) props.onSearch(value);
+            if (props.onSearch && matchingValues.length) props.onSearch(matchingValues[0]);
           }}
         >
           {searchSvg}
         </div>
-        {value && isFocused && (
+        {isFocused && matchingValues.length > 0 && (
           <div className="search-dropdown">
             {matchingValues.map((item, index) => {
               return (

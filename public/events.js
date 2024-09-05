@@ -36,7 +36,13 @@ exports.CustomEvents = {
     createConnectionEvent: 'create-connection',
     updateActiveConnectionEvent: 'update-active-connection',
     deleteConnectionEvent: 'delete-connection',
-    getConnectionsEvent: 'get-connections'
+    getConnectionsEvent: 'get-connections',
+    getTokenDetailsEvent: 'get-token-details',
+    getTokensPricesEvent: 'get-token-prices',
+    getTokenPriceEvent: 'get-token-price',
+    buyEvent: 'buy',
+    wrapEvent: 'wrap',
+    unwrapEvent: 'unwrap'
 };
 function verifyUniqueEvents(processType) {
     const eventSet = new Set(Object.values(exports.CustomEvents));

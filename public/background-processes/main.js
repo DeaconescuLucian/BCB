@@ -2,7 +2,7 @@
 var interval;
 function startMainProcess() {
     interval = setInterval(() => {
-        const message = `Background update at ${new Date().toLocaleTimeString()}`;
+        const message = `Background update at ${process.pid}`;
         if (process.send) {
             process.send(message);
         }
@@ -18,8 +18,15 @@ process.on('message', (msg) => {
     if (msg === 'start') {
         startMainProcess();
     }
-    else if (msg === 'stop') {
-        stopMainProcess();
+    else {
+        if (msg === 'stop') {
+            stopMainProcess();
+        }
+        if (msg.type === 'confirm-transaction') {
+            if (process.send) {
+                process.send({ type: "confirm-transaction", data: msg.data });
+            }
+        }
     }
 });
 if (process.send) {

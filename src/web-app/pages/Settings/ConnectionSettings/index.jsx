@@ -129,7 +129,7 @@ function ConnectionSettings() {
               setClearFlag(false);
               createConnection();
             }}
-            theme="primary"
+            theme="secondary"
             type="add"
             text="Create"
             disabled={!newConnection.length > 0}

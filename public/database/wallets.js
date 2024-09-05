@@ -14,6 +14,7 @@ exports.insertWallet = insertWallet;
 exports.getWallets = getWallets;
 exports.updateWalletBalance = updateWalletBalance;
 exports.deleteWallet = deleteWallet;
+exports.getWalletSecret = getWalletSecret;
 const db_1 = require("./db");
 function createTableWallets(db) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -83,6 +84,27 @@ function deleteWallet(db, publicKey, callback) {
                 if (callback)
                     callback({ message: 'Wallet successfully deleted' });
             }
+        });
+    });
+}
+function getWalletSecret(db, publicKey) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            db.get(`SELECT secretKey FROM wallets WHERE publicKey = ?`, [publicKey], (err, row) => {
+                if (err) {
+                    console.error('Error retrieving wallet:', err.message);
+                    reject(err);
+                }
+                else {
+                    if (row) {
+                        console.log('Retrieved wallet.');
+                    }
+                    else {
+                        console.log('No wallet found with the given publicKey.');
+                    }
+                    resolve(row);
+                }
+            });
         });
     });
 }

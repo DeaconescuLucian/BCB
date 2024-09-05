@@ -38,3 +38,40 @@ export function timeAgo(date) {
         return `${years} years ago`;
     }
 }
+
+export function formatNumber(val, empty) {
+    if (empty)
+        return '';
+
+    let foundDot = false;
+    let integerPart = '';
+    let decimalPart = '';
+    let arr;
+    if (typeof val === 'number') {
+        arr = val.toString();
+    } else {
+        arr = val;
+    }
+    for (const c in arr) {
+        if (arr[c] === '.') {
+            foundDot = true;
+        }
+        else {
+            if (!foundDot) {
+                integerPart += arr[c];
+            }
+            else {
+                decimalPart += arr[c];
+            }
+        }
+    }
+    let formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    let formattedValue = formattedInteger;
+    if (decimalPart !== '')
+        formattedValue += '.' + decimalPart;
+    else {
+        if (foundDot)
+            formattedValue += '.'
+    }
+    return formattedValue;
+};

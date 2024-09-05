@@ -40,3 +40,16 @@ export function getLatestTransactions(db: sqlite3.Database, callback: (err: Erro
         );
     });
 }
+
+export function updateTransaction(db: sqlite3.Database, t: any): void {
+    db.serialize(() => {
+        db.run(`UPDATE transactions SET "date" = ? , status = ? WHERE signature = ?`,
+            [t.date, t.status, t.signature], (err: Error | null) => {
+                if (err) {
+                    console.error('Error updating transaction:', err.message);
+                } else {
+                    console.log('Transaction updated successfully.');
+                }
+            });
+    });
+}
