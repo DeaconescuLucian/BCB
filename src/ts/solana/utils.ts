@@ -1,13 +1,6 @@
-import {
-  Connection,
-  PublicKey,
-  LAMPORTS_PER_SOL,
-  Keypair,
-  clusterApiUrl,
-  Cluster,
-} from '@solana/web3.js';
+import { Connection, PublicKey, LAMPORTS_PER_SOL, Keypair, clusterApiUrl, Cluster } from '@solana/web3.js';
 
-import { TOKEN_PROGRAM_ID} from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 import * as raydium from '@raydium-io/raydium-sdk';
 
@@ -16,87 +9,91 @@ import BN from 'bn.js';
 import e from 'express';
 const { TokenListProvider } = require('@solana/spl-token-registry');
 
-export async function findRaydiumPoolInfo(baseMint: string, quoteMint: string, connection:Connection): Promise<raydium.LiquidityPoolKeys | undefined> {
-    const layout = raydium.LIQUIDITY_STATE_LAYOUT_V4
+export async function findRaydiumPoolInfo(
+  baseMint: string,
+  quoteMint: string,
+  connection: Connection
+): Promise<raydium.LiquidityPoolKeys | undefined> {
+  const layout = raydium.LIQUIDITY_STATE_LAYOUT_V4;
 
-    const programData = await connection.getProgramAccounts(raydium.MAINNET_PROGRAM_ID.AmmV4, {
-      filters: [
-        { dataSize: layout.span },
-        {
-          memcmp: {
-            offset: layout.offsetOf('baseMint'),
-            bytes: new PublicKey(baseMint).toBase58(),
-          },
+  const programData = await connection.getProgramAccounts(raydium.MAINNET_PROGRAM_ID.AmmV4, {
+    filters: [
+      { dataSize: layout.span },
+      {
+        memcmp: {
+          offset: layout.offsetOf('baseMint'),
+          bytes: new PublicKey(baseMint).toBase58(),
         },
-        {
-          memcmp: {
-            offset: layout.offsetOf('quoteMint'),
-            bytes: new PublicKey(quoteMint).toBase58(),
-          },
+      },
+      {
+        memcmp: {
+          offset: layout.offsetOf('quoteMint'),
+          bytes: new PublicKey(quoteMint).toBase58(),
         },
-      ],
-    })
-  
-    const collectedPoolResults = programData
-      .map((info) => ({
-        id: new PublicKey(info.pubkey),
-        version: 4,
-        programId: raydium.MAINNET_PROGRAM_ID.AmmV4,
-        ...layout.decode(info.account.data),
-      }))
-      .flat()
+      },
+    ],
+  });
 
-    const pool = collectedPoolResults[0]
-
-    if (!pool) {    
-        console.log('Pool not found')
-        return undefined
-    }
-
-    const market = await connection.getAccountInfo(pool.marketId).then((item) => ({
-      programId: item!.owner,
-      ...raydium.MARKET_STATE_LAYOUT_V3.decode(item!.data),
-    }))
-
-    const authority = raydium.Liquidity.getAssociatedAuthority({
+  const collectedPoolResults = programData
+    .map((info) => ({
+      id: new PublicKey(info.pubkey),
+      version: 4,
       programId: raydium.MAINNET_PROGRAM_ID.AmmV4,
-    }).publicKey
+      ...layout.decode(info.account.data),
+    }))
+    .flat();
 
-    const marketProgramId = market.programId
+  const pool = collectedPoolResults[0];
 
-    const poolKeys = {
-      id: pool.id,
-      baseMint: pool.baseMint,
-      quoteMint: pool.quoteMint,
-      lpMint: pool.lpMint,
-      baseDecimals: Number.parseInt(pool.baseDecimal.toString()),
-      quoteDecimals: Number.parseInt(pool.quoteDecimal.toString()),
-      lpDecimals: Number.parseInt(pool.baseDecimal.toString()),
-      version: pool.version,
-      programId: pool.programId,
-      openOrders: pool.openOrders,
-      targetOrders: pool.targetOrders,
-      baseVault: pool.baseVault,
-      quoteVault: pool.quoteVault,
-      marketVersion: 3,
-      authority: authority,
-      marketProgramId,
+  if (!pool) {
+    console.log('Pool not found');
+    return undefined;
+  }
+
+  const market = await connection.getAccountInfo(pool.marketId).then((item) => ({
+    programId: item!.owner,
+    ...raydium.MARKET_STATE_LAYOUT_V3.decode(item!.data),
+  }));
+
+  const authority = raydium.Liquidity.getAssociatedAuthority({
+    programId: raydium.MAINNET_PROGRAM_ID.AmmV4,
+  }).publicKey;
+
+  const marketProgramId = market.programId;
+
+  const poolKeys = {
+    id: pool.id,
+    baseMint: pool.baseMint,
+    quoteMint: pool.quoteMint,
+    lpMint: pool.lpMint,
+    baseDecimals: Number.parseInt(pool.baseDecimal.toString()),
+    quoteDecimals: Number.parseInt(pool.quoteDecimal.toString()),
+    lpDecimals: Number.parseInt(pool.baseDecimal.toString()),
+    version: pool.version,
+    programId: pool.programId,
+    openOrders: pool.openOrders,
+    targetOrders: pool.targetOrders,
+    baseVault: pool.baseVault,
+    quoteVault: pool.quoteVault,
+    marketVersion: 3,
+    authority: authority,
+    marketProgramId,
+    marketId: market.ownAddress,
+    marketAuthority: raydium.Market.getAssociatedAuthority({
+      programId: marketProgramId,
       marketId: market.ownAddress,
-      marketAuthority: raydium.Market.getAssociatedAuthority({
-        programId: marketProgramId,
-        marketId: market.ownAddress,
-      }).publicKey,
-      marketBaseVault: market.baseVault,
-      marketQuoteVault: market.quoteVault,
-      marketBids: market.bids,
-      marketAsks: market.asks,
-      marketEventQueue: market.eventQueue,
-      withdrawQueue: pool.withdrawQueue,
-      lpVault: pool.lpVault,
-      lookupTableAccount: PublicKey.default,
-    } as raydium.LiquidityPoolKeys
+    }).publicKey,
+    marketBaseVault: market.baseVault,
+    marketQuoteVault: market.quoteVault,
+    marketBids: market.bids,
+    marketAsks: market.asks,
+    marketEventQueue: market.eventQueue,
+    withdrawQueue: pool.withdrawQueue,
+    lpVault: pool.lpVault,
+    lookupTableAccount: PublicKey.default,
+  } as raydium.LiquidityPoolKeys;
 
-    return poolKeys
+  return poolKeys;
 }
 
 export function createConnection(connection: string) {
@@ -105,7 +102,6 @@ export function createConnection(connection: string) {
 }
 
 export async function getSolanaBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
-  console.log(connection)
   return (await connection.getBalance(publicKey)) / LAMPORTS_PER_SOL;
 }
 
@@ -233,3 +229,96 @@ export async function getTokensOwnedByWallet(
   });
 }
 
+export async function getTokenDetails(connection: Connection, mint: string) {
+  const {
+    metadata: { Metadata },
+  } = programs;
+  try {
+    let tokenList: any[] = [];
+    let icon;
+    const provider = new TokenListProvider();
+    await provider.resolve().then((tokens: any) => {
+      tokenList = tokens.filterByClusterSlug('mainnet-beta').getList();
+      icon = tokenList?.find((e) => e.address === mint)?.logoURI || null;
+    });
+    const metadataPDA = await Metadata.getPDA(mint);
+    const metadataAccount = await Metadata.load(connection, metadataPDA);
+    let name = metadataAccount.data.data.name;
+    let symbol = metadataAccount.data.data.symbol;
+    let uri = metadataAccount.data.data.uri;
+    let price = await getTokenPrice(mint);
+
+    if (uri) {
+      let response = await fetchData(uri);
+      if (response) {
+        if (response.image) {
+          icon = response.image;
+        }
+      }
+    }
+    return {
+      mint: mint,
+      name,
+      symbol,
+      icon,
+      price,
+    };
+  } catch (error) {
+    let price = await getTokenPrice(mint);
+    return {
+      mint: mint,
+      price: price,
+    };
+  }
+}
+
+export async function getTokenPrice(mint: string) {
+  try {
+    const response = await fetchData(`https://api-v3.raydium.io/mint/price?mints=${mint}`);
+    return response.data[mint];
+  } catch (error) {
+    console.error('Error fetching SOL price:', error);
+    return null;
+  }
+}
+
+export async function getTokensPrice(mints: string[]) {
+  try {
+    const response = await fetchData(`https://api-v3.raydium.io/mint/price?mints=${mints.join(',')}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching SOL price:', error);
+    return null;
+  }
+}
+
+//solana - dollar
+//solana - mint
+// export async function getTokenPrice(
+//   mint: string,
+//   connection: Connection,
+//   solUSDCPoolKeys?: raydium.LiquidityPoolKeys,
+//   solMintPoolKeys?: raydium.LiquidityPoolKeys
+// ) {
+//   const solToken = raydium.Token.WSOL.mint.toString();
+//   const usdcToken = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+//   solUSDCPoolKeys = solUSDCPoolKeys || (await findRaydiumPoolInfo(usdcToken, solToken, connection));
+
+//   let solQv = (await connection.getTokenAccountBalance(solUSDCPoolKeys?.quoteVault as PublicKey)).value.uiAmount;
+//   let usdcBv = (await connection.getTokenAccountBalance(solUSDCPoolKeys?.baseVault as PublicKey)).value.uiAmount;
+
+//   let solPrice = (usdcBv as number) / (solQv as number);
+//   if (mint === solToken) {
+//     return solPrice;
+//   } else {
+//     solMintPoolKeys = solMintPoolKeys || (await findRaydiumPoolInfo(mint, solToken, connection));
+//   }
+
+//   solQv = (await connection.getTokenAccountBalance(solMintPoolKeys?.quoteVault as PublicKey)).value.uiAmount;
+//   let mintBv = (await connection.getTokenAccountBalance(solMintPoolKeys?.baseVault as PublicKey)).value.uiAmount;
+
+//   let tokenSOLRatio = (mintBv as number) / (solQv as number);
+//   let tokenPrice = solPrice / tokenSOLRatio;
+
+//   return tokenPrice;
+// }

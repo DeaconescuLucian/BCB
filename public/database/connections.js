@@ -87,7 +87,6 @@ function insertConnection(db, connection, callback) {
     });
 }
 function deleteConnection(db, connection, callback) {
-    console.log(connection);
     db.serialize(() => {
         db.run(`DELETE FROM connections WHERE connection = ?`, [connection], (err) => {
             if (err) {

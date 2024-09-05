@@ -18,6 +18,7 @@ import Empty from '../../../components/Empty/index.tsx';
 import Solscan from '../../../assets/icons/solscan.png';
 import DafaultCoin from '../../../assets/icons/coin.png';
 import { searchSvg } from '../../../assets/svg/index.jsx';
+import { formatNumber } from '../../../utils.js';
 
 function ViewWallet() {
   const tableTypes = {
@@ -174,12 +175,16 @@ function ViewWallet() {
           <CopyToClipboard text={selectedWalletDetails.publicKey}></CopyToClipboard>
         </div>
         <div className="overview-item">
-          <span className="label">SOL Balance</span>
-          <span className="value">{selectedWalletDetails.balance}</span>
+          <span className="label sol">SOL Balance</span>
+          <span className="value">{formatNumber(selectedWalletDetails.balance)}</span>
+        </div>
+        <div className="overview-item">
+          <span className="label wsol">WSOL Balance</span>
+          <span className="value">{formatNumber(selectedWalletAccounts?.find((e) => e.mint === 'So11111111111111111111111111111111111111112')?.amount || 0)}</span>
         </div>
         <div className="overview-item">
           <span className="label">Token Balance</span>
-          <span className="value">{selectedWalletAccounts?.filter((a) => a.isNft === 0).length || 0}</span>
+          <span className="value">{formatNumber(selectedWalletAccounts?.filter((a) => a.isNft === 0).length || 0)}</span>
         </div>
       </div>
       <div className="controls">
@@ -220,6 +225,7 @@ function ViewWallet() {
         dispatch(updateSelectedWallet(wallet.publicKey));
         dispatch(getWalletDetails(wallet.publicKey));
       }}
+      placeholder="Search wallets by name or public key"
     ></SearchBar>
   );
 

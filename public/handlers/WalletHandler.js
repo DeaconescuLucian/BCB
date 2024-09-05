@@ -157,7 +157,6 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                         tokensToInsert.push(token);
                 }
             });
-            console.log('insert tokens');
             try {
                 if (tokensToInsert.length)
                     yield new Promise((resolve, reject) => {
@@ -171,7 +170,6 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                             }
                         });
                     });
-                console.log('update tokens');
                 if (tokensToUpdate.length)
                     yield new Promise((resolve, reject) => {
                         (0, tokens_1.updateTokens)(db, tokensToUpdate, (err) => {
@@ -184,7 +182,6 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                             }
                         });
                     });
-                console.log('insert token accs');
                 if (tokenAccsToInsert.length)
                     yield new Promise((resolve, reject) => {
                         (0, walletTokenAccounts_1.insertWalletTokenAccounts)(db, tokenAccsToInsert, (result) => {
@@ -197,7 +194,6 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                             }
                         });
                     });
-                console.log('update token accs');
                 if (tokenAccsToUpdate.length)
                     yield new Promise((resolve, reject) => {
                         (0, walletTokenAccounts_1.updateTokenAccountBalances)(db, tokenAccsToUpdate.map((a) => {

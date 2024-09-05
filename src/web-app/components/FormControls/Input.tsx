@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ErrorMessage from '../ErrorMessage';
+import { formatNumber } from '../../utils';
 
 type InputType = 'text' | 'number';
 type InputTheme = 'primary' | 'secondary';
@@ -61,35 +62,40 @@ function Input(props: IInput) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue((e.target as any).value);
+    if (props.type === 'number' && ref.current) ref.current.value = formatNumber((e.target as any).value || 0);
     if (!touched) {
       setTouched(true);
     }
   };
 
   useEffect(() => {
-    if(props.clearFlag)
-      if(ref.current)
-        ref.current.value = ''
-  }, [props.clearFlag])
+    if (props.clearFlag) if (ref.current) ref.current.value = '';
+  }, [props.clearFlag]);
 
   useEffect(() => {
-    if(ref.current && props.readonly)
-        ref.current.value = props.readOnlyValue;
-  }, [props.readOnlyValue])
+    if (props.type === 'number') {
+      if (ref.current && props.readonly) ref.current.value = formatNumber(props.readOnlyValue || 0)
+    }
+    else
+    {
+      if (ref.current && props.readonly) ref.current.value = props.readOnlyValue;
+    }
+    
+  }, [props.readOnlyValue]);
 
   return (
     <div className={`input-container`}>
       <input
         ref={ref}
         className={`${props.theme ? `theme-${props.theme}` : null}`}
-        type={props.type}
+        type='text'
         //value={value || props.readOnlyValue}
         defaultValue={props.readonly ? props.readOnlyValue : ''}
         onChange={handleChange}
         onBlur={handleBlur}
         readOnly={props.readonly ?? false}
         placeholder={props.placeholder}
-      />
+      ></input>
       {errorMessage && <ErrorMessage text={errorMessage}></ErrorMessage>}
     </div>
   );

@@ -63,7 +63,8 @@ function Menu() {
         case '/wallet-page/view':
           changeSelectedTab('wallets-menu-item');
           break;
-        case '/trade':
+        case '/trade/buy':
+        case '/trade/sell':
           changeSelectedTab('trade-menu-item');
           break;
         case '/settings/license':
@@ -123,8 +124,8 @@ function Menu() {
           className="app-menu-item"
           onClick={(e) => {
             handleMenuItemClick(e);
-            window.localStorage.setItem('url', '/trade');
-            navigate('/trade');
+            window.localStorage.setItem('url', '/trade/buy');
+            navigate('/trade/buy');
           }}
         >
           <img src={trade_icon}></img>
@@ -136,7 +137,7 @@ function Menu() {
             className="app-menu-item"
             onClick={(e) => {
               handleMenuItemClick(e);
-              window.localStorage.setItem('url', '/settings');
+              window.localStorage.setItem('url', '/settings/license');
               navigate('/settings/license');
             }}
           >

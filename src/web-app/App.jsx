@@ -28,7 +28,7 @@ function App() {
       <Routes>
         <Route path="/home" element={<Home></Home>} />
         <Route path="/wallet-page/*" element={<WalletPage></WalletPage>} />
-        <Route path="/trade" element={<Trade></Trade>} />
+        <Route path="/trade/*" element={<Trade></Trade>} />
         <Route path="/settings/*" element={<Settings></Settings>} />
       </Routes>
     </div>

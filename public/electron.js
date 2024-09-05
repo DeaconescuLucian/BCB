@@ -57,19 +57,9 @@ let solanaConnection;
 remoteMain.initialize();
 let mainBackgroundProcess = null;
 let secondaryBackgroundProcesses = [];
-function startBackgroundProcess(backgroundProcess, processType, pid) {
+function startBackgroundProcess(processType, pid) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
-        if (backgroundProcess) {
-            if (backgroundProcess.connected) {
-                console.log('Background process is already running');
-                return { message: 'Process already started!', pid: pid };
-            }
-            else {
-                console.log('Cleaning up disconnected background process');
-                backgroundProcess = null;
-            }
-        }
+        let backgroundProcess;
         return new Promise((resolve, reject) => {
             console.log('Starting background process...');
             if (processType !== events_1.ProcessType.MAIN) {
@@ -97,37 +87,69 @@ function startBackgroundProcess(backgroundProcess, processType, pid) {
                 console.log('Timeout reached, resolving without confirmation');
                 resolve({ message: 'Process started but no confirmation received', pid: undefined });
             }, 5000);
-            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.once('message', (message) => {
-                if (message === 'ready') {
-                    console.log('Background process is ready, sending start command');
-                    if (!pid) {
-                        //backgroundProcess?.send({ type: 'init'});
-                        backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send('start');
-                    }
-                    clearTimeout(timeout);
-                    resolve({ message: `Started process ${pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid}.`, pid: pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid });
-                }
-            });
-            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('error', (error) => {
+            const onError = (error) => {
                 console.error('Background process error:', error);
                 clearTimeout(timeout);
                 backgroundProcess = null;
                 reject(error);
-            });
-            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('exit', (code, signal) => {
+            };
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('error', onError);
+            const onExit = (code, signal) => {
                 console.log(`Background process exited with code ${code} and signal ${signal}`);
                 backgroundProcess = null;
-            });
-            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('message', (message) => {
+            };
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('exit', onExit);
+            const onMessage = (message) => {
                 if (message !== 'ready') {
                     if (processType.type === 'transaction') {
                         transactionsDb.insertTransaction(dbConnection, message);
+                        if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
+                            (0, ipcHandler_1.sendToRenderer)(mainWindow, processType.updateEvent, message);
+                        }
                     }
-                    if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
-                        (0, ipcHandler_1.sendToRenderer)(mainWindow, processType.updateEvent, message);
+                    if (message.type === 'confirm-transaction') {
+                        connectionDb.getActiveConnection(dbConnection).then((r) => {
+                            const confirmTransactionProcess = (0, child_process_1.fork)(path.join(`${__dirname}/background-processes`, 'confirm-transaction.js'));
+                            console.log("start already madafaka");
+                            confirmTransactionProcess === null || confirmTransactionProcess === void 0 ? void 0 : confirmTransactionProcess.once('message', (msg) => {
+                                if (msg === 'ready') {
+                                    confirmTransactionProcess === null || confirmTransactionProcess === void 0 ? void 0 : confirmTransactionProcess.send({
+                                        type: 'start',
+                                        data: { transactionData: message.data, connection: r },
+                                    });
+                                }
+                            });
+                            confirmTransactionProcess === null || confirmTransactionProcess === void 0 ? void 0 : confirmTransactionProcess.on('message', (msg) => {
+                                if (msg.type === 'transaction-confirmation-done') {
+                                    console.log('Transaction confirmed successfully');
+                                    transactionsDb.updateTransaction(dbConnection, msg.data);
+                                    if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
+                                        (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, msg.data);
+                                    }
+                                }
+                            });
+                        });
                     }
                 }
-            });
+            };
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('message', onMessage);
+            const onceMessage = (message) => {
+                if (message === 'ready') {
+                    console.log('Background process is ready, sending start command');
+                    if (!pid) {
+                        backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.send('start');
+                    }
+                    clearTimeout(timeout);
+                    if (processType === events_1.ProcessType.MAIN) {
+                        registerHandlers(backgroundProcess);
+                    }
+                    resolve({ message: `Started process ${pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid}.`, pid: pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid });
+                }
+            };
+            backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.once('message', onceMessage);
+            if (processType === events_1.ProcessType.MAIN) {
+                mainBackgroundProcess = backgroundProcess;
+            }
         });
     });
 }
@@ -165,9 +187,9 @@ function stopBackgroundProcess(backgroundProcess) {
 function createWindow() {
     mainWindow = new electron_1.BrowserWindow({
         minWidth: 1156,
-        minHeight: 680,
+        minHeight: 780,
         width: 1156,
-        height: 680,
+        height: 787,
         frame: false,
         show: false,
         webPreferences: {
@@ -209,7 +231,7 @@ function createTray() {
                         const result = yield connectionDb.getActiveConnection(dbConnection);
                         if (result)
                             solanaConnection = (0, utils_1.createConnection)(result);
-                        (0, handlers_1.setupHandlers)(dbConnection, solanaConnection);
+                        (0, handlers_1.setupHandlers)(dbConnection, solanaConnection, mainBackgroundProcess, mainWindow);
                     }
                     catch (error) {
                         console.log(error);
@@ -241,26 +263,13 @@ function createTray() {
     tray.setContextMenu(contextMenu);
     tray.setToolTip('Blockchain Busters');
 }
-function registerHandlers() {
-    (0, ipcHandler_1.registerHandler)('start-background-process', () => __awaiter(this, void 0, void 0, function* () {
-        try {
-            const result = yield startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
-            return result;
-        }
-        catch (error) {
-            console.error('Error in startBackgroundProcess:', error);
-            return 'error';
-        }
-    }));
-    (0, handlers_1.setupHandlers)(dbConnection, solanaConnection);
+function registerHandlers(backgroundProcess) {
+    (0, handlers_1.setupHandlers)(dbConnection, solanaConnection, backgroundProcess, mainWindow);
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess(mainBackgroundProcess);
     }));
-    // registerHandler(ProcessType.WALLET.startEvent, async (e: any, arg: number) => {
-    //   return await startBackgroundProcess(null, ProcessType.WALLET, arg);
-    // });
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.TRANSACTION.startEvent, (e, arg) => __awaiter(this, void 0, void 0, function* () {
-        return yield startBackgroundProcess(null, events_1.ProcessType.TRANSACTION, arg);
+        return yield startBackgroundProcess(events_1.ProcessType.TRANSACTION, arg);
     }));
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getLatestTransactionsEvent, () => __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
@@ -291,8 +300,7 @@ electron_1.app.on('ready', () => __awaiter(void 0, void 0, void 0, function* () 
         db.closeConnection(dbConnection);
         return;
     }
-    registerHandlers();
-    startBackgroundProcess(mainBackgroundProcess, events_1.ProcessType.MAIN);
+    yield startBackgroundProcess(events_1.ProcessType.MAIN);
 }));
 electron_1.app.on('window-all-closed', (event) => {
     if (process.platform !== 'darwin') {

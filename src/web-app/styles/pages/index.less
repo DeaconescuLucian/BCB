@@ -8,6 +8,7 @@
 @import 'home-page';
 @import 'trade-page';
 @import 'view-wallet-page';
+@import 'buy';
 
 .page-container {
     margin-top: @page-container-margin-top;
@@ -25,5 +26,6 @@
     
     &.page-with-tabstrip {
         padding: 0;
+        height: calc(@page-height - 2 * @default-page-container-padding + @default-main-container-padding);
     }
 }

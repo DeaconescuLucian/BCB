@@ -2,7 +2,7 @@ var interval: NodeJS.Timeout;
 
 function startMainProcess() {
   interval = setInterval(() => {
-    const message = `Background update at ${new Date().toLocaleTimeString()}`;
+    const message = `Background update at ${process.pid}`;
     if (process.send) {
       process.send(message);
     }
@@ -19,11 +19,19 @@ function stopMainProcess() {
 process.on('message', (msg: any) => {
   if (msg === 'start') {
     startMainProcess();
-  } else if (msg === 'stop') {
-    stopMainProcess();
+  } else {
+    if (msg === 'stop') {
+      stopMainProcess();
+    }
+    if (msg.type === 'confirm-transaction')
+    {
+      if (process.send) {
+        process.send({type: "confirm-transaction", data: msg.data});
+      }
+    }
   }
 });
 
 if (process.send) {
-    process.send('ready');
+  process.send('ready');
 }

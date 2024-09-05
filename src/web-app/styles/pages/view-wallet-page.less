@@ -26,48 +26,6 @@
     }
   }
 
-  .overview-panel {
-    width: calc(100% - 30px);
-    padding: 15px;
-    background-color: @color-tertiary-base;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    position: relative;
-
-    h3 {
-      color: @color-font-brand;
-      margin-bottom: 10px;
-      letter-spacing: 1px;
-    }
-
-    .overview-item {
-      width: 100%;
-      margin-bottom: 5px;
-
-      span {
-        display: inline-block;
-      }
-
-      .label {
-        width: 20%;
-        font-weight: lighter !important;
-      }
-
-      .value {
-        color: @color-font-white;
-        max-width: calc(80% - 50px);
-      }
-
-      .copy-icon {
-        position: relative;
-      }
-
-      .copy-to-clipboard-message {
-        font-size: 12px;
-      }
-    }
-  }
-
   .token-type-selector {
     display: flex;
     background-color: @color-tertiary-base;
@@ -107,5 +65,85 @@
     justify-content: space-between;
     width: calc(100% - 10px);
     margin-bottom: 20px;
+  }
+}
+
+.overview-panel {
+  width: calc(100% - 30px);
+  padding: 15px;
+  background-color: @color-tertiary-base;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  position: relative;
+
+  .header {
+    width: 100%;
+    display: flex;
+
+    button {
+      position: relative;
+      top: -10px;
+      margin-left: 10px;
+    }
+  }
+
+  h3 {
+    color: @color-font-brand;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+
+  .overview-item {
+    width: 100%;
+    margin-bottom: 5px;
+
+    &.has-image {
+      line-height: 32px;
+
+      .label {
+        position: relative;
+        top: -10px;
+      }
+    }
+
+
+    span {
+      display: inline-block;
+    }
+
+    .label {
+      width: 22%;
+      font-weight: lighter !important;
+
+      .sol-colors-mixin();
+    }
+
+    .value {
+      color: @color-font-white;
+      max-width: calc(80% - 50px); 
+
+      span {
+        color: @color-font-gray !important;
+        font-family: none;
+      }
+    }
+
+    .copy-icon {
+      position: relative;
+      top: -4px
+    }
+
+    .copy-to-clipboard-message {
+      font-size: 12px;
+    }
+
+    img {
+      position: relative;
+      top: 6px;
+      width: 24px;
+      height: 24px;
+      margin-right: 10px;
+      border-radius: 50%;
+    }
   }
 }

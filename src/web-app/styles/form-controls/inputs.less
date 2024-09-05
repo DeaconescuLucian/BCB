@@ -1,9 +1,15 @@
-input[type="text"] {
+input[type="text"], input[type="number"], input[type="range"] {
     width: calc(100% - 20px);
     padding: 5px 10px;
     outline: none;
     border: none;
     border-radius: 5px;
+
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
 
     &.theme-primary {
         color: @color-font-white;
@@ -21,6 +27,16 @@ input[type="text"] {
 
         &::placeholder {
             color: @color-black;
+            letter-spacing: 1px;
+        }
+    }
+
+    &.theme-tertiary {
+        color: @color-font-white;
+        background-color: @color-tertiary-base;
+
+        &::placeholder {
+            color: @color-font-white;
             letter-spacing: 1px;
         }
     }
