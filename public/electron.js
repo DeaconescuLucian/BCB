@@ -107,29 +107,6 @@ function startBackgroundProcess(processType, pid) {
                             (0, ipcHandler_1.sendToRenderer)(mainWindow, processType.updateEvent, message);
                         }
                     }
-                    if (message.type === 'confirm-transaction') {
-                        connectionDb.getActiveConnection(dbConnection).then((r) => {
-                            const confirmTransactionProcess = (0, child_process_1.fork)(path.join(`${__dirname}/background-processes`, 'confirm-transaction.js'));
-                            console.log("start already madafaka");
-                            confirmTransactionProcess === null || confirmTransactionProcess === void 0 ? void 0 : confirmTransactionProcess.once('message', (msg) => {
-                                if (msg === 'ready') {
-                                    confirmTransactionProcess === null || confirmTransactionProcess === void 0 ? void 0 : confirmTransactionProcess.send({
-                                        type: 'start',
-                                        data: { transactionData: message.data, connection: r },
-                                    });
-                                }
-                            });
-                            confirmTransactionProcess === null || confirmTransactionProcess === void 0 ? void 0 : confirmTransactionProcess.on('message', (msg) => {
-                                if (msg.type === 'transaction-confirmation-done') {
-                                    console.log('Transaction confirmed successfully');
-                                    transactionsDb.updateTransaction(dbConnection, msg.data);
-                                    if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
-                                        (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, msg.data);
-                                    }
-                                }
-                            });
-                        });
-                    }
                 }
             };
             backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('message', onMessage);
@@ -141,7 +118,7 @@ function startBackgroundProcess(processType, pid) {
                     }
                     clearTimeout(timeout);
                     if (processType === events_1.ProcessType.MAIN) {
-                        registerHandlers(backgroundProcess);
+                        registerHandlers();
                     }
                     resolve({ message: `Started process ${pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid}.`, pid: pid !== null && pid !== void 0 ? pid : backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.pid });
                 }
@@ -231,7 +208,7 @@ function createTray() {
                         const result = yield connectionDb.getActiveConnection(dbConnection);
                         if (result)
                             solanaConnection = (0, utils_1.createConnection)(result);
-                        (0, handlers_1.setupHandlers)(dbConnection, solanaConnection, mainBackgroundProcess, mainWindow);
+                        (0, handlers_1.setupHandlers)(dbConnection, solanaConnection, mainWindow);
                     }
                     catch (error) {
                         console.log(error);
@@ -263,8 +240,8 @@ function createTray() {
     tray.setContextMenu(contextMenu);
     tray.setToolTip('Blockchain Busters');
 }
-function registerHandlers(backgroundProcess) {
-    (0, handlers_1.setupHandlers)(dbConnection, solanaConnection, backgroundProcess, mainWindow);
+function registerHandlers() {
+    (0, handlers_1.setupHandlers)(dbConnection, solanaConnection, mainWindow);
     (0, ipcHandler_1.registerHandler)(events_1.ProcessType.MAIN.stopEvent, () => __awaiter(this, void 0, void 0, function* () {
         return yield stopBackgroundProcess(mainBackgroundProcess);
     }));

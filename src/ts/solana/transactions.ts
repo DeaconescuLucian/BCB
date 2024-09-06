@@ -42,31 +42,40 @@ async function simulateTransaction(tx: VersionedTransaction, connection: Connect
 export async function confirmTransaction(connection: Connection, params: { signature: string; block: any }) {
   const { signature, block } = params;
 
-  const result = await connection.confirmTransaction(
-    { signature: signature, blockhash: block.blockhash, lastValidBlockHeight: block.lastValidBlockHeight },
-    'confirmed'
-  );
-  if (result) {
-    if (result.value.err) {
-      console.log(`Error confirming signature: ${signature}`);
-      console.log(result.value.err);
+  try{
+    const result = await connection.confirmTransaction(
+      { signature: signature, blockhash: block.blockhash, lastValidBlockHeight: block.lastValidBlockHeight },
+      'confirmed'
+    );
+    if (result) {
+      if (result.value.err) {
+        console.log(`Error confirming signature: ${signature}`);
+        console.log(result.value.err);
+        return {
+          status: 'fail',
+          error: 'Transaction was not confirmed',
+          signature: signature,
+          date: new Date()
+  
+        };
+      } else {
+        console.log(`Signature confirmed: ${signature}`);
+        return {
+          status: 'success',
+          message: 'Transaction confirmed',
+          signature: signature,
+          date: new Date()
+        };
+      }
+    } else {
       return {
         status: 'fail',
         error: 'Transaction was not confirmed',
         signature: signature,
         date: new Date()
-
-      };
-    } else {
-      console.log(`Signature confirmed: ${signature}`);
-      return {
-        status: 'success',
-        message: 'Transaction confirmed',
-        signature: signature,
-        date: new Date()
       };
     }
-  } else {
+  } catch {
     return {
       status: 'fail',
       error: 'Transaction was not confirmed',
@@ -74,6 +83,7 @@ export async function confirmTransaction(connection: Connection, params: { signa
       date: new Date()
     };
   }
+
 }
 
 async function sendTransaction(tx: VersionedTransaction, block: any, connection: Connection, simulate: boolean, amount?: number) {
@@ -235,10 +245,10 @@ export async function buy(params: buyParams, fees: feesParams, connection: Conne
   ];
 
   const tx = await createSignedTransaction(instructions, connection, wallet, lastbk.blockhash);
-  return sendTransaction(tx, lastbk, connection, simulate);
+  return sendTransaction(tx, lastbk, connection, simulate, params.amount);
 }
 
-export async function unwrapSol(wallet: Keypair, connection: Connection, simulate: boolean) {
+export async function unwrapSol(wallet: Keypair, connection: Connection, amount: number, simulate: boolean) {
   const ata = getAssociatedTokenAddressSync(raydium.Token.WSOL.mint, wallet.publicKey);
   const blockhash = await connection.getLatestBlockhash('finalized');
   const instructions = [
@@ -247,7 +257,7 @@ export async function unwrapSol(wallet: Keypair, connection: Connection, simulat
     createCloseAccountInstruction(ata, wallet.publicKey, wallet.publicKey),
   ];
   const tx = await createSignedTransaction(instructions, connection, wallet);
-  return sendTransaction(tx, blockhash, connection, simulate);
+  return sendTransaction(tx, blockhash, connection, simulate, amount);
 }
 
 export async function wrapSol(wallet: Keypair, amount: number, connection: Connection, simulate: boolean) {

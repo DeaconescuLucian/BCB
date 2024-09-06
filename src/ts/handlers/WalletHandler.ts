@@ -11,6 +11,7 @@ import {
   getWalletTokenAccounts,
   insertWalletTokenAccounts,
   updateTokenAccountBalances,
+  deleteTokenAccounts
 } from '../database/walletTokenAccounts';
 import { updateWalletBalance } from '../database/wallets';
 import { ITokenAccount, IToken } from '../solana/utils';
@@ -116,10 +117,11 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
       const tokenAccs = await getWalletTokenAccounts(db, arg.publicKey);
       let tokenAccsToInsert: ITokenAccount[] = [];
       let tokenAccsToUpdate: ITokenAccount[] = [];
+      let tokenAccsToDelete: any[];
       let tokensToInsert: IToken[] = [];
       let tokensToUpdate: IToken[] = [];
 
-      res.accounts.forEach((acc) => {
+      res.accounts.filter(a => !a.toDelete).forEach((acc) => {
         let token = res.tokens.find((t) => t.mint === acc.mint);
         if (tokenAccs?.find((a) => a.accountAddress === acc.accountAddress)) {
           tokenAccsToUpdate.push(acc);
@@ -129,6 +131,8 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
           if (token) tokensToInsert.push(token);
         }
       });
+
+      tokenAccsToDelete = res.accounts.filter(a => a.toDelete);
 
       try {
         if (tokensToInsert.length)
@@ -173,6 +177,23 @@ const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
               db,
               tokenAccsToUpdate.map((a) => {
                 return { accountAddress: a.accountAddress, balance: a.amount };
+              }),
+              (err: Error | null) => {
+                if (err) {
+                  error = err.message;
+                  reject(err.message);
+                } else {
+                  resolve();
+                }
+              }
+            );
+          });
+        if(tokenAccsToDelete.length)
+          await new Promise<void>((resolve, reject) => {
+            deleteTokenAccounts(
+              db,
+              tokenAccsToDelete.map((a) => {
+                return { publicKey: a.publicKey, mint: a.mint };
               }),
               (err: Error | null) => {
                 if (err) {

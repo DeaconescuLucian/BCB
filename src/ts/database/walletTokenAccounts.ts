@@ -155,3 +155,43 @@ export function updateTokenAccountBalances(
     });
   });
 }
+
+
+export function deleteTokenAccounts(
+  db: sqlite3.Database,
+  tokenAccounts: { publicKey: string; mint: string; }[],
+  callback?: (err: Error | null) => void
+): void {
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+
+    const stmt = db.prepare(`
+      DELETE FROM walletTokenAccounts
+      WHERE publicKey = ? AND mint = ?
+    `);
+
+    for (const account of tokenAccounts) {
+      stmt.run(account.publicKey, account.mint, function (err: Error | null) {
+        if (err) {
+          db.run('ROLLBACK');
+          console.error('Error deleting token account:', err.message);
+          if (callback) callback(err);
+          return;
+        }
+      });
+    }
+
+    stmt.finalize((err) => {
+      if (err) {
+        db.run('ROLLBACK');
+        console.error('Error finalizing statement:', err.message);
+        if (callback) callback(err);
+      } else {
+        db.run('COMMIT');
+        console.log('Deleted token accounts.');
+        if (callback) callback(null);
+      }
+    });
+  });
+}
+

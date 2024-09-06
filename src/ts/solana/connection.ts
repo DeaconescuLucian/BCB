@@ -1,14 +1,13 @@
 import { Cluster, clusterApiUrl, Connection } from '@solana/web3.js';
 import { setupHandlers } from '../handlers';
 import sqlite3 from 'sqlite3';
-import { ChildProcess } from 'child_process';
 import { BrowserWindow } from 'electron';
 
-export function updateSolanaConnection(dbConnection: sqlite3.Database, connection: Connection, mainProcess: ChildProcess | null, mainWindow: BrowserWindow | null,  newConnection: string) {
+export function updateSolanaConnection(dbConnection: sqlite3.Database, connection: Connection, mainWindow: BrowserWindow | null,  newConnection: string) {
   if (newConnection.startsWith('http')) connection = new Connection(newConnection);
   else connection = new Connection(clusterApiUrl(newConnection as Cluster), 'confirmed');
 
-  setupHandlers(dbConnection, connection, mainProcess, mainWindow);
+  setupHandlers(dbConnection, connection, mainWindow);
 }
 
 export async function testConnection(connectionString: string) {

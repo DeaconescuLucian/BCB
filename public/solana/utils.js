@@ -165,9 +165,6 @@ function getTokensOwnedByWallet(connection, publicKey, existingMints) {
                 amount = balance.uiAmount;
                 decimals = balance.decimals;
                 isNft = decimals === 0;
-                if (mint === 'So11111111111111111111111111111111111111112') {
-                    console.log(balance.uiAmount);
-                }
                 try {
                     if (!(existingMints === null || existingMints === void 0 ? void 0 : existingMints.find((e) => e.mint === mint))) {
                         const metadataPDA = yield Metadata.getPDA(accData.mint);
@@ -218,6 +215,15 @@ function getTokensOwnedByWallet(connection, publicKey, existingMints) {
                 }
             }
         }
+        existingMints === null || existingMints === void 0 ? void 0 : existingMints.forEach((m) => {
+            if (!accounts.find((a) => a.mint === m.mint)) {
+                accounts.push({
+                    publicKey: publicKey.toBase58(),
+                    mint: m.mint,
+                    toDelete: true,
+                });
+            }
+        });
         return new Promise((resolve) => {
             resolve({
                 tokens: tokens,

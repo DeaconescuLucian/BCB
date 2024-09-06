@@ -50,7 +50,7 @@ const TransactionItem = memo((props) => {
             <CopyToClipboard text={props.signature}></CopyToClipboard>
           </div>
           <div className="value">
-            <span>{props.value} SOL</span>
+            <span>{props.value.toFixed(8)} SOL</span>
           </div>
         </div>
       </div>

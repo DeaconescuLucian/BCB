@@ -13,6 +13,7 @@ exports.createTableWalletTokenAccounts = createTableWalletTokenAccounts;
 exports.insertWalletTokenAccounts = insertWalletTokenAccounts;
 exports.getWalletTokenAccounts = getWalletTokenAccounts;
 exports.updateTokenAccountBalances = updateTokenAccountBalances;
+exports.deleteTokenAccounts = deleteTokenAccounts;
 const db_1 = require("./db");
 function createTableWalletTokenAccounts(db) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -136,6 +137,40 @@ function updateTokenAccountBalances(db, tokenAccounts, callback) {
             else {
                 db.run('COMMIT');
                 console.log('Updated token account balances.');
+                if (callback)
+                    callback(null);
+            }
+        });
+    });
+}
+function deleteTokenAccounts(db, tokenAccounts, callback) {
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION');
+        const stmt = db.prepare(`
+      DELETE FROM walletTokenAccounts
+      WHERE publicKey = ? AND mint = ?
+    `);
+        for (const account of tokenAccounts) {
+            stmt.run(account.publicKey, account.mint, function (err) {
+                if (err) {
+                    db.run('ROLLBACK');
+                    console.error('Error deleting token account:', err.message);
+                    if (callback)
+                        callback(err);
+                    return;
+                }
+            });
+        }
+        stmt.finalize((err) => {
+            if (err) {
+                db.run('ROLLBACK');
+                console.error('Error finalizing statement:', err.message);
+                if (callback)
+                    callback(err);
+            }
+            else {
+                db.run('COMMIT');
+                console.log('Deleted token accounts.');
                 if (callback)
                     callback(null);
             }

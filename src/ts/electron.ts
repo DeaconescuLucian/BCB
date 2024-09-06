@@ -10,8 +10,8 @@ import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './e
 import sqlite3 from 'sqlite3';
 import * as db from './database/db';
 import * as transactionsDb from './database/transactions';
-import { createConnection, getTokensOwnedByWallet } from './solana/utils';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { createConnection} from './solana/utils';
+import { Connection } from '@solana/web3.js';
 import * as connectionDb from './database/connections';
 
 if (!verifyUniqueEvents(ProcessType)) {
@@ -95,29 +95,6 @@ async function startBackgroundProcess(
             sendToRenderer(mainWindow, processType.updateEvent, message);
           }
         }
-        if (message.type === 'confirm-transaction') {
-            connectionDb.getActiveConnection(dbConnection).then((r) => {
-            const confirmTransactionProcess = fork(path.join(`${__dirname}/background-processes`, 'confirm-transaction.js'));
-            console.log("start already madafaka")
-            confirmTransactionProcess?.once('message', (msg: any) => {
-              if (msg === 'ready') {
-                confirmTransactionProcess?.send({
-                  type: 'start',
-                  data: { transactionData: message.data, connection: r },
-                });
-              }
-            });
-            confirmTransactionProcess?.on('message', (msg: any) => {
-              if (msg.type === 'transaction-confirmation-done') {
-                console.log('Transaction confirmed successfully');
-                transactionsDb.updateTransaction(dbConnection, msg.data);
-                if (mainWindow?.isVisible()) {
-                  sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
-                }
-              }
-            });
-          });
-        }
       }
     };
 
@@ -131,7 +108,7 @@ async function startBackgroundProcess(
         }
         clearTimeout(timeout);
         if (processType === ProcessType.MAIN) {
-          registerHandlers(backgroundProcess);
+          registerHandlers();
         }
         resolve({ message: `Started process ${pid ?? backgroundProcess?.pid}.`, pid: pid ?? backgroundProcess?.pid });
       }
@@ -227,7 +204,7 @@ function createTray(): void {
           try {
             const result = await connectionDb.getActiveConnection(dbConnection);
             if (result) solanaConnection = createConnection(result);
-            setupHandlers(dbConnection, solanaConnection, mainBackgroundProcess, mainWindow);
+            setupHandlers(dbConnection, solanaConnection, mainWindow);
           } catch (error) {
             console.log(error);
           }
@@ -258,8 +235,8 @@ function createTray(): void {
   tray.setToolTip('Blockchain Busters');
 }
 
-function registerHandlers(backgroundProcess: ChildProcess | null) {
-  setupHandlers(dbConnection, solanaConnection, backgroundProcess, mainWindow);
+function registerHandlers() {
+  setupHandlers(dbConnection, solanaConnection, mainWindow);
 
   registerHandler(ProcessType.MAIN.stopEvent, async () => {
     return await stopBackgroundProcess(mainBackgroundProcess);

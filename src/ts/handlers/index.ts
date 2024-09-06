@@ -4,13 +4,12 @@ import handleToken from './TokenHandler';
 import sqlite3 from 'sqlite3';
 import { Connection } from '@solana/web3.js';
 import handleTransaction from './TransactionHandler';
-import { ChildProcess } from 'child_process';
 import { BrowserWindow } from 'electron';
 
-export function setupHandlers(db: sqlite3.Database, solanaConnection: Connection, mainProcess: ChildProcess | null, mainWindow: BrowserWindow | null): void
+export function setupHandlers(db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null): void
 {
     handleWallet(db, solanaConnection);
-    handleConnection(db, solanaConnection, mainProcess, mainWindow);
+    handleConnection(db, solanaConnection, mainWindow);
     handleToken(db, solanaConnection);
-    handleTransaction(db, solanaConnection, mainProcess, mainWindow);
+    handleTransaction(db, solanaConnection, mainWindow);
 }

@@ -8,9 +8,9 @@ const WalletHandler_1 = __importDefault(require("./WalletHandler"));
 const ConnectionHandler_1 = __importDefault(require("./ConnectionHandler"));
 const TokenHandler_1 = __importDefault(require("./TokenHandler"));
 const TransactionHandler_1 = __importDefault(require("./TransactionHandler"));
-function setupHandlers(db, solanaConnection, mainProcess, mainWindow) {
+function setupHandlers(db, solanaConnection, mainWindow) {
     (0, WalletHandler_1.default)(db, solanaConnection);
-    (0, ConnectionHandler_1.default)(db, solanaConnection, mainProcess, mainWindow);
+    (0, ConnectionHandler_1.default)(db, solanaConnection, mainWindow);
     (0, TokenHandler_1.default)(db, solanaConnection);
-    (0, TransactionHandler_1.default)(db, solanaConnection, mainProcess, mainWindow);
+    (0, TransactionHandler_1.default)(db, solanaConnection, mainWindow);
 }

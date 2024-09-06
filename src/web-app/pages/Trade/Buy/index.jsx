@@ -34,7 +34,6 @@ function Buy() {
   const [solanaPrice, setSolanaPrice] = useState(0);
   const [fee, setFee] = useState(0.00005);
   const [wrapAmount, setWrapAmount] = useState(0);
-  const [unwrapAmount, setUnwrapAmount] = useState(0);
   const [wsolBalance, setWsolBalance] = useState(0);
 
   const updateSolanaPrice = async () => {
@@ -106,6 +105,7 @@ function Buy() {
     setLoading(true);
     const result = await window.electron.invoke(CustomEvents.unwrapEvent, {
       wallet: selectedWalletDetails?.publicKey,
+      amount: wsolBalance,
       simulate: simulateUnwrap,
     });
     if (result) {
@@ -124,27 +124,38 @@ function Buy() {
   };
 
   const buy = async () => {
-    console.log((amountToBuy || 0))
-    console.log( (solanaPrice / token.price))
-    // const result = await window.electron.invoke(CustomEvents.buyEvent, {
-    //   params: {
-    //     wallet: selectedWalletDetails?.publicKey,
-    //     token: token?.mint,
-    //     amount: amountToBuy,
-    //   },
-    //   fees: fee,
-    //   simulate: simulate,
-    // });
-
-    // if (result) {
-    //   if (result.data.message) {
-    //     showToast(result.data.message, 'success');
-    //   } else {
-    //     if (result.data.error) {
-    //       showToast(result.data.error, 'fail');
-    //     }
-    //   }
-    // }
+    setLoading(true);
+    const result = await window.electron.invoke(CustomEvents.buyEvent, {
+      params: {
+        wallet: selectedWalletDetails?.publicKey,
+        mint: token?.mint,
+        amount: amountToBuy,
+      },
+      fees: fee,
+      simulate: simulate,
+    });
+    if (result) {
+      if(result.data)
+      {
+        if (result.data.message) {
+          let publicKey = selectedWalletDetails?.publicKey;
+          dispatch(updateSelectedWallet(publicKey));
+          dispatch(getWalletDetails(publicKey));
+          setLoading(false);
+          showToast(result.data.message, 'success');
+        } else {
+          if (result.data.error) {
+            setLoading(false);
+            showToast(result.data.error, 'fail');
+          }
+        }
+      }
+      else
+      {
+        setLoading(false);
+        showToast('Error processing transaction', 'fail');
+      }
+    }
   };
 
   const handleUpdateWallet = async () => {
@@ -345,7 +356,7 @@ function Buy() {
             }}
             theme="dark"
             text="Unwrap"
-            disabled={unwrapAmount <= 0}
+            disabled={wsolBalance <= 0}
           ></Button>
           <Switch theme="primary" value={simulateUnwrap} onChange={() => setSimulateUnwrap(!simulateUnwrap)}></Switch>
         </div>

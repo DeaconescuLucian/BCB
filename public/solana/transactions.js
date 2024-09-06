@@ -70,11 +70,31 @@ function simulateTransaction(tx, connection) {
 function confirmTransaction(connection, params) {
     return __awaiter(this, void 0, void 0, function* () {
         const { signature, block } = params;
-        const result = yield connection.confirmTransaction({ signature: signature, blockhash: block.blockhash, lastValidBlockHeight: block.lastValidBlockHeight }, 'confirmed');
-        if (result) {
-            if (result.value.err) {
-                console.log(`Error confirming signature: ${signature}`);
-                console.log(result.value.err);
+        try {
+            const result = yield connection.confirmTransaction({ signature: signature, blockhash: block.blockhash, lastValidBlockHeight: block.lastValidBlockHeight }, 'confirmed');
+            if (result) {
+                console.log(result);
+                if (result.value.err) {
+                    console.log(`Error confirming signature: ${signature}`);
+                    console.log(result.value.err);
+                    return {
+                        status: 'fail',
+                        error: 'Transaction was not confirmed',
+                        signature: signature,
+                        date: new Date()
+                    };
+                }
+                else {
+                    console.log(`Signature confirmed: ${signature}`);
+                    return {
+                        status: 'success',
+                        message: 'Transaction confirmed',
+                        signature: signature,
+                        date: new Date()
+                    };
+                }
+            }
+            else {
                 return {
                     status: 'fail',
                     error: 'Transaction was not confirmed',
@@ -82,17 +102,8 @@ function confirmTransaction(connection, params) {
                     date: new Date()
                 };
             }
-            else {
-                console.log(`Signature confirmed: ${signature}`);
-                return {
-                    status: 'success',
-                    message: 'Transaction confirmed',
-                    signature: signature,
-                    date: new Date()
-                };
-            }
         }
-        else {
+        catch (_a) {
             return {
                 status: 'fail',
                 error: 'Transaction was not confirmed',
@@ -217,10 +228,10 @@ function buy(params, fees, connection, simulate) {
             ...innerTransaction.instructions,
         ];
         const tx = yield createSignedTransaction(instructions, connection, wallet, lastbk.blockhash);
-        return sendTransaction(tx, lastbk, connection, simulate);
+        return sendTransaction(tx, lastbk, connection, simulate, params.amount);
     });
 }
-function unwrapSol(wallet, connection, simulate) {
+function unwrapSol(wallet, connection, amount, simulate) {
     return __awaiter(this, void 0, void 0, function* () {
         const ata = (0, spl_token_1.getAssociatedTokenAddressSync)(raydium.Token.WSOL.mint, wallet.publicKey);
         const blockhash = yield connection.getLatestBlockhash('finalized');
@@ -230,7 +241,7 @@ function unwrapSol(wallet, connection, simulate) {
             (0, spl_token_1.createCloseAccountInstruction)(ata, wallet.publicKey, wallet.publicKey),
         ];
         const tx = yield createSignedTransaction(instructions, connection, wallet);
-        return sendTransaction(tx, blockhash, connection, simulate);
+        return sendTransaction(tx, blockhash, connection, simulate, amount);
     });
 }
 function wrapSol(wallet, amount, connection, simulate) {

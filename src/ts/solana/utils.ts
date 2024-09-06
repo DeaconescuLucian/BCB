@@ -119,6 +119,7 @@ export interface ITokenAccount {
   accountAddress: string;
   mint: string;
   amount: number;
+  toDelete?: boolean;
 }
 
 async function fetchData(uri: string) {
@@ -220,6 +221,16 @@ export async function getTokensOwnedByWallet(
       }
     }
   }
+
+  existingMints?.forEach((m) => {
+    if (!accounts.find((a: any) => a.mint === m.mint)) {
+      accounts.push({
+        publicKey: publicKey.toBase58(),
+        mint: m.mint,
+        toDelete: true,
+      });
+    }
+  });
 
   return new Promise((resolve) => {
     resolve({

@@ -4,14 +4,16 @@ import sqlite3 from 'sqlite3';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { buy, getPoolKeys, unwrapSol, wrapSol } from '../solana/transactions';
 import { getWalletSecret } from '../database/wallets';
-import { generateWallet, getKeyPairFromSecret } from '../solana/wallet';
-import { ChildProcess } from 'child_process';
+import { getKeyPairFromSecret } from '../solana/wallet';
 import * as transactionsDb from '../database/transactions';
 import { BrowserWindow } from 'electron';
+import * as connectionDb from '../database/connections';
+import * as path from 'path';
+import { fork } from 'child_process';
 
 let _poolKeys: any[] = [];
 
-const BuyHandler = (solanaConnection: Connection, db: sqlite3.Database) => {
+const BuyHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
   registerHandler(
     CustomEvents.buyEvent,
     async (
@@ -19,13 +21,12 @@ const BuyHandler = (solanaConnection: Connection, db: sqlite3.Database) => {
       arg: { params: { wallet: string; mint: string; amount: number }; fees: number; simulate: boolean }
     ) => {
       let response: any = null;
-      console.log(_poolKeys);
       const wallet = await getWalletSecret(db, arg.params.wallet);
       if (wallet) {
         const keyPair = getKeyPairFromSecret(wallet.secretKey);
         if (keyPair) {
           let poolKeys =
-            _poolKeys.find((e) => (e.mint = arg.params.mint)) ||
+            _poolKeys.find((e) => (e.mint === arg.params.mint))?.poolKeys ||
             (await getPoolKeys(new PublicKey(arg.params.mint), solanaConnection));
           if (poolKeys) {
             if (!_poolKeys.find((e) => (e.mint = arg.params.mint)))
@@ -41,7 +42,49 @@ const BuyHandler = (solanaConnection: Connection, db: sqlite3.Database) => {
               arg.simulate
             );
 
-            if (response.status === 'success') {
+            if (!arg.simulate) {
+              if (response.status === 'success') {
+                const transaction = {
+                  signature: response.signature,
+                  value: response.amount,
+                  date: new Date(),
+                  status: 'pending',
+                };
+                transactionsDb.insertTransaction(db, transaction);
+                if (mainWindow?.isVisible()) {
+                  sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
+                }
+  
+                connectionDb.getActiveConnection(db).then((r) => {
+                  const confirmTransactionProcess = fork(
+                    path.join(`${__dirname}/../background-processes`, 'confirm-transaction.js')
+                  );
+                  confirmTransactionProcess?.once('message', (msg: any) => {
+                    if (msg === 'ready') {
+                      confirmTransactionProcess?.send({
+                        type: 'start',
+                        data: {
+                          transactionData: {
+                            block: response.block,
+                            amount: transaction.value,
+                            signature: transaction.signature,
+                          },
+                          connection: r,
+                        },
+                      });
+                    }
+                  });
+                  confirmTransactionProcess?.on('message', (msg: any) => {
+                    if (msg.type === 'transaction-confirmation-done') {
+                      console.log('Transaction confirmed successfully');
+                      transactionsDb.updateTransaction(db, msg.data);
+                      if (mainWindow?.isVisible()) {
+                        sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
+                      }
+                    }
+                  });
+                });
+              }
             }
           }
         }
@@ -57,24 +100,7 @@ const BuyHandler = (solanaConnection: Connection, db: sqlite3.Database) => {
   );
 };
 
-function generateRandomNumber() {
-  const randomNum = Math.random() * 10;
-  const roundedNum = randomNum.toFixed(8);
-  return parseFloat(roundedNum);
-}
-
-function getRandomStatus() {
-  const statuses = ['success', 'fail', 'pending'];
-  const randomIndex = Math.floor(Math.random() * statuses.length);
-  return statuses[randomIndex];
-}
-
-const WrapHandler = (
-  solanaConnection: Connection,
-  db: sqlite3.Database,
-  mainProcess: ChildProcess | null,
-  mainWindow: BrowserWindow | null
-) => {
+const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
   registerHandler(
     CustomEvents.wrapEvent,
     async (e: any, arg: { wallet: string; amount: number; simulate: boolean }) => {
@@ -97,9 +123,35 @@ const WrapHandler = (
               if (mainWindow?.isVisible()) {
                 sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
               }
-              mainProcess?.send({
-                type: 'confirm-transaction',
-                data: { block: response.block, amount: transaction.value, signature: transaction.signature },
+
+              connectionDb.getActiveConnection(db).then((r) => {
+                const confirmTransactionProcess = fork(
+                  path.join(`${__dirname}/../background-processes`, 'confirm-transaction.js')
+                );
+                confirmTransactionProcess?.once('message', (msg: any) => {
+                  if (msg === 'ready') {
+                    confirmTransactionProcess?.send({
+                      type: 'start',
+                      data: {
+                        transactionData: {
+                          block: response.block,
+                          amount: transaction.value,
+                          signature: transaction.signature,
+                        },
+                        connection: r,
+                      },
+                    });
+                  }
+                });
+                confirmTransactionProcess?.on('message', (msg: any) => {
+                  if (msg.type === 'transaction-confirmation-done') {
+                    console.log('Transaction confirmed successfully');
+                    transactionsDb.updateTransaction(db, msg.data);
+                    if (mainWindow?.isVisible()) {
+                      sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
+                    }
+                  }
+                });
               });
             }
           }
@@ -116,33 +168,75 @@ const WrapHandler = (
   );
 };
 
-const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database) => {
-  registerHandler(CustomEvents.unwrapEvent, async (e: any, arg: { wallet: string; simulate: boolean }) => {
+const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
+  registerHandler(CustomEvents.unwrapEvent, async (e: any, arg: { wallet: string; amount: number; simulate: boolean }) => {
     let response: any = null;
-    const wallet = await getWalletSecret(db, arg.wallet);
-    if (wallet) {
-      const keyPair = getKeyPairFromSecret(wallet.secretKey);
-      if (keyPair) response = await unwrapSol(keyPair, solanaConnection, arg.simulate);
-    }
+      const wallet = await getWalletSecret(db, arg.wallet);
+      if (wallet) {
+        const keyPair = getKeyPairFromSecret(wallet.secretKey);
+        if (keyPair) {
+          response = await unwrapSol(keyPair, solanaConnection, arg.amount, arg.simulate);
 
-    return new Promise((resolve) => {
-      if (response) resolve(response);
-      else {
-        resolve(null);
+          if (!arg.simulate) {
+            if (response.status === 'success') {
+              const transaction = {
+                signature: response.signature,
+                value: response.amount,
+                date: new Date(),
+                status: 'pending',
+              };
+              transactionsDb.insertTransaction(db, transaction);
+              if (mainWindow?.isVisible()) {
+                sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
+              }
+
+              connectionDb.getActiveConnection(db).then((r) => {
+                const confirmTransactionProcess = fork(
+                  path.join(`${__dirname}/../background-processes`, 'confirm-transaction.js')
+                );
+                confirmTransactionProcess?.once('message', (msg: any) => {
+                  if (msg === 'ready') {
+                    confirmTransactionProcess?.send({
+                      type: 'start',
+                      data: {
+                        transactionData: {
+                          block: response.block,
+                          amount: transaction.value,
+                          signature: transaction.signature,
+                        },
+                        connection: r,
+                      },
+                    });
+                  }
+                });
+                confirmTransactionProcess?.on('message', (msg: any) => {
+                  if (msg.type === 'transaction-confirmation-done') {
+                    console.log('Transaction confirmed successfully');
+                    transactionsDb.updateTransaction(db, msg.data);
+                    if (mainWindow?.isVisible()) {
+                      sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
+                    }
+                  }
+                });
+              });
+            }
+          }
+        }
       }
-    });
+
+      return new Promise((resolve) => {
+        if (response) resolve(response);
+        else {
+          resolve(null);
+        }
+      });
   });
 };
 
-const handleTransaction = (
-  db: sqlite3.Database,
-  solanaConnection: Connection,
-  mainProcess: ChildProcess | null,
-  mainWindow: BrowserWindow | null
-) => {
-  BuyHandler(solanaConnection, db);
-  WrapHandler(solanaConnection, db, mainProcess, mainWindow);
-  UnwrapHandler(solanaConnection, db);
+const handleTransaction = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null) => {
+  BuyHandler(solanaConnection, db, mainWindow);
+  WrapHandler(solanaConnection, db, mainWindow);
+  UnwrapHandler(solanaConnection, db, mainWindow);
 };
 
 export default handleTransaction;

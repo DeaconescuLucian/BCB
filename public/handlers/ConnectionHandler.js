@@ -71,13 +71,13 @@ const GetConnectionsHandler = (db) => {
         });
     }));
 };
-const UpdateActiveConnectionHandler = (db, solanaConnection, mainProcess, mainWindow) => {
+const UpdateActiveConnectionHandler = (db, solanaConnection, mainWindow) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.updateActiveConnectionEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         return new Promise((resolve) => {
             connectionDb.updateActiveConnection(db, arg, (result) => {
                 if (!result) {
                     try {
-                        (0, connection_1.updateSolanaConnection)(db, solanaConnection, mainProcess, mainWindow, arg);
+                        (0, connection_1.updateSolanaConnection)(db, solanaConnection, mainWindow, arg);
                     }
                     catch (error) {
                         console.log(error);
@@ -97,10 +97,10 @@ const DeleteConnectionHandler = (db) => {
         });
     }));
 };
-const handleConnection = (db, solanaConnection, mainProcess, mainWindow) => {
+const handleConnection = (db, solanaConnection, mainWindow) => {
     CreateConnectionHandler(db);
     GetConnectionsHandler(db);
-    UpdateActiveConnectionHandler(db, solanaConnection, mainProcess, mainWindow);
+    UpdateActiveConnectionHandler(db, solanaConnection, mainWindow);
     DeleteConnectionHandler(db);
 };
 exports.default = handleConnection;

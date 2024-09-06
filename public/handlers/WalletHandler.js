@@ -142,9 +142,10 @@ const UpdateWalletHandler = (db, solanaConnection) => {
             const tokenAccs = yield (0, walletTokenAccounts_1.getWalletTokenAccounts)(db, arg.publicKey);
             let tokenAccsToInsert = [];
             let tokenAccsToUpdate = [];
+            let tokenAccsToDelete;
             let tokensToInsert = [];
             let tokensToUpdate = [];
-            res.accounts.forEach((acc) => {
+            res.accounts.filter(a => !a.toDelete).forEach((acc) => {
                 let token = res.tokens.find((t) => t.mint === acc.mint);
                 if (tokenAccs === null || tokenAccs === void 0 ? void 0 : tokenAccs.find((a) => a.accountAddress === acc.accountAddress)) {
                     tokenAccsToUpdate.push(acc);
@@ -157,6 +158,7 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                         tokensToInsert.push(token);
                 }
             });
+            tokenAccsToDelete = res.accounts.filter(a => a.toDelete);
             try {
                 if (tokensToInsert.length)
                     yield new Promise((resolve, reject) => {
@@ -198,6 +200,20 @@ const UpdateWalletHandler = (db, solanaConnection) => {
                     yield new Promise((resolve, reject) => {
                         (0, walletTokenAccounts_1.updateTokenAccountBalances)(db, tokenAccsToUpdate.map((a) => {
                             return { accountAddress: a.accountAddress, balance: a.amount };
+                        }), (err) => {
+                            if (err) {
+                                error = err.message;
+                                reject(err.message);
+                            }
+                            else {
+                                resolve();
+                            }
+                        });
+                    });
+                if (tokenAccsToDelete.length)
+                    yield new Promise((resolve, reject) => {
+                        (0, walletTokenAccounts_1.deleteTokenAccounts)(db, tokenAccsToDelete.map((a) => {
+                            return { publicKey: a.publicKey, mint: a.mint };
                         }), (err) => {
                             if (err) {
                                 error = err.message;

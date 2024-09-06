@@ -23,12 +23,6 @@ process.on('message', (msg: any) => {
     if (msg === 'stop') {
       stopMainProcess();
     }
-    if (msg.type === 'confirm-transaction')
-    {
-      if (process.send) {
-        process.send({type: "confirm-transaction", data: msg.data});
-      }
-    }
   }
 });
 
