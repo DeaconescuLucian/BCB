@@ -4,6 +4,7 @@ import LicenseSettings from './LicenseSettings/index.jsx';
 import ConnectionSettings from './ConnectionSettings';
 import Tabstrip from '../../components/Tabstrip/index.tsx';
 import { useNavigate } from 'react-router-dom';
+import { navigateAndSave } from '../../utils.js';
 
 function Settings() {
   const [tabs] = useState([
@@ -41,7 +42,7 @@ function Settings() {
         onChange={(tab) => {
           window.localStorage.setItem('url', `/settings${tab.url}`);
           setActiveTab(tab);
-          navigate(`/settings${tab.url}`);
+          navigateAndSave(navigate, `/settings${tab.url}`);
         }}
       ></Tabstrip>
       <div className="settings-page">

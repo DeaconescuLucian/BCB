@@ -62,8 +62,8 @@ export default function SearchBar(props: ISearchProps) {
           if (event.key === 'Enter') {
             setIsFocused(false);
             setValue('');
-            if (props.remoteSearch && props.onSearch) props.onSearch(value);
             if (props.onSearch && matchingValues.length) props.onSearch(matchingValues[0]);
+            if (value !== '') if (props.remoteSearch && props.onSearch) props.onSearch(value);
           }
         }}
       >
@@ -91,8 +91,8 @@ export default function SearchBar(props: ISearchProps) {
           onClick={() => {
             setIsFocused(false);
             setValue('');
-            if (props.remoteSearch && props.onSearch) props.onSearch(value);
             if (props.onSearch && matchingValues.length) props.onSearch(matchingValues[0]);
+            if (value !== '') if (props.remoteSearch && props.onSearch) props.onSearch(value);
           }}
         >
           {searchSvg}

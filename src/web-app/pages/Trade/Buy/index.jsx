@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SearchBar from '../../../components/SearchBar';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -20,6 +20,9 @@ import Input from '../../../components/FormControls/Input.tsx';
 import Switch from '../../../components/Switch/index.tsx';
 import { formatNumber } from '../../../utils.js';
 import Collapse from '../../../components/Collapse/index.tsx';
+import { backSvg } from '../../../assets/svg';
+import { navigateBack, checkForPreviousLocation } from '../../../utils.js';
+import { useNavigate } from 'react-router-dom';
 
 function Buy() {
   const { selectedWalletDetails, selectedWalletAccounts, wallets } = useSelector((state) => state.wallets);
@@ -29,12 +32,12 @@ function Buy() {
   const [token, setToken] = useState(null);
   const [amountToBuy, setAmountToBuy] = useState(0);
   const [simulate, setSimulate] = useState(false);
-  const [simulateWrap, setSimulateWrap] = useState(false);
-  const [simulateUnwrap, setSimulateUnwrap] = useState(false);
   const [solanaPrice, setSolanaPrice] = useState(0);
   const [fee, setFee] = useState(0.00005);
   const [wrapAmount, setWrapAmount] = useState(0);
   const [wsolBalance, setWsolBalance] = useState(0);
+  const loadingParentRef = useRef(null);
+  const navigate = useNavigate();
 
   const updateSolanaPrice = async () => {
     const result1 = await window.electron.invoke(
@@ -76,7 +79,7 @@ function Buy() {
 
   useEffect(() => {
     setAmountToBuy(wsolBalance / 2);
-    setToken(null)
+    setToken(null);
   }, [wsolBalance]);
 
   const wrapSol = async () => {
@@ -84,7 +87,7 @@ function Buy() {
     const result = await window.electron.invoke(CustomEvents.wrapEvent, {
       wallet: selectedWalletDetails?.publicKey,
       amount: wrapAmount,
-      simulate: simulateWrap,
+      simulate: simulate,
     });
     if (result) {
       if (result.data.message) {
@@ -106,7 +109,7 @@ function Buy() {
     const result = await window.electron.invoke(CustomEvents.unwrapEvent, {
       wallet: selectedWalletDetails?.publicKey,
       amount: wsolBalance,
-      simulate: simulateUnwrap,
+      simulate: simulate,
     });
     if (result) {
       if (result.data.message) {
@@ -135,8 +138,7 @@ function Buy() {
       simulate: simulate,
     });
     if (result) {
-      if(result.data)
-      {
+      if (result.data) {
         if (result.data.message) {
           let publicKey = selectedWalletDetails?.publicKey;
           dispatch(updateSelectedWallet(publicKey));
@@ -149,9 +151,7 @@ function Buy() {
             showToast(result.data.error, 'fail');
           }
         }
-      }
-      else
-      {
+      } else {
         setLoading(false);
         showToast('Error processing transaction', 'fail');
       }
@@ -191,6 +191,65 @@ function Buy() {
     }
   };
 
+  const walletTitle = selectedWalletDetails ? (
+    <div className="wallet-title">
+      <div className="title-item flex-spread">
+        <span
+          className={`back-button ${checkForPreviousLocation() ? '' : 'disabled'}`}
+          onClick={() => {
+            navigateBack(navigate);
+          }}
+        >
+          {backSvg} Back
+        </span>
+        <div className="header-buttons">
+          {' '}
+          <Switch theme="primary" value={simulate} onChange={() => setSimulate(!simulate)}></Switch>
+          <Button
+            onClick={() => {
+              handleUpdateWallet();
+            }}
+            theme="primary"
+            type="reload"
+            text="Reload"
+          ></Button>
+        </div>
+      </div>
+      <div className="title-item">
+        <span className="value  truncate">{selectedWalletDetails.alias}</span>
+      </div>
+      <div className="title-item">
+        <span className="value truncate">{selectedWalletDetails.publicKey}</span>
+        <CopyToClipboard text={selectedWalletDetails.publicKey}></CopyToClipboard>
+      </div>
+    </div>
+  ) : (
+    <div className="wallet-title no-wallet">
+      <div className="title-item flex-spread">
+        <span
+          className="back-button"
+          onClick={() => {
+            navigateBack(navigate);
+          }}
+        >
+          {backSvg} Back
+        </span>
+        <div className="header-buttons">
+          {' '}
+          <Switch theme="primary" value={simulate} onChange={() => setSimulate(!simulate)}></Switch>
+          <Button
+            onClick={() => {
+              handleUpdateWallet();
+            }}
+            theme="primary"
+            type="reload"
+            text="Reload"
+          ></Button>
+        </div>
+      </div>
+    </div>
+  );
+
   const walletSearchBar = (
     <div className="wallet-selector">
       {walletSvg}
@@ -216,22 +275,6 @@ function Buy() {
     <div className="overview-panel">
       <div className="header">
         <h3>Wallet Overview</h3>
-        <Button
-          onClick={() => {
-            handleUpdateWallet();
-          }}
-          theme="primary"
-          type="reload"
-        ></Button>
-      </div>
-      <div className="overview-item">
-        <span className="label">Alias</span>
-        <span className="value  truncate">{selectedWalletDetails.alias}</span>
-      </div>
-      <div className="overview-item">
-        <span className="label">Address</span>
-        <span className="value truncate">{selectedWalletDetails.publicKey}</span>
-        <CopyToClipboard text={selectedWalletDetails.publicKey}></CopyToClipboard>
       </div>
       <div className="overview-item">
         <span className="label sol">SOL Balance</span>
@@ -342,7 +385,6 @@ function Buy() {
             text="Wrap"
             disabled={wrapAmount <= 0}
           ></Button>
-          <Switch theme="primary" value={simulateWrap} onChange={() => setSimulateWrap(!simulateWrap)}></Switch>
         </div>
         <div className="wrap">
           <div className="title wsol">Unwrap WSOL</div>
@@ -358,7 +400,6 @@ function Buy() {
             text="Unwrap"
             disabled={wsolBalance <= 0}
           ></Button>
-          <Switch theme="primary" value={simulateUnwrap} onChange={() => setSimulateUnwrap(!simulateUnwrap)}></Switch>
         </div>
       </div>
     </div>
@@ -423,7 +464,6 @@ function Buy() {
         <span>${formatNumber(Number((amountToBuy * solanaPrice).toFixed(2)))}</span>
       </div>
       <div className="button-container">
-        <Switch theme="primary" value={simulate} onChange={() => setSimulate(!simulate)}></Switch>
         <div className="optional-selectors">
           <div className="fee-selector">
             <div className="label">
@@ -455,14 +495,15 @@ function Buy() {
   );
 
   return (
-    <div className="buy-page">
+    <div className="buy-page" ref={loadingParentRef}>
+      {walletTitle}
       {walletSearchBar}
       {walletHeader}
       {wrapOrUnwrapBody}
       {tokenSearchBar}
       {tokenHeader}
       {tokenBody}
-      {loading && <Loading></Loading>}
+      {loading && <Loading parentRef={loadingParentRef}></Loading>}
     </div>
   );
 }

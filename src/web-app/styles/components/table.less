@@ -71,7 +71,40 @@ table {
         }
 
         &.action-cell {
+          position: relative;
           text-align: end;
+          overflow: visible;
+
+          .expand-action {
+            position: relative;
+
+            .action-dropdown {
+              position: absolute;
+              display: flex;
+              flex-direction: column;
+              z-index: 101;
+              background-color: @color-dark;
+              border-radius: 5px;
+              border: 1px solid @color-tertiary-base;
+
+              .action-dropdown-item {
+                position: relative;
+                font-family: none;
+                background-color: @color-dark;
+                border-bottom: 1px solid @color-secondary-base;
+                border-radius: 5px;
+                padding: 7px 10px;
+                z-index: 101;
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+
+                &:hover {
+                  background-color: @color-secondary-base;
+                }
+              }
+            }
+          }
         }
 
         img {
@@ -102,11 +135,11 @@ table {
 
           &:hover {
             path {
-              fill: @color-font-brand;
+              fill: @color-brand-secondary;
             }
 
             circle {
-              fill: @color-font-brand;
+              fill: @color-brand-secondary;
             }
           }
         }

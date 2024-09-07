@@ -76,6 +76,7 @@ export async function getWalletTokenAccounts(
   publicKey: string
 ): Promise<
   {
+    publicKey: string;
     accountAddress: string;
     mint: string;
     amount: number;
@@ -88,6 +89,7 @@ export async function getWalletTokenAccounts(
   return new Promise((resolve, reject) => {
     const sql = `
       SELECT 
+        wta.publicKey AS publicKey,
         wta.accountAddress AS accountAddress,
         wta.mint AS mint,
         wta.amount AS amount,

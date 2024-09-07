@@ -53,7 +53,6 @@ const BuyHandler = (solanaConnection, db, mainWindow) => {
             if (keyPair) {
                 let poolKeys = ((_a = _poolKeys.find((e) => (e.mint === arg.params.mint))) === null || _a === void 0 ? void 0 : _a.poolKeys) ||
                     (yield (0, transactions_1.getPoolKeys)(new web3_js_1.PublicKey(arg.params.mint), solanaConnection));
-                console.log(poolKeys);
                 if (poolKeys) {
                     if (!_poolKeys.find((e) => (e.mint = arg.params.mint)))
                         _poolKeys.push({
@@ -61,7 +60,6 @@ const BuyHandler = (solanaConnection, db, mainWindow) => {
                             poolKeys: poolKeys,
                         });
                     response = yield (0, transactions_1.buy)({ poolKeys, wallet: keyPair, mint: new web3_js_1.PublicKey(arg.params.mint), amount: arg.params.amount }, { prioFee: arg.fees }, solanaConnection, arg.simulate);
-                    console.log(response);
                     if (!arg.simulate) {
                         if (response.status === 'success') {
                             const transaction = {
@@ -70,7 +68,6 @@ const BuyHandler = (solanaConnection, db, mainWindow) => {
                                 date: new Date(),
                                 status: 'pending',
                             };
-                            console.log(transaction);
                             transactionsDb.insertTransaction(db, transaction);
                             if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
                                 (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, transaction);

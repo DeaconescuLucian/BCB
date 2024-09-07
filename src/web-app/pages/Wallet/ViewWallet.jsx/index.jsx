@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Table from '../../../components/Table/index.tsx';
-import { viewSvg, dexscreenerSvg } from '../../../assets/svg/index.jsx';
+import { dexscreenerSvg, purchaseSvg } from '../../../assets/svg/index.jsx';
 import Loading from '../../../components/Loading/index.tsx';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -18,7 +18,8 @@ import Empty from '../../../components/Empty/index.tsx';
 import Solscan from '../../../assets/icons/solscan.png';
 import DafaultCoin from '../../../assets/icons/coin.png';
 import { searchSvg } from '../../../assets/svg/index.jsx';
-import { formatNumber } from '../../../utils.js';
+import { formatNumber, navigateAndSave } from '../../../utils.js';
+import { useNavigate } from 'react-router-dom';
 
 function ViewWallet() {
   const tableTypes = {
@@ -45,9 +46,9 @@ function ViewWallet() {
   const filterTableData = () => {
     switch (tableType.type) {
       case 'token':
-        return selectedWalletAccounts?.filter((e) => e.isNft === 0) || [];
+        return selectedWalletAccounts?.filter((e) => e.isNft === 0).map((r) => ({ ...r, expandedAction: '' })) || [];
       case 'nft':
-        return selectedWalletAccounts?.filter((e) => e.isNft === 1) || [];
+        return selectedWalletAccounts?.filter((e) => e.isNft === 1).map((r) => ({ ...r, expandedAction: '' })) || [];
       case 'transaction':
         return [];
       default:
@@ -113,6 +114,8 @@ function ViewWallet() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [columns, setColumns] = useState(tokenColumns);
+  const navigate = useNavigate();
+  const loadingParentRef = useRef(null);
 
   useEffect(() => {
     const publicKey = window.location.search.split('=')[1];
@@ -180,11 +183,17 @@ function ViewWallet() {
         </div>
         <div className="overview-item">
           <span className="label wsol">WSOL Balance</span>
-          <span className="value">{formatNumber(selectedWalletAccounts?.find((e) => e.mint === 'So11111111111111111111111111111111111111112')?.amount || 0)}</span>
+          <span className="value">
+            {formatNumber(
+              selectedWalletAccounts?.find((e) => e.mint === 'So11111111111111111111111111111111111111112')?.amount || 0
+            )}
+          </span>
         </div>
         <div className="overview-item">
           <span className="label">Token Balance</span>
-          <span className="value">{formatNumber(selectedWalletAccounts?.filter((a) => a.isNft === 0).length || 0)}</span>
+          <span className="value">
+            {formatNumber(selectedWalletAccounts?.filter((a) => a.isNft === 0).length || 0)}
+          </span>
         </div>
       </div>
       <div className="controls">
@@ -220,7 +229,7 @@ function ViewWallet() {
         { name: 'publicKey', fullMatch: true },
       ]}
       onSearch={(wallet) => {
-        window.localStorage.setItem('url', `/wallet-page/view?pub=${wallet.publicKey}`);
+        navigateAndSave(navigate, `/wallet-page/view?pub=${wallet.publicKey}`);
         dispatch(deselectWallet());
         dispatch(updateSelectedWallet(wallet.publicKey));
         dispatch(getWalletDetails(wallet.publicKey));
@@ -230,12 +239,12 @@ function ViewWallet() {
   );
 
   return (
-    <div className="view-wallet-page">
+    <div className="view-wallet-page" ref={loadingParentRef}>
       {selectedWalletAccounts === null ? (
         <>
           {searchBar}
           {header}
-          {selectedWalletDetails && <Loading></Loading>}
+          {selectedWalletDetails && <Loading parentRef={loadingParentRef}></Loading>}
         </>
       ) : (
         <>
@@ -264,6 +273,33 @@ function ViewWallet() {
                       window.open(`https://dexscreener.com/solana/${r.mint}`, '_blank');
                     },
                   },
+                  {
+                    name: 'Trade',
+                    icon: purchaseSvg,
+                    expandable: true,
+                    actions: [
+                      {
+                        name: 'Buy',
+                        action: (r) => {
+                          navigateAndSave(
+                            navigate,
+                            `/trade/buy?pub=${r.publicKey}&mint=${r.mint}`,
+                            true
+                          );
+                        },
+                      },
+                      {
+                        name: 'Sell',
+                        action: (r) => {
+                          navigateAndSave(
+                            navigate,
+                            `/trade/sell?pub=${r.publicKey}&mint=${r.mint}`,
+                            true
+                          );
+                        },
+                      },
+                    ],
+                  },
                 ]}
                 pagination={{ pageSizes: [10, 20, 30, 40] }}
               ></Table>
@@ -276,7 +312,7 @@ function ViewWallet() {
               Search an wallet
             </div>
           )}
-          {loading && <Loading></Loading>}
+          {loading && <Loading parentRef={loadingParentRef}></Loading>}
         </>
       )}
     </div>

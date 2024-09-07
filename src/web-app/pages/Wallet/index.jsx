@@ -8,6 +8,7 @@ import ViewWallet from './ViewWallet.jsx/index.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateSelectedWallet, getWalletDetails } from '../../store/reducers/wallets.js';
 import { useNavigate } from 'react-router-dom';
+import { navigateAndSave } from '../../utils.js';
 
 function WalletPage() {
   const [tabs] = useState([
@@ -45,7 +46,7 @@ function WalletPage() {
 
   const changeToViewWallet = (publicKey) => {
     setActiveTab({ name: 'View', url: '/view' });
-    navigate(`/wallet-page/view?pub=${publicKey}`)
+    navigateAndSave(navigate, `/wallet-page/view?pub=${publicKey}`);
     dispatch(updateSelectedWallet(publicKey));
     dispatch(getWalletDetails(publicKey));
   };

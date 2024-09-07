@@ -79,6 +79,7 @@ function getWalletTokenAccounts(db, publicKey) {
         return new Promise((resolve, reject) => {
             const sql = `
       SELECT 
+        wta.publicKey AS publicKey,
         wta.accountAddress AS accountAddress,
         wta.mint AS mint,
         wta.amount AS amount,
