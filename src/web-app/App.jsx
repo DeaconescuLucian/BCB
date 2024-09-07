@@ -16,8 +16,8 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    dispatch(fetchWallets())
-    navigate(window.localStorage.getItem('url') || `/home`)
+    dispatch(fetchWallets());
+    navigate(window.localStorage.getItem('url') || `/home`);
   }, []);
 
   return (

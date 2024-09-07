@@ -73,7 +73,6 @@ function confirmTransaction(connection, params) {
         try {
             const result = yield connection.confirmTransaction({ signature: signature, blockhash: block.blockhash, lastValidBlockHeight: block.lastValidBlockHeight }, 'confirmed');
             if (result) {
-                console.log(result);
                 if (result.value.err) {
                     console.log(`Error confirming signature: ${signature}`);
                     console.log(result.value.err);

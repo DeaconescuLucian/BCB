@@ -5,10 +5,13 @@ import settings_icon from '../../assets/icons/settings.svg';
 import logout_icon from '../../assets/icons/logout.svg';
 import home_icon from '../../assets/icons/home.svg';
 import { useNavigate } from 'react-router-dom';
+import { navigateAndSave } from '../../utils';
+import { useLocation } from 'react-router-dom';
 
 function Menu() {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('home-menu-item');
+  const location = useLocation();
 
   const handleMenuItemClick = (e) => {
     document.getElementById(selectedTab)?.classList?.remove('menu-item-selected');
@@ -72,11 +75,10 @@ function Menu() {
           changeSelectedTab('settings-menu-item');
           break;
         default:
-          console.log('here1');
           changeSelectedTab('home-menu-item');
           break;
       }
-  }, []);
+  }, [location]);
 
   return (
     <div className="app-menu">
@@ -84,8 +86,7 @@ function Menu() {
         className="app-menu-header"
         onClick={(e) => {
           handleMenuItemClick(e);
-          window.localStorage.setItem('url', '/home');
-          navigate('/');
+          navigateAndSave(navigate, '/home');
         }}
       >
         <div className="app-menu-title">
@@ -100,8 +101,7 @@ function Menu() {
           className="app-menu-item menu-item-selected"
           onClick={(e) => {
             handleMenuItemClick(e);
-            window.localStorage.setItem('url', '/home');
-            navigate('/home');
+            navigateAndSave(navigate, '/home');
           }}
         >
           <img src={home_icon}></img>
@@ -112,8 +112,7 @@ function Menu() {
           className="app-menu-item"
           onClick={(e) => {
             handleMenuItemClick(e);
-            window.localStorage.setItem('url', '/wallet-page/list');
-            navigate('/wallet-page/list');
+            navigateAndSave(navigate, '/wallet-page/list');
           }}
         >
           <img src={wallet}></img>
@@ -124,8 +123,7 @@ function Menu() {
           className="app-menu-item"
           onClick={(e) => {
             handleMenuItemClick(e);
-            window.localStorage.setItem('url', '/trade/buy');
-            navigate('/trade/buy');
+            navigateAndSave(navigate, '/trade/buy');
           }}
         >
           <img src={trade_icon}></img>
@@ -137,8 +135,7 @@ function Menu() {
             className="app-menu-item"
             onClick={(e) => {
               handleMenuItemClick(e);
-              window.localStorage.setItem('url', '/settings/license');
-              navigate('/settings/license');
+              navigateAndSave(navigate, '/settings/license');
             }}
           >
             <img src={settings_icon}></img>

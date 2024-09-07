@@ -16,11 +16,18 @@ interface IAction {
   name: string;
   icon?: React.JSX.Element;
   image?: string;
-  action: Function;
+  action?: Function;
+  expandable: boolean;
+  expanded?: boolean | false;
+  actions?: {
+    action: Function;
+    name: string;
+  }[];
 }
 
 interface IRow {
   [key: string]: any;
+  expandedAction: string;
 }
 
 interface IPagination {
@@ -41,12 +48,20 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
   const [totalPages, setTotalPages] = useState(
     pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0
   );
+  const [displayedRows, setDisplayedRows] = useState(
+    rows.slice(0, pagination?.pageSizes ? pagination.pageSizes[0] : rows.length)
+  );
+  const [currentActions, setCurrentActions] = useState(actions);
 
   useEffect(() => {
     setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
     setCurrentPage(1);
     setTotalPages(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0);
   }, [rows]);
+
+  useEffect(() => {
+    setDisplayedRows(rows.slice((currentPage - 1) * currentPageSize, currentPage * currentPageSize));
+  }, [currentPage, currentPageSize]);
 
   return (
     <>
@@ -67,7 +82,7 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
           </tr>
         </thead>
         <tbody>
-          {rows.slice((currentPage - 1) * currentPageSize, currentPage * currentPageSize).map((row, index) => (
+          {displayedRows.map((row, index) => (
             <tr key={`row-${index}`}>
               {columns.map(
                 (column, index1) =>
@@ -94,10 +109,10 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
                           key={`cell-${index}-${index1}`}
                         >
                           {column.iconProperty && row[column.iconProperty] && (
-                            <img className='no-hover' src={row[column.iconProperty]}></img>
+                            <img className="no-hover" src={row[column.iconProperty]}></img>
                           )}
                           {column.iconProperty && column.iconDefault && !row[column.iconProperty] && (
-                            <img className='no-hover' src={column.iconDefault}></img>
+                            <img className="no-hover" src={column.iconDefault}></img>
                           )}
                           {row[column.propertyName] ?? '-'}
                         </td>
@@ -105,7 +120,7 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
                     </>
                   )
               )}
-              {actions ? (
+              {currentActions ? (
                 <td
                   key={`action-cell-${index}`}
                   className="action-cell"
@@ -114,16 +129,56 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
                     minWidth: `calc(${columns[columns.length - 1].percentWidth}% - 10px)`,
                   }}
                 >
-                  {actions.map((action) => (
-                    <span
-                      title={action.name}
-                      onClick={() => {
-                        action.action(row);
-                      }}
-                    >
-                      {action.icon && action.icon}
-                      {action.image && <img style={{cursor: 'pointer'}} src={action.image}></img>}
-                    </span>
+                  {currentActions.map((action) => (
+                    <>
+                      {!action.expandable ? (
+                        <span
+                          title={action.name}
+                          onClick={() => {
+                            if (action.action) action.action(row);
+                          }}
+                        >
+                          {action.icon && action.icon}
+                          {action.image && <img style={{ cursor: 'pointer' }} src={action.image}></img>}
+                        </span>
+                      ) : (
+                        <span
+                          title={action.name}
+                          onClick={() => {
+                            let newRows = [...displayedRows];
+                            newRows[index].expandedAction = action.name;
+                            setDisplayedRows(newRows);
+                          }}
+                          className="expand-action"
+                        >
+                          {action.icon && action.icon}
+                          {action.image && <img style={{ cursor: 'pointer' }} src={action.image}></img>}
+                          {row.expandedAction === action.name && (
+                            <ClickOutside
+                              onClickOutside={() => {
+                                let newRows = [...displayedRows];
+                                newRows[index].expandedAction = '';
+                                setDisplayedRows(newRows);
+                              }}
+                            >
+                              <div className="action-dropdown" key={`expanded-action-${action.name}`}>
+                                {action.actions?.map((a, i) => {
+                                  return (
+                                    <div
+                                      key={`expanded-action-${action.name}-${i}-${index}`}
+                                      className={`action-dropdown-item`}
+                                      onClick={() => a.action(row)}
+                                    >
+                                      {a.name}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </ClickOutside>
+                          )}
+                        </span>
+                      )}
+                    </>
                   ))}
                 </td>
               ) : null}

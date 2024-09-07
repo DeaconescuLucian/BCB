@@ -4,6 +4,7 @@ import Tabstrip from '../../components/Tabstrip/index.tsx';
 import { useNavigate } from 'react-router-dom';
 import Buy from './Buy/index.jsx';
 import Sell from './Sell/index.jsx';
+import { navigateAndSave } from '../../utils.js';
 
 function Trade() {
   const [tabs] = useState([
@@ -40,7 +41,7 @@ function Trade() {
         onChange={(tab) => {
           window.localStorage.setItem('url', `/trade${tab.url}`);
           setActiveTab(tab);
-          navigate(`/trade${tab.url}`);
+          navigateAndSave(navigate, `/trade${tab.url}`)
         }}
       ></Tabstrip>
       <div className="trade-page">

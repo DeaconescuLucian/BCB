@@ -75,3 +75,46 @@ export function formatNumber(val, empty) {
     }
     return formattedValue;
 };
+
+export function navigateAndSave(navigate, newUrl, savePreviousPath) {
+    if (savePreviousPath) {
+        let previousPath = window.location.pathname + window.location.search;
+        let oldUrls = window.localStorage.getItem('previous-urls');
+        if (oldUrls) {
+            oldUrls = JSON.parse(oldUrls);
+            oldUrls.push(previousPath);
+        }
+        else {
+            oldUrls = [previousPath];
+        }
+        window.localStorage.setItem('previous-urls', JSON.stringify(oldUrls))
+    }
+    else {
+        window.localStorage.setItem('previous-urls', JSON.stringify([]))
+    }
+    window.localStorage.setItem('url', newUrl);
+    navigate(newUrl);
+}
+
+export function navigateBack(navigate) {
+    let oldUrls = window.localStorage.getItem('previous-urls');
+    if (oldUrls) {
+        let oldUrlsArray = JSON.parse(oldUrls);
+        let lastLocation = oldUrlsArray.pop();
+        window.localStorage.setItem('previous-urls', JSON.stringify(oldUrlsArray));
+        window.localStorage.setItem('url', lastLocation);
+        navigate(lastLocation);
+    }
+}
+
+export function checkForPreviousLocation() {
+    let oldUrls = window.localStorage.getItem('previous-urls');
+    if (oldUrls) {
+        oldUrls = JSON.parse(oldUrls);
+        if (oldUrls.length > 0)
+            return true
+        else
+            return false
+    }
+    return false;
+}
