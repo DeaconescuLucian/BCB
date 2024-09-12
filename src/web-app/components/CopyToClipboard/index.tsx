@@ -11,7 +11,9 @@ function CopyToClipboard(props: ICopyToClipboard) {
   const [copyToClipboardTitle, setCopyToClipboardTitle] = useState("Copy");
 
 
-  const copyToClipboard = () => {
+  const copyToClipboard = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
     setCopyToClipboardTitle("Copied");
     setButtonClicked(true);
     navigator.clipboard.writeText(props.text);
@@ -25,8 +27,8 @@ function CopyToClipboard(props: ICopyToClipboard) {
   return (
     <span
       className="copy-icon"
-      onClick={() => {
-        copyToClipboard();
+      onClick={(e) => {
+        copyToClipboard(e);
       }}
       onMouseEnter={() => {setShowMessageBox(true)}}
       onMouseLeave={() => {setShowMessageBox(false)}}

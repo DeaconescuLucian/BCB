@@ -13,9 +13,9 @@ import { fork } from 'child_process';
 
 let _poolKeys: any[] = [];
 
-const BuyHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
+const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
   registerHandler(
-    CustomEvents.buyEvent,
+    CustomEvents.swapEvent,
     async (
       e: any,
       arg: { params: { wallet: string; mint: string; amount: number }; fees: number; simulate: boolean }
@@ -234,7 +234,7 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
 };
 
 const handleTransaction = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null) => {
-  BuyHandler(solanaConnection, db, mainWindow);
+  SwapHandler(solanaConnection, db, mainWindow);
   WrapHandler(solanaConnection, db, mainWindow);
   UnwrapHandler(solanaConnection, db, mainWindow);
 };

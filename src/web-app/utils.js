@@ -76,6 +76,24 @@ export function formatNumber(val, empty) {
     return formattedValue;
 };
 
+export const tinyNumber = 0.000000001;
+export function formatTinyNumber(num) {
+    let str = num.toExponential();
+
+    let [base, exp] = str.split('e');
+
+    exp = parseInt(exp, 10);
+
+    let formattedBase = base.replace('.', '');
+
+    if (exp < 0) {
+        let result = `0..${formattedBase.replace(/0+$/, '')}`;
+        return result.slice(0, 13);
+    }
+
+    return num.toString();
+}
+
 export function navigateAndSave(navigate, newUrl, savePreviousPath) {
     if (savePreviousPath) {
         let previousPath = window.location.pathname + window.location.search;
@@ -117,4 +135,19 @@ export function checkForPreviousLocation() {
             return false
     }
     return false;
+}
+
+export function updatePageSettings(setting, value, page) {
+    let settings = window.localStorage.getItem(page);
+    if (settings !== 'null' && settings !== null) {
+        settings = JSON.parse(settings);
+        settings[setting] = value;
+    } else {
+        if (token2)
+            settings = {
+            };
+        settings[setting] = value
+    }
+    if (settings !== null) window.localStorage.setItem(page, JSON.stringify(settings));
+
 }

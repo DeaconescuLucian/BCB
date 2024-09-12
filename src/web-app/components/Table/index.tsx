@@ -57,6 +57,7 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
     setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
     setCurrentPage(1);
     setTotalPages(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0);
+    setDisplayedRows(rows.slice(0, pagination?.pageSizes ? pagination.pageSizes[0] : rows.length));
   }, [rows]);
 
   useEffect(() => {

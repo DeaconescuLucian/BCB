@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Table from '../../../components/Table/index.tsx';
 import { viewSvg, deleteSvg } from '../../../assets/svg/index.jsx';
 import Loading from '../../../components/Loading/index.tsx';
 import { useSelector, useDispatch } from 'react-redux';
-import SearchBar from '../../../components/SearchBar/index.tsx';
-import { deselectWallet } from '../../../store//reducers/wallets.js';
 import { CustomEvents } from '../../../../ts/events.ts';
 import { useToast } from '../../../contexts/ToastContext.tsx';
 import { fetchWallets } from '../../../store//reducers/wallets.js';
 
 function WalletList(props) {
-  const { wallets, status } = useSelector((state) => state.wallets);
+  const { wallets, status, selectedWalletDetails } = useSelector((state) => state.wallets);
   const dispatch = useDispatch();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -58,33 +56,11 @@ function WalletList(props) {
   return (
     <div className="wallet-list-page">
       <>
-        <SearchBar
-          searchArray={wallets}
-          displayTemplate={(wallet) => `alias: ${wallet.alias} (${wallet.publicKey})`}
-          matchProperties={[
-            { name: 'alias', fullMatch: false },
-            { name: 'publicKey', fullMatch: true },
-          ]}
-          onSearch={(wallet) => {
-            window.localStorage.setItem('url', `wallet-page/view?pub=${wallet.publicKey}`);
-            dispatch(deselectWallet());
-            props.onView(wallet.publicKey);
-          }}
-          placeholder='Search wallets by name or public key'
-        ></SearchBar>
         {wallets.length > 0 ? (
           <Table
             columns={columns}
             rows={wallets}
             actions={[
-              {
-                name: 'View',
-                icon: viewSvg,
-                action: (r) => {
-                  window.localStorage.setItem('url', `wallet-page/view?pub=${r.publicKey}`);
-                  props.onView(r.publicKey);
-                },
-              },
               {
                 name: 'Delete',
                 icon: deleteSvg,

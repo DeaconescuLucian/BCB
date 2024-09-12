@@ -303,33 +303,14 @@ export async function getTokensPrice(mints: string[]) {
   }
 }
 
-//solana - dollar
-//solana - mint
-// export async function getTokenPrice(
-//   mint: string,
-//   connection: Connection,
-//   solUSDCPoolKeys?: raydium.LiquidityPoolKeys,
-//   solMintPoolKeys?: raydium.LiquidityPoolKeys
-// ) {
-//   const solToken = raydium.Token.WSOL.mint.toString();
-//   const usdcToken = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-//   solUSDCPoolKeys = solUSDCPoolKeys || (await findRaydiumPoolInfo(usdcToken, solToken, connection));
-
-//   let solQv = (await connection.getTokenAccountBalance(solUSDCPoolKeys?.quoteVault as PublicKey)).value.uiAmount;
-//   let usdcBv = (await connection.getTokenAccountBalance(solUSDCPoolKeys?.baseVault as PublicKey)).value.uiAmount;
-
-//   let solPrice = (usdcBv as number) / (solQv as number);
-//   if (mint === solToken) {
-//     return solPrice;
-//   } else {
-//     solMintPoolKeys = solMintPoolKeys || (await findRaydiumPoolInfo(mint, solToken, connection));
-//   }
-
-//   solQv = (await connection.getTokenAccountBalance(solMintPoolKeys?.quoteVault as PublicKey)).value.uiAmount;
-//   let mintBv = (await connection.getTokenAccountBalance(solMintPoolKeys?.baseVault as PublicKey)).value.uiAmount;
-
-//   let tokenSOLRatio = (mintBv as number) / (solQv as number);
-//   let tokenPrice = solPrice / tokenSOLRatio;
-
-//   return tokenPrice;
-// }
+export async function getTokenList()
+{
+  try {
+    const response = await fetchData(`https://api-v3.raydium.io/mint/list`);
+    const response1 = await fetchData(`https://tokens.jup.ag/tokens?tags=lst,community`);
+    return [...response.data.mintList, ...response1];
+  } catch (error) {
+    console.error('Error fetching SOL price:', error);
+    return null;
+  }
+}

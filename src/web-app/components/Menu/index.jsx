@@ -7,11 +7,16 @@ import home_icon from '../../assets/icons/home.svg';
 import { useNavigate } from 'react-router-dom';
 import { navigateAndSave } from '../../utils';
 import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { viewSvg, rightSvg } from '../../assets/svg';
+import SelectWalletDialog from './SelectWalletDialog';
 
 function Menu() {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('home-menu-item');
   const location = useLocation();
+  const { selectedWalletDetails } = useSelector((state) => state.wallets);
+  const [showSelectWalletDialog, setShowSelectWalletDialog] = useState(false);
 
   const handleMenuItemClick = (e) => {
     document.getElementById(selectedTab)?.classList?.remove('menu-item-selected');
@@ -66,8 +71,8 @@ function Menu() {
         case '/wallet-page/view':
           changeSelectedTab('wallets-menu-item');
           break;
-        case '/trade/buy':
-        case '/trade/sell':
+        case '/trade/swap':
+        case '/trade/wrap-unrwap':
           changeSelectedTab('trade-menu-item');
           break;
         case '/settings/license':
@@ -80,74 +85,115 @@ function Menu() {
       }
   }, [location]);
 
-  return (
-    <div className="app-menu">
-      <div
-        className="app-menu-header"
-        onClick={(e) => {
-          handleMenuItemClick(e);
-          navigateAndSave(navigate, '/home');
-        }}
-      >
-        <div className="app-menu-title">
-          {solanaSVG}
-          <h2>B C B</h2>
-        </div>
-        <div className="app-menu-subtitle">Blockchain Busters</div>
+  const changeWallet = (
+    <div
+      className="change-wallet-container"
+      onClick={() => {
+        setShowSelectWalletDialog(true);
+      }}
+    >
+      <span>Change wallet</span>
+      {rightSvg}
+    </div>
+  );
+
+  const selectedWalletHeader = selectedWalletDetails && (
+    <div
+      className="selected-wallet-header"
+      onClick={() => {
+        navigateAndSave(navigate, `/wallet-page/view?pub=${selectedWalletDetails?.publicKey}`);
+      }}
+    >
+      <div className="title-item view">
+        <span className="value  truncate">{selectedWalletDetails.alias}</span>
+        <span>{viewSvg}</span>
       </div>
-      <div className="app-menu-content">
+      <div className="title-item">
+        <span className="value truncate">{selectedWalletDetails.balance.toFixed(9)} (SOL) </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {' '}
+      <div className="app-menu">
         <div
-          id="home-menu-item"
-          className="app-menu-item menu-item-selected"
+          className="app-menu-header"
           onClick={(e) => {
             handleMenuItemClick(e);
             navigateAndSave(navigate, '/home');
           }}
         >
-          <img src={home_icon}></img>
-          <span>Home</span>
+          <div className="app-menu-title">
+            {solanaSVG}
+            <h2>B C B</h2>
+          </div>
+          <div className="app-menu-subtitle">Blockchain Busters</div>
         </div>
-        <div
-          id="wallets-menu-item"
-          className="app-menu-item"
-          onClick={(e) => {
-            handleMenuItemClick(e);
-            navigateAndSave(navigate, '/wallet-page/list');
-          }}
-        >
-          <img src={wallet}></img>
-          <span>Wallets</span>
-        </div>
-        <div
-          id="trade-menu-item"
-          className="app-menu-item"
-          onClick={(e) => {
-            handleMenuItemClick(e);
-            navigateAndSave(navigate, '/trade/buy');
-          }}
-        >
-          <img src={trade_icon}></img>
-          <span>Trade</span>
-        </div>
-        <div className="app-menu-footer">
+        <div className="app-menu-content">
+          {changeWallet}
+          {selectedWalletHeader}
           <div
-            id="settings-menu-item"
+            id="home-menu-item"
+            className="app-menu-item menu-item-selected"
+            onClick={(e) => {
+              handleMenuItemClick(e);
+              navigateAndSave(navigate, '/home');
+            }}
+          >
+            <img src={home_icon}></img>
+            <span>Home</span>
+          </div>
+          <div
+            id="wallets-menu-item"
             className="app-menu-item"
             onClick={(e) => {
               handleMenuItemClick(e);
-              navigateAndSave(navigate, '/settings/license');
+              navigateAndSave(navigate, '/wallet-page/list');
             }}
           >
-            <img src={settings_icon}></img>
-            <span>Settings</span>
+            <img src={wallet}></img>
+            <span>Wallets</span>
           </div>
-          <div className="app-menu-item">
-            <img src={logout_icon}></img>
-            <span>Logout</span>
+          <div
+            id="trade-menu-item"
+            className="app-menu-item"
+            onClick={(e) => {
+              handleMenuItemClick(e);
+              navigateAndSave(navigate, '/trade/swap');
+            }}
+          >
+            <img src={trade_icon}></img>
+            <span>Trade</span>
+          </div>
+          <div className="app-menu-footer">
+            <div
+              id="settings-menu-item"
+              className="app-menu-item"
+              onClick={(e) => {
+                handleMenuItemClick(e);
+                navigateAndSave(navigate, '/settings/license');
+              }}
+            >
+              <img src={settings_icon}></img>
+              <span>Settings</span>
+            </div>
+            <div className="app-menu-item">
+              <img src={logout_icon}></img>
+              <span>Logout</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      {showSelectWalletDialog && (
+        <SelectWalletDialog
+          onClose={() => {
+            setShowSelectWalletDialog(false);
+          }}
+        ></SelectWalletDialog>
+      )}
+    </>
   );
 }
 

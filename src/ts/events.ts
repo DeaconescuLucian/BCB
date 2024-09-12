@@ -52,9 +52,11 @@ export const CustomEvents = {
   getTokenDetailsEvent: 'get-token-details',
   getTokensPricesEvent: 'get-token-prices',
   getTokenPriceEvent: 'get-token-price',
-  buyEvent: 'buy',
+  swapEvent: 'swap',
   wrapEvent: 'wrap',
-  unwrapEvent: 'unwrap'
+  unwrapEvent: 'unwrap',
+  getTokenList: 'get-token-list',
+  addTokenEvent: 'add-token'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

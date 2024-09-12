@@ -121,3 +121,17 @@ export function updateTokens(
     });
   });
 }
+
+export function getTokens(db: sqlite3.Database, callback: (err: Error | null, rows?: any[]) => void): void {
+  db.serialize(() => {
+    db.all(`SELECT mint as address, name as name, symbol as symbol, icon as logoURI FROM tokens WHERE isNft = 0`, (err: Error | null, rows: any[]) => {
+      if (err) {
+        console.error('Error retrieving wallets:', err.message);
+        callback(err);
+      } else {
+        console.log('Retrieved wallets.');
+        callback(null, rows);
+      }
+    });
+  });
+}

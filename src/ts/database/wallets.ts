@@ -35,15 +35,21 @@ export function insertWallet(
 
 export function getWallets(db: sqlite3.Database, callback: (err: Error | null, rows?: any[]) => void): void {
   db.serialize(() => {
-    db.all(`SELECT publicKey, alias, balance FROM wallets`, (err: Error | null, rows: any[]) => {
-      if (err) {
-        console.error('Error retrieving wallets:', err.message);
-        callback(err);
-      } else {
-        console.log('Retrieved wallets.');
-        callback(null, rows);
+    db.all(
+      `SELECT w.publicKey, w.alias, w.balance, COUNT(ta.accountAddress) AS tokenAccounts
+       FROM wallets w
+       LEFT JOIN walletTokenAccounts ta ON w.publicKey = ta.publicKey
+       GROUP BY w.publicKey`, 
+      (err: Error | null, rows: any[]) => {
+        if (err) {
+          console.error('Error retrieving wallets:', err.message);
+          callback(err);
+        } else {
+          console.log('Retrieved wallets.');
+          callback(null, rows);
+        }
       }
-    });
+    );
   });
 }
 

@@ -37,6 +37,7 @@ interface IInput {
   readOnlyValue?: any;
   placeholder?: string;
   clearFlag?: string;
+  value: any;
 }
 
 function Input(props: IInput) {
@@ -74,24 +75,36 @@ function Input(props: IInput) {
 
   useEffect(() => {
     if (props.type === 'number') {
-      if (ref.current && props.readonly) ref.current.value = formatNumber(props.readOnlyValue || 0)
-    }
-    else
-    {
+      if (ref.current && props.readonly) ref.current.value = formatNumber(props.readOnlyValue || 0);
+    } else {
       if (ref.current && props.readonly) ref.current.value = props.readOnlyValue;
     }
-    
   }, [props.readOnlyValue]);
+
+  useEffect(() => {
+    if (props.value || props.value === 0) {
+      if (props.validate){
+        const error = props.validate(props.value);
+        setErrorMessage(error);
+      } 
+      setValue(props.value);
+    }
+  }, [props.value]);
 
   return (
     <div className={`input-container`}>
       <input
         ref={ref}
         className={`${props.theme ? `theme-${props.theme}` : null}`}
-        type='text'
-        //value={value || props.readOnlyValue}
-        defaultValue={props.readonly ? props.readOnlyValue : ''}
+        type="text"
+        value={value || props.readOnlyValue || ''}
+        defaultValue={props.readOnlyValue ? props.readOnlyValue : ''}
         onChange={handleChange}
+        onKeyDown={(e) => {
+          if (props.type === 'number' && e.key === 'Enter') {
+            handleBlur();
+          }
+        }}
         onBlur={handleBlur}
         readOnly={props.readonly ?? false}
         placeholder={props.placeholder}

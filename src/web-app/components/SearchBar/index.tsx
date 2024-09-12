@@ -4,11 +4,13 @@ import ClickOutside from '../ClickOutside';
 
 interface ISearchProps {
   onSearch?: (item: any) => void;
+  onChange?: (item: any) => void;
   searchArray?: any[];
   displayTemplate?: (value: any) => any;
   matchProperties?: { name: string; fullMatch: boolean }[] | [];
   placeholder?: string;
   remoteSearch?: boolean;
+  withDropDown?: boolean;
 }
 
 export default function SearchBar(props: ISearchProps) {
@@ -73,6 +75,10 @@ export default function SearchBar(props: ISearchProps) {
           onChange={(e) => {
             setValue(e.target.value);
             matchValues(e.target.value);
+            if(props.onChange)
+            {
+              props.onChange(e.target.value)
+            }
           }}
           value={value}
         ></input>
@@ -81,6 +87,8 @@ export default function SearchBar(props: ISearchProps) {
             className="clear-input"
             onClick={() => {
               setValue('');
+              if(props.onChange)
+                props.onChange('');
             }}
           >
             {crossSvg}
@@ -97,7 +105,7 @@ export default function SearchBar(props: ISearchProps) {
         >
           {searchSvg}
         </div>
-        {isFocused && matchingValues.length > 0 && (
+        {isFocused && matchingValues.length > 0 && props.withDropDown && (
           <div className="search-dropdown">
             {matchingValues.map((item, index) => {
               return (

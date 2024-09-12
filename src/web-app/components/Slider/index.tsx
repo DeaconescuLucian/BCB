@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatNumber } from '../../utils';
 
 interface ISlider {
@@ -9,11 +9,16 @@ interface ISlider {
   label: JSX.Element | JSX.Element[];
   theme: string;
   step: string;
+  noInput?: boolean;
 }
 
 const Slider = (props: ISlider) => {
   const [value, setValue] = useState(props.value);
   const [displayedValue, setDisplayedValue] = useState(formatNumber(props.value || 0));
+
+  useEffect(() => {
+    if (props.value) setValue(props.value);
+  }, [props.value]);
 
   return (
     <div className="slider-container">
@@ -39,7 +44,7 @@ const Slider = (props: ISlider) => {
           onChange={(e) => {
             let newVal = e.target.value;
             let empty = !!(e.target.value === '');
-            let newVal1 = Number(formatNumber(newVal, empty)) || props.min;
+            let newVal1 = Number(newVal) || props.min;
             setDisplayedValue(formatNumber(newVal, empty));
             setValue(newVal1);
             props.onChange(newVal1);
@@ -56,25 +61,27 @@ const Slider = (props: ISlider) => {
           MAX
         </span>
       </div>
-      <input
-        type="text"
-        className={`${props.theme ? `theme-${props.theme}` : ''}`}
-        value={displayedValue}
-        onChange={(e) => {
-          let newVal = e.target.value;
-          let empty = !!(e.target.value === '');
-          if (!empty) {
-            if (Number(newVal) > props.max) newVal = props.max.toString();
-            if (Number(newVal) < props.min) newVal = props.min.toString();
-          }
-          setDisplayedValue(formatNumber(newVal, empty));
-          let newVal1 = Number(formatNumber(newVal, empty)) || props.min;
-          if (newVal1 > props.max) newVal1 = props.max;
-          if (newVal1 < props.min) newVal1 = props.min;
-          setValue(newVal1);
-          props.onChange(newVal1);
-        }}
-      />
+      {!props.noInput && (
+        <input
+          type="text"
+          className={`${props.theme ? `theme-${props.theme}` : ''}`}
+          value={displayedValue}
+          onChange={(e) => {
+            let newVal = e.target.value;
+            let empty = !!(e.target.value === '');
+            if (!empty) {
+              if (Number(newVal) > props.max) newVal = props.max.toString();
+              if (Number(newVal) < props.min) newVal = props.min.toString();
+            }
+            setDisplayedValue(formatNumber(newVal, empty));
+            let newVal1 = Number(newVal) || props.min;
+            if (newVal1 > props.max) newVal1 = props.max;
+            if (newVal1 < props.min) newVal1 = props.min;
+            setValue(newVal1);
+            props.onChange(newVal1);
+          }}
+        />
+      )}
     </div>
   );
 };
