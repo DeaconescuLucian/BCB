@@ -4,6 +4,7 @@ import { CustomEvents } from '../../../ts/events';
 const initialState = {
   wallets: [],
   tokenPrices: [],
+  tokens: [],
   selectedWallet: null,
   selectedWalletDetails: null,
   selectedWalletAccounts: null,
@@ -14,6 +15,19 @@ const initialState = {
 export const fetchWallets = createAsyncThunk('wallets/fetchWallets', async () => {
   try {
     const result = await window.electron.invoke(CustomEvents.getWalletsEvent);
+    if (result && result.success) {
+      return result.data;
+    }
+    throw new Error('Failed to fetch wallets');
+  } catch (error) {
+    console.error('Error fetching wallets:', error);
+    throw error;
+  }
+});
+
+export const fetchTokens = createAsyncThunk('wallets/fetchTokens', async () => {
+  try {
+    const result = await window.electron.invoke(CustomEvents.getTokenList);
     if (result && result.success) {
       return result.data;
     }
@@ -58,11 +72,6 @@ const walletsSlice = createSlice({
       state.selectedWallet = action.payload;
       state.selectedWalletDetails = state.wallets.find(w => w.publicKey === state.selectedWallet);
     },
-    deselectWallet: (state) => {
-      state.selectedWallet = null;
-      state.selectedWalletDetails = null;
-      state.selectedWalletAccounts = null;
-    },
     updateWallets: (state, action) => {
       state.wallets = action.payload;
       state.status = 'succeeded';
@@ -76,24 +85,20 @@ const walletsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchWallets.pending, (state) => {
-        state.status = 'loading';
-      })
       .addCase(fetchWallets.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.wallets = action.payload;
         state.selectedWalletDetails = state.wallets.find(w => w.publicKey === state.selectedWallet) || null;
       })
-      .addCase(fetchWallets.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
+      .addCase(fetchTokens.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.tokens = action.payload;
       })
       .addCase(getWalletDetails.pending, (state) => {
         state.status = 'loading';
       })
       .addCase(getWalletDetails.fulfilled, (state, action) => {
         state.selectedWalletAccounts = action.payload || [];
-        //console.log(state.selectedWalletAccounts.filter(e => e.isNft === 0).map(e => e.mint))
         state.status = 'succeeded'
       })
       .addCase(getTokensPrices.fulfilled, (state, action) => {

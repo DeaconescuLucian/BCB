@@ -1,0 +1,218 @@
+.token-selector {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  gap: 5px;
+  font-size: 30px;
+  line-height: 30px;
+  color: @color-font-white;
+  background-color: @color-tertiary-base;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-right: 10px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: @color-font-brand;
+  }
+}
+
+.token-selector-dialog {
+  width: 400px;
+  min-height: 500px;
+  height: 500px;
+  background-color: @color-dark;
+  border-radius: 10px;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: start !important;
+
+  .token-selector-dialog-header {
+    position: sticky;
+    top: 0px;
+    padding: 15px;
+    background-color: @color-dark;
+    width: calc(100% - 30px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: @color-font-white;
+    font-size: 18px;
+    letter-spacing: 1px;
+    z-index: 100;
+    border-radius: 10px;
+
+    .title {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+
+    }
+
+    .subtitle
+    {
+      width: 100%;
+      display: flex;
+      color: @color-font-gray;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      fill: @color-info;
+      cursor: pointer;
+    }
+
+    .search-bar {
+      width: 350px;
+      border: none;
+      background-color: @color-secondary-base;
+  
+      input {
+        background-color: @color-secondary-base;
+      }
+    }
+
+    .token-list-header {
+      position: sticky;
+      top: 0px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      color: @color-info;
+      font-size: 14px;
+    }
+
+  }
+
+  .token-list {
+    position: relative;
+    width: calc(100% - 30px);
+    padding: 0px 15px;
+    max-height: 330px;
+
+    .token-list-body {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 100%;
+      width: 100%;
+
+      .token-list-item {
+        display: flex;
+        justify-content: space-between;
+        max-width: 100%;
+        width: 100%;
+        padding: 5px;
+        color: @color-font-gray;
+
+        &:hover {
+          background-color: @color-secondary-base;
+          border-radius: 5px;
+          cursor: pointer;
+        }
+
+        .left-side {
+          display: flex;
+          justify-content: flex-start;
+          max-width: 50%;
+          width: 50%;
+          flex-grow: 1;
+
+          .icon-container {
+            margin-right: 10px;
+          }
+          
+          .name-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+
+            .name{
+              font-size: 10px;
+            }
+
+            .symbol {
+              display: flex;
+              align-items: center;
+              .add {
+                font-size: 12px;
+                color: @color-font-brand;
+                margin-left: 10px;
+
+                svg {
+                  width: 10px;
+                  height: 10px;
+                  fill: @color-font-brand;
+                }
+
+                &:hover {
+                  color: @color-brand;
+
+                  svg {
+                    fill: @color-brand;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        .right-side {
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          gap: 5px;
+          text-align: end;
+          width: 50%;
+          max-width: 50%;
+
+          .address {
+            width: 100%;
+            max-width: 100%;
+            display: flex;
+            font-size: 10px;
+
+            .copy-icon {
+              margin-left: 5px;
+            }
+            svg {
+              width: 10px;
+              height: 10px;
+            }
+
+            .truncate {
+              max-width: calc(100% - 20px);
+            }
+          }
+
+        }
+      }
+    }
+    overflow-y: scroll;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+.icon-container {
+  img {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+  }
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(127deg, @color-tertiary-base 28.69%, @color-base 100%);
+  border-radius: 50%;
+}

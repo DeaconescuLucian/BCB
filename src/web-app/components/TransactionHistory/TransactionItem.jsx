@@ -5,7 +5,7 @@ import { timeAgo } from '../../utils.js';
 
 const TransactionItem = memo((props) => {
   const [time, setTime] = useState(timeAgo(props.date));
-  const [animation, setAnimation] = useState((new Date() - new Date(props.date)) < 15000);
+  const [animation, setAnimation] = useState(new Date() - new Date(props.date) < 15000);
 
   useEffect(() => {
     const timeIntervalId = setInterval(() => {
@@ -19,7 +19,7 @@ const TransactionItem = memo((props) => {
     return () => {
       clearInterval(timeIntervalId);
       clearTimeout(animationTimeoutId);
-    }
+    };
   }, []);
 
   const renderIcon = () => {
@@ -36,24 +36,17 @@ const TransactionItem = memo((props) => {
   };
 
   return (
-    <div className={`transaction-item ${props.status} ${animation ? "animation" : ""}`}>
-      <div className="view">{viewSvg}</div>
-      <div className="item-content">
-        {' '}
-        <div className={`status ${props.status}`}>
-          <div className="time">{time}</div>
-          {renderIcon()}
-        </div>
-        <div className="info">
-          <div className="signature">
-            <span className="truncate">{props.signature}</span>
-            <CopyToClipboard text={props.signature}></CopyToClipboard>
-          </div>
-          <div className="value">
-            <span>{props.value.toFixed(8)} SOL</span>
-          </div>
-        </div>
+    <div className={`transaction-item ${props.status} ${animation ? 'animation' : ''}`}>
+      <div className="status">{renderIcon()}</div>
+      <div className="time">{time}</div>
+      <div className="signature truncate">{props.signature}</div>
+      <CopyToClipboard text={props.signature}></CopyToClipboard>
+      <div className="signature truncate">{props.signature}</div>
+      <CopyToClipboard text={props.signature}></CopyToClipboard>
+      <div className="value">
+        <span>{props.value.toFixed(8)} SOL</span>
       </div>
+      <div className="view">{viewSvg}</div>
     </div>
   );
 });

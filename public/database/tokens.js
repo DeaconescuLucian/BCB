@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTableTokens = createTableTokens;
 exports.insertTokens = insertTokens;
 exports.updateTokens = updateTokens;
+exports.getTokens = getTokens;
 const db_1 = require("./db");
 function createTableTokens(db) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -102,6 +103,20 @@ function updateTokens(db, tokens, callback) {
                 if (callback) {
                     callback(null);
                 }
+            }
+        });
+    });
+}
+function getTokens(db, callback) {
+    db.serialize(() => {
+        db.all(`SELECT mint as address, name as name, symbol as symbol, icon as logoURI FROM tokens WHERE isNft = 0`, (err, rows) => {
+            if (err) {
+                console.error('Error retrieving wallets:', err.message);
+                callback(err);
+            }
+            else {
+                console.log('Retrieved wallets.');
+                callback(null, rows);
             }
         });
     });

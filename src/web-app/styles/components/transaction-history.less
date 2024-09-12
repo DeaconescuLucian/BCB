@@ -2,14 +2,28 @@
   position: fixed;
   background-color: @color-dark;
   color: @color-font-white;
-  width: @right-section-width;
-  height: calc(100vh - @top-bar-height);
-  left: calc(100vw - @right-section-width);
-  top: @top-bar-height;
+  width: calc(100% - @menu-width);
+  height: @default-terminal-height;
+  min-height: 38px;
+  left: @menu-width;
+  bottom: 0;
   border-radius: 5px;
-  padding: 15px 0 15px 20px;
+  padding: 0px 0 0px 0px;
   display: flex;
   flex-direction: column;
+  z-index: 200;
+
+  .topper {
+    position: relative;
+    width: 100%;
+    border-top: 2px solid @color-tertiary-base;
+    background-color: @color-tertiary-base;
+    cursor: ns-resize;
+
+    &:active {
+      border-top: 4px solid @color-brand;
+    }
+  }
 
   .header {
     display: flex;
@@ -64,22 +78,25 @@
     display: flex;
     flex-direction: column;
     font-size: 12px;
-    width: calc(100% - 20px);
+    width: calc(100% - 10px);
+    height: 100%;
     overflow-y: scroll;
-    padding-top: 15px;
-    padding-bottom: 15px;
+    padding-left: 10px;
     &::-webkit-scrollbar {
       display: none;
     }
 
     .transaction-item {
       display: flex;
+      justify-content: start;
       align-items: center;
-      margin-bottom: 10px;
       width: calc(100% - 20px);
       padding: 5px;
       border-radius: 5px;
+      gap: 5px;
       transition: 1s ease-in;
+      position: relative;
+      margin-bottom: 5px;
       &.success {
         background: linear-gradient(to left, rgba(0, 255, 0, 0) 0%, @color-success-bg 100%);
 
@@ -104,154 +121,99 @@
         }
       }
 
-      .status {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 5px;
+      svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      &.success {
         svg {
-          width: 12px;
-          height: 12px;
-        }
-
-        &.success {
-          svg {
-            path {
-              fill: @color-success;
-            }
-          }
-        }
-
-        &.fail {
-          svg {
-            path {
-              fill: @color-fail;
-            }
-            circle {
-              fill: @color-fail;
-            }
-          }
-        }
-
-        &.pending {
-          svg {
-            path {
-              fill: @color-pending;
-            }
-          }
+          fill: @color-success;
         }
       }
 
-      .info {
-        display: flex;
-        justify-content: space-between;
-        .signature {
-          .truncate {
-            display: inline-block;
-            width: 70px;
-            max-width: 70px;
-          }
+      &.fail {
+        svg {
+          fill: @color-fail;
         }
+      }
+
+      &.pending {
+        svg {
+          fill: @color-pending;
+        }
+      }
+
+      .signature {
+        width: 30%;
+        .truncate {
+          display: inline-block;
+          max-width: calc(100%);
+        }
+      }
+
+      .value {
+        width: 15%;
+        display: flex;
+        justify-content: center;
+      }
+
+      .copy-icon {
+        position: relative;
+      }
+      .copy-to-clipboard-message {
+        top: -5px;
+        right: -50px;
+        padding: 5px;
+        font-size: 12px;
+      }
+
+      .time {
+        width: 15%;
+      }
+
+      .status {
+        width: 40px;
+        min-width: 40px;
+      }
+
+      .copy-icon {
+        width: 20px;
       }
 
       .view {
-        margin-right: 10px;
-
-        svg {
-          width: 12px;
-          height: 12px;
-          path {
-            fill: @color-font-white;
-          }
-          circle {
-            fill: @color-font-white;
-          }
-
-          &:hover {
-            path {
-              fill: @color-brand;
-            }
-            circle {
-              fill: @color-brand;
-            }
-          }
-        }
-
-        &:hover {
-          cursor: pointer;
-        }
+        width: 40px;
+        display: flex;
+        justify-content: center;
       }
 
-      .item-content {
-        width: 226px;
-        .info {
-          .signature {
-            position: relative;
-            .copy-to-clipboard-message {
-              left: 70px;
-            }
-          }
+      &.header {
+        padding: 10px 0;
+        top: 0px;
+        left: 0;
+        position: sticky;
+        background-color: @color-dark;
+        z-index: 2;
+        border-radius: 0px;
+
+        .signature {
+          width: calc(30% + 40px);
         }
       }
     }
-  }
 
-  transition: 0.5s ease;
-}
-
-.right-section-hidden {
-  position: fixed;
-  background-color: @color-dark;
-  color: @color-font-white;
-  width: @right-section-hidden-width;
-  height: calc(100vh - @top-bar-height);
-  left: calc(100vw - @right-section-hidden-width);
-  top: @top-bar-height;
-  border-radius: 5px;
-  padding: 15px 0 15px 20px;
-  display: flex;
-  flex-direction: column;
-
-  .header {
-    .arrow-button {
-      cursor: pointer;
-
+    .empty-page {
+      margin-top: 10px;
       svg {
-        margin-right: 15px;
-        pointer-events: none;
-        width: 24px;
-        height: 24px;
-        path {
-          fill: @color-font-brand;
-        }
-      }
-
-      &:hover {
-        svg {
-          margin-right: 15px;
-          pointer-events: none;
-          path {
-            fill: @color-brand;
-          }
-        }
-      }
-    }
-
-    span {
-      font-size: 24px;
-      transform: rotate(90deg);
-      transform-origin: left top;
-      display: inline-block;
-      text-wrap: nowrap;
-      margin-left: 26px;
-      margin-top: 15px;
-
-      &.transacations-count {
-        margin-top: 200px;
-        font-size: 20px;
-        color: @color-font-gray;
+        width: 50px;
+        height: 50px;
       }
     }
   }
 
-  transition: 0.5s ease;
+  .tab-strip {
+    background-color: @color-dark;
+    border-radius: 0;
+    font-size: 12px;
+  }
 }

@@ -1,17 +1,30 @@
 .dialog-wrapper {
-    width: 100vw;
-    height: 100vh;
+    width: calc(100vw - @menu-width);
     position: fixed;
     display: flex;
     justify-content: center;
-    align-items: center;
     background-color: @dialog-background;
-    top: 0;
+    top: 30px;
+    left: @menu-width;
+    z-index: 99999;
+    overflow-y: scroll;
+    &::-webkit-scrollbar {
+      display: none;
+    }
 
     .dialog {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        position: absolute;
+        top: 60px;
+        z-index: 99998;
+        box-shadow: 0px 0px 12px @color-brand-secondary;
+    }
+
+    .click-outside-dialog {
+      display: flex;
+      justify-content: center;
     }
 }

@@ -208,7 +208,7 @@ function ConnectionSettings() {
       </div>
       {loading && <Loading></Loading>}
       {showDialog && (
-        <Dialog className="delete-active-connection-dialog">
+        <Dialog className="delete-active-connection-dialog" onClose={() => {setShowDialog(false);}}>
           <div className="header">
             <h2>This connection is active. Are you sure you want to delete it?</h2>
             <span>Deleting the active connection will automatically set "mainnet-beta" as your active connection.</span>

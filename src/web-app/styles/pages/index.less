@@ -17,15 +17,12 @@
 }
 
 .page-content-container {
-    margin-top: 15px;
-    height: calc(@page-height - 2 * @default-page-container-padding);
-    background-color: @color-secondary-base;
+    height: @page-height;
+    background-color: @color-base;
     border-radius: 10px;
-    box-shadow: 0px 0px 12px @color-brand;
     padding: @default-page-container-padding;
     
     &.page-with-tabstrip {
         padding: 0;
-        height: calc(@page-height - 2 * @default-page-container-padding + @default-main-container-padding);
     }
 }

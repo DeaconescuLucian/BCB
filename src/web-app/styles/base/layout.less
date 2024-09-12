@@ -38,16 +38,21 @@ img {
 .main-container {
   position: fixed;
   left: 256px;
-  width: calc(100vw - @menu-width - @right-section-width - 2 * @default-main-container-padding);
-  height: calc(100vh - 2 * @default-main-container-padding);
+  width: calc(100vw - @menu-width - 2 * @default-main-container-padding);
+  max-width: calc(100vw - @menu-width - 2 * @default-main-container-padding);
+  height: calc(100vh - @default-main-container-padding - @default-terminal-height);
   padding: 30px;
+  padding-bottom: 0;
   color: @color-font-gray;
 
   &.hidden-right-section {
     width: calc(100vw - @menu-width - @right-section-hidden-width - 2 * @default-main-container-padding);
   }
 
-  transition: 0.5s ease;
+  overflow-y: scroll;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .top-bar {
@@ -57,7 +62,7 @@ img {
   z-index: 1001;
   display: flex;
   justify-content: end;
-  background-color: @color-base;
+  background-color: @color-dark;
 
   .bar {
     width: calc(100% - 90px);
@@ -89,7 +94,6 @@ img {
     }
   }
 }
-
 
 .column-self-center {
   display: flex;

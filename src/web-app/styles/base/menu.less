@@ -1,77 +1,199 @@
 .app-menu {
-    position: fixed;
-    background-color: @color-secondary-base;
-    color: @color-font-gray; 
-    width:  @menu-width;
-    height: 100vh;
+  position: fixed;
+  background-color: @color-dark;
+  color: @color-font-gray;
+  width: calc(@menu-width - 1px);
+  height: 100vh;
+  border-right: 1px solid @color-tertiary-base;
 
-    .app-menu-header {
-        position: relative;
-        padding: 15px 0 15px 30px;
+  .app-menu-header {
+    position: relative;
+    padding: 15px 0 15px 30px;
+    cursor: pointer;
+
+    .app-menu-title {
+      display: flex;
+      pointer-events: none;
+
+      h2 {
+        font-size: 42px;
+        line-height: 32px;
+        color: @color-brand;
+        margin-left: 15px;
+      }
+    }
+
+    .app-menu-subtitle {
+      pointer-events: none;
+      margin-top: 15px;
+      font-size: large;
+      color: @color-brand-secondary;
+    }
+
+    border-bottom: 1px solid @color-tertiary-base;
+  }
+
+  .app-menu-content {
+    position: relative;
+    height: calc(100vh - @menu-header-height);
+    padding: 15px 0 15px 20px;
+
+    .change-wallet-container {
+      width: 185px;
+      padding: 10px 15px;
+      color: @color-dark;
+      background: linear-gradient(to left, @color-brand-secondary 0%, @color-brand 50%);
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+
+      &:hover {
+        box-shadow: 0px 0px 12px @color-brand;
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+        fill: @color-brand;
         cursor: pointer;
 
-        .app-menu-title {
-            display: flex;
-            pointer-events: none;
-    
-            h2 {
-                font-size: 42px;
-                line-height: 32px;
-                color: @color-brand;
-                margin-left: 15px;
-            }
+        &:hover {
+          fill: @color-font-white;
         }
-
-        .app-menu-subtitle {
-            pointer-events: none;
-            margin-top: 15px;
-            font-size: large;
-            color: @color-brand-secondary;  
-        }
-
-        border-bottom: 1px solid @color-tertiary-base;
+      }
     }
 
-    .app-menu-content {
+    .app-menu-item {
+      display: flex;
+      padding: 15px;
+      cursor: pointer;
+      width: 185px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+
+      img {
+        pointer-events: none;
+        margin-right: 20px;
+      }
+
+      span {
+        pointer-events: none;
+        line-height: 25px;
+        font-weight: bold;
+      }
+
+      &:hover {
+        background-color: @color-base;
+      }
+
+      &.menu-item-selected {
+        background-color: @color-quaternary-base;
+        color: @color-font-white;
+      }
+
+      &.menu-search-wrapper {
+        padding: 0;
+        cursor: default;
+        width: 215px;
+
+        .search-bar {
+          width: 100%;
+          cursor: pointer;
+          pointer-events: all;
+          user-select: all !important;
+        }
+
+        &:hover {
+          background-color: @color-dark;
+        }
+      }
+    }
+
+    .selected-wallet-header {
+      width: 185px;
+      padding: 10px 15px;
+      background: linear-gradient(to left, @color-brand 0%, @color-brand-secondary 50%);
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+
+      &:hover {
+        box-shadow: 0px 0px 12px @color-brand-secondary;
+      }
+
+
+      .title-item {
+        width: 100%;
         position: relative;
-        height: calc(100vh - @menu-header-height);
-        padding: 15px 0 15px 20px;
+        color: @color-font-white;
+        display: flex;
+        justify-content: space-between;
 
-        .app-menu-item{
-            display: flex;
-            padding: 15px;
-            cursor: pointer;
-            width: 185px;
-            border-radius: 10px;
-
-            img {
-                pointer-events: none;
-                margin-right: 20px;
-            }
-    
-            span {
-                pointer-events: none;
-                line-height: 25px;
-                font-weight: bold;
-            }
-
-            &:hover {
-                background-color: @color-tertiary-base;
-            }
-
-            &.menu-item-selected {
-                background-color: #08a08c;
-                color: @color-base;
-            }
+        .value {
+          display: inline-block;
+          max-width: calc(100% - 30px);
+          width: 100%;
         }
 
-        .app-menu-footer {
-            position: absolute;
-            left: 0;
-            bottom: 35px;
-            width: calc(100% - 15px);
-            padding: 15px 0 15px 15px;
-            border-top: 1px solid @color-tertiary-base;
+        .copy-icon {
+          position: relative;
+
+          svg {
+            path {
+              fill: @color-brand-secondary;
+            }
+          }
+
+          .copy-to-clipboard-message {
+            font-size: 14px;
+            top: -30px;
+            right: -60px;
+          }
         }
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+        fill: @color-brand-secondary;
+        cursor: pointer;
+
+        &:hover {
+          fill: @color-font-white;
+        }
+      }
+    }
+
+    .app-menu-footer {
+      position: absolute;
+      left: 0;
+      bottom: 35px;
+      width: calc(100% - 15px);
+      height: 121px;
+      padding: 15px 0 9px 15px;
+      border-top: 2px solid @color-tertiary-base;
     }
   }
+}
+
+.wallet-dialog {
+  .selected-wallet {
+    border-radius: 5px;
+    background: linear-gradient(to left, @color-brand-secondary 0%, @color-brand 100%);
+
+    .left-side {
+      color: @color-dark !important;
+    }
+
+    .right-side {
+      color: @color-font-white !important;
+    }
+
+  }
+}

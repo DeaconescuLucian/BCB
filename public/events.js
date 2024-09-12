@@ -42,7 +42,9 @@ exports.CustomEvents = {
     getTokenPriceEvent: 'get-token-price',
     buyEvent: 'buy',
     wrapEvent: 'wrap',
-    unwrapEvent: 'unwrap'
+    unwrapEvent: 'unwrap',
+    getTokenList: 'get-token-list',
+    addTokenEvent: 'add-token'
 };
 function verifyUniqueEvents(processType) {
     const eventSet = new Set(Object.values(exports.CustomEvents));

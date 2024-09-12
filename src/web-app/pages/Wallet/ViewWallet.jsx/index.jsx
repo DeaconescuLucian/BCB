@@ -4,13 +4,10 @@ import { dexscreenerSvg, purchaseSvg } from '../../../assets/svg/index.jsx';
 import Loading from '../../../components/Loading/index.tsx';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  deselectWallet,
-  updateSelectedWallet,
   getWalletDetails,
   fetchWallets,
 } from '../../../store//reducers/wallets.js';
 import CopyToClipboard from '../../../components/CopyToClipboard/index.tsx';
-import SearchBar from '../../../components/SearchBar/index.tsx';
 import Button from '../../../components/FormControls/Button.tsx';
 import { CustomEvents } from '../../../../ts/events.ts';
 import { useToast } from '../../../contexts/ToastContext.tsx';
@@ -118,17 +115,6 @@ function ViewWallet() {
   const loadingParentRef = useRef(null);
 
   useEffect(() => {
-    const publicKey = window.location.search.split('=')[1];
-    dispatch(deselectWallet());
-    dispatch(updateSelectedWallet(publicKey));
-    dispatch(getWalletDetails(publicKey));
-
-    return () => {
-      dispatch(deselectWallet());
-    };
-  }, []);
-
-  useEffect(() => {
     switch (tableType.type) {
       case 'token':
         setColumns(tokenColumns);
@@ -166,95 +152,78 @@ function ViewWallet() {
 
   const header = selectedWalletDetails && (
     <>
-      <div className="overview-panel">
-        <h3>Overview</h3>
-        <div className="overview-item">
-          <span className="label">Alias</span>
-          <span className="value  truncate">{selectedWalletDetails.alias}</span>
-        </div>
-        <div className="overview-item">
-          <span className="label">Address</span>
-          <span className="value truncate">{selectedWalletDetails.publicKey}</span>
-          <CopyToClipboard text={selectedWalletDetails.publicKey}></CopyToClipboard>
-        </div>
-        <div className="overview-item">
-          <span className="label sol">SOL Balance</span>
-          <span className="value">{formatNumber(selectedWalletDetails.balance)}</span>
-        </div>
-        <div className="overview-item">
-          <span className="label wsol">WSOL Balance</span>
-          <span className="value">
-            {formatNumber(
-              selectedWalletAccounts?.find((e) => e.mint === 'So11111111111111111111111111111111111111112')?.amount || 0
-            )}
-          </span>
-        </div>
-        <div className="overview-item">
-          <span className="label">Token Balance</span>
-          <span className="value">
-            {formatNumber(selectedWalletAccounts?.filter((a) => a.isNft === 0).length || 0)}
-          </span>
-        </div>
-      </div>
-      <div className="controls">
-        <div className="token-type-selector">
-          {Object.values(tableTypes).map((type) => (
-            <div
-              key={type.type}
-              className={`token-type ${tableType.type === type.type ? 'selected' : ''}`}
-              onClick={() => setTableType(type)}
-            >
-              {type.name}
+      <div className="overview-wrapper">
+        {' '}
+        <div className="overview-panel-wrapper">
+          {' '}
+          <div className="overview-panel">
+            <div className="overview-title">
+              <span className="value  truncate">{selectedWalletDetails.alias}</span>
+              <span>
+                <span className="value truncate key">{selectedWalletDetails.publicKey}</span>
+                <CopyToClipboard text={selectedWalletDetails.publicKey}></CopyToClipboard>
+              </span>
             </div>
-          ))}
+            <div className="overview-row">
+              <div className="overview-item sol">
+                <span className="label">SOL</span>
+                <span className="value">{formatNumber(selectedWalletDetails.balance)}</span>
+              </div>
+              <div className="overview-item wsol">
+                <span className="label">WSOL</span>
+                <span className="value">
+                  {formatNumber(
+                    selectedWalletAccounts?.find((e) => e.mint === 'So11111111111111111111111111111111111111112')
+                      ?.amount || 0
+                  )}
+                </span>
+              </div>
+              <div className="overview-item token">
+                <span className="label">Tokens</span>
+                <span className="value">
+                  {formatNumber(selectedWalletAccounts?.filter((a) => a.isNft === 0).length || 0)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            handleUpdateWallet();
-          }}
-          theme="primary"
-          type="reload"
-          text="Refresh"
-        ></Button>
+        <div className="controls">
+          <div className="token-type-selector">
+            {Object.values(tableTypes).map((type) => (
+              <div
+                key={type.type}
+                className={`token-type ${tableType.type === type.type ? 'selected' : ''}`}
+                onClick={() => setTableType(type)}
+              >
+                {type.name}
+              </div>
+            ))}
+          </div>
+          <Button
+            onClick={() => {
+              handleUpdateWallet();
+            }}
+            theme="primary"
+            type="reload"
+            text="Refresh"
+          ></Button>
+        </div>
       </div>
     </>
-  );
-
-  const searchBar = (
-    <SearchBar
-      searchArray={wallets}
-      displayTemplate={(wallet) => `alias: ${wallet.alias} (${wallet.publicKey})`}
-      matchProperties={[
-        { name: 'alias', fullMatch: false },
-        { name: 'publicKey', fullMatch: true },
-      ]}
-      onSearch={(wallet) => {
-        navigateAndSave(navigate, `/wallet-page/view?pub=${wallet.publicKey}`);
-        dispatch(deselectWallet());
-        dispatch(updateSelectedWallet(wallet.publicKey));
-        dispatch(getWalletDetails(wallet.publicKey));
-      }}
-      placeholder="Search wallets by name or public key"
-    ></SearchBar>
   );
 
   return (
     <div className="view-wallet-page" ref={loadingParentRef}>
       {selectedWalletAccounts === null ? (
         <>
-          {searchBar}
           {header}
           {selectedWalletDetails && <Loading parentRef={loadingParentRef}></Loading>}
         </>
       ) : (
         <>
-          {searchBar}
           {header}
           {tableData.length > 0 ? (
             <>
-              <div className="total">
-                <span>{tableType.totalTemplate(tableData.length)}</span>
-              </div>
               <Table
                 columns={columns}
                 rows={tableData}
@@ -281,21 +250,13 @@ function ViewWallet() {
                       {
                         name: 'Buy',
                         action: (r) => {
-                          navigateAndSave(
-                            navigate,
-                            `/trade/buy?pub=${r.publicKey}&mint=${r.mint}`,
-                            true
-                          );
+                          navigateAndSave(navigate, `/trade/swap?mint2=${r.mint}`, true);
                         },
                       },
                       {
                         name: 'Sell',
                         action: (r) => {
-                          navigateAndSave(
-                            navigate,
-                            `/trade/sell?pub=${r.publicKey}&mint=${r.mint}`,
-                            true
-                          );
+                          navigateAndSave(navigate, `/trade/swap?mint1=${r.mint}`, true);
                         },
                       },
                     ],

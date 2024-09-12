@@ -125,7 +125,9 @@ const GetWalletsHandler = (db) => {
 const UpdateWalletHandler = (db, solanaConnection) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.updateWalletEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         const publicKey = new web3_js_1.PublicKey(arg.publicKey);
+        console.log(publicKey);
         const solBalance = yield (0, utils_1.getSolanaBalance)(solanaConnection, publicKey);
+        console.log(solBalance);
         let error = null;
         yield new Promise((resolve, reject) => {
             (0, wallets_1.updateWalletBalance)(db, { publicKey: arg.publicKey, balance: solBalance }, (err) => {

@@ -10,7 +10,7 @@ import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './e
 import sqlite3 from 'sqlite3';
 import * as db from './database/db';
 import * as transactionsDb from './database/transactions';
-import { createConnection} from './solana/utils';
+import { createConnection } from './solana/utils';
 import { Connection } from '@solana/web3.js';
 import * as connectionDb from './database/connections';
 
