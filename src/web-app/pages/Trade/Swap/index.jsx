@@ -30,7 +30,7 @@ function Swap() {
   const [token2Price, setToken2Price] = useState(null);
   const [priceRatio, setPriceRatio] = useState(undefined);
   const [amountToBuy, setAmountToBuy] = useState(0);
-  const [simulate, setSimulate] = useState(JSON.parse(window.localStorage.getItem('swap-settings')).simulate || false);
+  const [simulate, setSimulate] = useState(JSON.parse(window.localStorage.getItem('swap-settings'))?.simulate || false);
   const [solanaPrice, setSolanaPrice] = useState(0);
   const [fee, setFee] = useState(0.00005);
   const [wrapAmount, setWrapAmount] = useState(0);
@@ -127,7 +127,7 @@ function Swap() {
   }, [selectedWalletAccounts]);
 
   useEffect(() => {
-    let wallet = JSON.parse(window.localStorage.getItem(pageSettings)).wallet || '';
+    let wallet = JSON.parse(window.localStorage.getItem(pageSettings))?.wallet || '';
     if (selectedWallet !== wallet) {
       setToken1(null);
       setToken2(null);
@@ -169,11 +169,12 @@ function Swap() {
     const result = await window.electron.invoke(CustomEvents.swapEvent, {
       params: {
         wallet: selectedWalletDetails?.publicKey,
-        mint1: token1?.mint,
-        mint2: token1?.mint,
+        mintA: token1.address,
+        mintB: token2.address,
         amount: amountToBuy,
       },
       simulate: simulate,
+      fees: 0.001,
     });
     if (result) {
       if (result.data) {

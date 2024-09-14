@@ -10,15 +10,17 @@ import {
   LAMPORTS_PER_SOL,
 } from '@solana/web3.js';
 import * as raydium from '@raydium-io/raydium-sdk';
+import * as raydiumv2 from '@raydium-io/raydium-sdk-v2';
 import {
   getAssociatedTokenAddressSync,
   createAssociatedTokenAccountIdempotentInstruction,
   createCloseAccountInstruction,
   createSyncNativeInstruction,
   createUpdateGroupMaxSizeInstruction,
+  TOKEN_PROGRAM_ID
 } from '@solana/spl-token';
 import BN from 'bn.js';
-import { findRaydiumPoolInfo } from './utils';
+import { findRaydiumpoolKeys, getRaydiumPoolsbyMints, BasePoolKeys } from './utils';
 import { sign } from 'crypto';
 
 async function simulateTransaction(tx: VersionedTransaction, connection: Connection) {
@@ -56,7 +58,6 @@ export async function confirmTransaction(connection: Connection, params: { signa
           error: 'Transaction was not confirmed',
           signature: signature,
           date: new Date()
-  
         };
       } else {
         console.log(`Signature confirmed: ${signature}`);
@@ -91,14 +92,18 @@ async function sendTransaction(tx: VersionedTransaction, block: any, connection:
     if (simulate) return simulateTransaction(tx, connection);
     else {
       const signature = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: true });
+      //const signature = '4ke375HLhV871nV5DkexZjxAe9LkBQGAnM7e2BcPqwP2XKxJrNPTiZEBwKY57tAYgzAcgCLH2SZTQv6CwsfWEbU7'
+      const confirmation = confirmTransaction(connection, { signature: signature, block: block });
       console.log(`Transaction sent: ${signature}`);
+      //const conf = confirmTransaction(connection, { signature: signature, block: block });
       if (signature) {
         return {
           status: 'success',
           message: `Transaction sent: ${signature}`,
           signature: signature,
           block: block,
-          amount: amount
+          amount: amount,
+          confirmation: confirmation
         };
       } else {
         return {
@@ -139,9 +144,10 @@ async function createSignedTransaction(
   return tx;
 }
 
-export interface buyParams {
+export interface swapParams {
   wallet: Keypair;
-  mint: PublicKey;
+  mintA: PublicKey;
+  mintB: PublicKey;
   amount: number;
   poolKeys?: raydium.LiquidityPoolKeysV4 | undefined;
 }
@@ -197,55 +203,118 @@ export async function simpleTransfer(
 export async function getPoolKeys(mint: PublicKey, connection: Connection) {
   const quoteToken = raydium.Token.WSOL.mint;
 
-  let poolKeys = await findRaydiumPoolInfo(mint.toString(), quoteToken.toString(), connection);
+  let poolKeys = await findRaydiumpoolKeys(mint.toString(), quoteToken.toString(), connection);
   if (!poolKeys) {
     return undefined;
   }
   return poolKeys;
 }
 
-export async function buy(params: buyParams, fees: feesParams, connection: Connection, simulate: boolean) {
-  let { wallet, mint, amount, poolKeys } = params;
+export async function swap(params: swapParams, fees: feesParams, connection: Connection, simulate: boolean, basepoolKeys: BasePoolKeys) {
+  try{
+  let { wallet, mintA, mintB, amount } = params;
 
-  if (!poolKeys) {
-    console.log(`Pool not found`);
-    return {
-      status: 'fail',
-      error: 'Pool not found',
-    };
-  }
-
-  const quoteToken = raydium.Token.WSOL.mint;
-  const tokenAccount = getAssociatedTokenAddressSync(mint, wallet!.publicKey, true);
-  const quotetokenAccount = getAssociatedTokenAddressSync(quoteToken, wallet!.publicKey, true);
-
-  const quoteAmount = new BN(amount * LAMPORTS_PER_SOL);
-
-  const { innerTransaction, address } = raydium.Liquidity.makeSwapFixedInInstruction(
-    {
-      poolKeys: poolKeys!,
-      userKeys: {
-        tokenAccountIn: quotetokenAccount!,
-        tokenAccountOut: tokenAccount!,
-        owner: wallet.publicKey,
-      },
-      amountIn: quoteAmount,
-      minAmountOut: 0,
-    },
-    poolKeys!.version
-  );
+  let poolKeys = basepoolKeys.poolKeys;
+  // console.log(`enter swap`)
+  // console.log(`basepoolKeys:`,basepoolKeys)
 
   const lastbk = await connection.getLatestBlockhash('finalized');
+  const tokenAccount = getAssociatedTokenAddressSync(mintB, wallet!.publicKey, true);
+  const quotetokenAccount = getAssociatedTokenAddressSync(mintA, wallet!.publicKey, true);
 
-  const instructions = [
-    ComputeBudgetProgram.setComputeUnitLimit({ units: 100000 }),
+  let instructions = [
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 200000 }),
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: fees.prioFee * LAMPORTS_PER_SOL }),
-    createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, tokenAccount, wallet.publicKey, mint),
-    ...innerTransaction.instructions,
   ];
+
+  if(basepoolKeys.type === `Concentrated`){
+    const INVERTED = basepoolKeys.mintA === mintB.toString();
+    let apimintA = raydiumv2.toApiV3Token({address: poolKeys!.mintA.toBase58(), programId: TOKEN_PROGRAM_ID.toBase58(), decimals: poolKeys!.mintDecimalsA})
+    let apimintB = raydiumv2.toApiV3Token({address: poolKeys!.mintB.toBase58(), programId: TOKEN_PROGRAM_ID.toBase58(), decimals: poolKeys!.mintDecimalsB})
+    let clmminfo = await raydiumv2.PoolUtils.fetchComputeClmmInfo({
+      connection,
+      poolInfo: {
+        id: poolKeys!.poolId.toBase58(),
+        programId: poolKeys!.programId.toBase58(),
+        mintA: apimintA,
+        mintB: apimintB,
+        config: poolKeys!.config,
+        price: poolKeys!.price,
+      }
+    })
+
+    const x = await raydiumv2.PoolUtils.fetchMultiplePoolTickArrays({connection:connection, poolKeys:[clmminfo], batchRequest: true})
+
+
+
+
+
+    const quoteAmount = INVERTED ? new BN(amount * (10**poolKeys.mintDecimalsB)) : new BN(amount * (10**poolKeys!.mintDecimalsA));
+    console.log(`quoteAmount:`,quoteAmount)
+    console.log(`program id:`,poolKeys!.programId)
+
+    const { minAmountOut, remainingAccounts} = raydiumv2.PoolUtils.computeAmountOutFormat({
+      poolInfo: clmminfo,
+      tickArrayCache: x[clmminfo.id.toString()],
+      amountIn: quoteAmount,
+      tokenOut: INVERTED ? apimintA : apimintB,
+      slippage: 0.01,
+      epochInfo: await connection.getEpochInfo(),
+    })
+
+    const clmm_swap = raydiumv2.ClmmInstrument.swapInstruction(
+      poolKeys!.programId,
+      wallet.publicKey,
+      poolKeys!.poolId,
+      poolKeys!.ammConfig,
+      INVERTED ? tokenAccount : quotetokenAccount,
+      INVERTED ? quotetokenAccount: tokenAccount,
+      poolKeys!.vaultA,
+      poolKeys!.vaultB,
+      poolKeys!.mintA,
+      poolKeys!.mintB,
+      remainingAccounts,
+      poolKeys!.observationId,
+      quoteAmount,
+      new BN(0),
+      poolKeys!.sqrtPriceLimitX64,
+      true,
+      raydiumv2.getPdaExBitmapAccount(poolKeys!.programId, poolKeys!.poolId).publicKey,
+    )
+  
+    instructions.push(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, tokenAccount, wallet.publicKey, mintB),
+    createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, quotetokenAccount, wallet.publicKey, mintA),
+    clmm_swap);
+  }
+  else if(basepoolKeys.type === `Standard`){
+    const INVERTED = basepoolKeys.mintA === mintB.toString();
+    const quoteAmount = INVERTED ? new BN(amount * (10**poolKeys!.quoteDecimals)) : new BN(amount * (10**poolKeys!.baseDecimals));
+    console.log(`decimal powert:`,quoteAmount)
+    console.log(10**poolKeys!.quoteDecimals)
+    const { innerTransaction, address } = raydium.Liquidity.makeSwapFixedInInstruction(
+      {
+        poolKeys: poolKeys!,
+        userKeys: {
+          tokenAccountIn: quotetokenAccount!,
+          tokenAccountOut: tokenAccount!,
+          owner: wallet.publicKey,
+        },
+        amountIn: quoteAmount,
+        minAmountOut: 0,
+      },
+      poolKeys!.version
+    );
+    instructions.push(createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, tokenAccount, wallet.publicKey, mintB),
+    createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, quotetokenAccount, wallet.publicKey, mintA),
+    ...innerTransaction.instructions);
+  }
+
 
   const tx = await createSignedTransaction(instructions, connection, wallet, lastbk.blockhash);
   return sendTransaction(tx, lastbk, connection, simulate, params.amount);
+} catch (e) {
+  console.log(e);
+}
 }
 
 export async function unwrapSol(wallet: Keypair, connection: Connection, amount: number, simulate: boolean) {
@@ -282,7 +351,7 @@ export async function sell(params: sellParams, fees: feesParams, connection: Con
   const quoteToken = raydium.Token.WSOL.mint;
 
   const { wallet, mint, percentage } = params;
-  const poolKeys = params.poolKeys || (await findRaydiumPoolInfo(mint.toString(), quoteToken.toString(), connection));
+  const poolKeys = params.poolKeys || (await findRaydiumpoolKeys(mint.toString(), quoteToken.toString(), connection));
   if (!poolKeys) {
     console.log(`Pool not found`);
     return {
