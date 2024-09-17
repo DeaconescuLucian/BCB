@@ -25,7 +25,6 @@ const GetTokenPriceHandler = (solanaConnection: Connection) => {
 
 const GetTokensHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.getTokenList, async () => {
-    console.log('Fetching fucking tokens');
     return new Promise((resolve, reject) => {
       tokenDb.getTokens(db, async (err, rows) => {
         if (err) {
@@ -53,6 +52,12 @@ const GetTokensHandler = (db: sqlite3.Database) => {
             const uniqueTokensArray = Array.from(tokensSet).map((address) =>
               tokensArray.find((e) => e.address === address)
             );
+
+            uniqueTokensArray.sort((a, b) => {
+              if (a.favouriteIndex === null) return 1;
+              if (b.favouriteIndex === null) return -1;
+              return a.favouriteIndex - b.favouriteIndex;
+            });
             resolve(uniqueTokensArray);
           } catch (error) {
             reject(error);
@@ -77,12 +82,57 @@ const AddTokenHandler = (db: sqlite3.Database) => {
   });
 };
 
+const GetWsolHandler = (db: sqlite3.Database) => {
+  registerHandler(CustomEvents.getWSOLEvent, async (e: any, arg: any) => {
+    return new Promise((resolve, reject) => {
+      tokenDb.getWSOL(db, async (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          try {
+            const tokens = await Promise.all(
+              rows?.map(async (row: any) => {
+                return {
+                  ...row,
+                };
+              }) || []
+            );
+            resolve(tokens[0]);
+          } catch (error) {
+            reject(error);
+          }
+        }
+      });
+    });
+  });
+};
+
+const AddTokenToFavouritesHandler = (db: sqlite3.Database) => {
+  registerHandler(CustomEvents.addTokenToFavouritesEvent, async (e: any, arg: any) => {
+    return new Promise(async (resolve) => {
+      const res = await tokenDb.addTokenToFavourites(db, arg);
+      resolve('done');
+    });
+  });
+};
+
+const RemoveTokenFromFavouritesHandler = (db: sqlite3.Database) => {
+  registerHandler(CustomEvents.removeTokenFromFavouritesEvent, async (e: any, arg: any) => {
+    return new Promise(async (resolve) => {
+      const res = await tokenDb.removeTokenFomFavourites(db, arg);
+      resolve('done');
+    });
+  });
+};
+
 const handleToken = (db: sqlite3.Database, solanaConnection: Connection) => {
   GetTokenDetailsHandler(solanaConnection);
   GetTokenPriceHandler(solanaConnection);
   GetTokensHandler(db);
   AddTokenHandler(db);
-
+  GetWsolHandler(db);
+  AddTokenToFavouritesHandler(db);
+  RemoveTokenFromFavouritesHandler(db);
 };
 
 export default handleToken;

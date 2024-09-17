@@ -66,13 +66,12 @@ function Menu() {
           changeSelectedTab('home-menu-item');
           break;
         case '/wallet-page/list':
-        case '/wallet-page/import':
-        case '/wallet-page/generate':
+        case '/wallet-page/new':
         case '/wallet-page/view':
           changeSelectedTab('wallets-menu-item');
           break;
         case '/trade/swap':
-        case '/trade/wrap-unrwap':
+        case '/trade/wrap-unwrap':
           changeSelectedTab('trade-menu-item');
           break;
         case '/settings/license':

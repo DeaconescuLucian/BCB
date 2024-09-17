@@ -7,17 +7,22 @@ import Trade from './pages/Trade';
 import Settings from './pages/Settings';
 import TransactionHistory from './components/TransactionHistory';
 import WalletPage from './pages/Wallet';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { fetchWallets, fetchTokens, updateSelectedWallet, getWalletDetails } from './store/reducers/wallets';
+import { getValuesFromLocalStorage } from './store/reducers/feeAndSlippage';
 import { useNavigate } from 'react-router-dom';
+import Loading from './components/Loading';
 
 function App() {
+  const { fetchWalletsDone, fetchTokensDone, getWalletDetailsDone } = useSelector((state) => state.wallets);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [mainHeight, setMainHeight] = useState(637);
+  const [mainHeight, setMainHeight] = useState(607);
   const mainContainerRef = useRef(null);
+  const appRef = useRef(null);
 
   useEffect(() => {
+    dispatch(getValuesFromLocalStorage());
     dispatch(fetchWallets());
     const pub = window.localStorage.getItem('wallet-address');
     if (pub) {
@@ -29,7 +34,7 @@ function App() {
   }, []);
 
   return (
-    <div className="app-container">
+    <div className="app-container" ref={appRef}>
       <Menu></Menu>
       <TopBar></TopBar>
       <TransactionHistory
@@ -55,6 +60,9 @@ function App() {
           <Route path="/settings/*" element={<Settings></Settings>} />
         </Routes>
       </div>
+      {(!fetchWalletsDone || !fetchTokensDone || !getWalletDetailsDone) && (
+        <Loading parentRef={appRef} text={'Gettings things ready'}></Loading>
+      )}
     </div>
   );
 }

@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Page from '../../components/Page/index.tsx';
 import Tabstrip from '../../components/Tabstrip/index.tsx';
 import WalletList from './WalletList/index.jsx';
-import ImportWallet from './ImportWallet/index.jsx';
-import GenerateWallet from './GenerateWallet/index.jsx';
-import ViewWallet from './ViewWallet.jsx/index.jsx';
+import NewWallet from './NewWallet/index.jsx';
+import ViewWallet from './ViewWallet/index.jsx';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateSelectedWallet, getWalletDetails } from '../../store/reducers/wallets.js';
 import { useNavigate } from 'react-router-dom';
@@ -13,9 +12,8 @@ import { navigateAndSave } from '../../utils.js';
 function WalletPage() {
   const [tabs] = useState([
     { name: 'List', url: '/list' },
-    { name: 'Generate', url: '/generate' },
-    { name: 'Import', url: '/import' },
     { name: 'View', url: '/view' },
+    { name: 'New', url: '/new' },
   ]);
 
   const getActiveTab = () => {
@@ -24,11 +22,8 @@ function WalletPage() {
       case 'list':
         setActiveTab({ name: 'List', url: '/list' });
         break;
-      case 'generate':
-        setActiveTab({ name: 'Generate', url: '/generate' });
-        break;
-      case 'import':
-        setActiveTab({ name: 'Import', url: '/import' });
+      case 'new':
+        setActiveTab({ name: 'New', url: '/new' });
         break;
       case 'view':
         setActiveTab({ name: 'View', url: '/view' });
@@ -68,8 +63,7 @@ function WalletPage() {
       />
       <div className="wallets-page">
         {window.location.href.includes('list') && <WalletList onView={changeToViewWallet}></WalletList>}
-        {window.location.href.includes('generate') && <GenerateWallet></GenerateWallet>}
-        {window.location.href.includes('import') && <ImportWallet></ImportWallet>}
+        {window.location.href.includes('new') && <NewWallet></NewWallet>}
         {window.location.href.includes('view') && <ViewWallet publicKey={selectedWallet}></ViewWallet>}
       </div>
     </Page>

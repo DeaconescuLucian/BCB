@@ -8,7 +8,9 @@ const initialState = {
   selectedWallet: null,
   selectedWalletDetails: null,
   selectedWalletAccounts: null,
-  status: 'idle',
+  fetchWalletsDone: true,
+  getWalletDetailsDone: true,
+  fetchTokensDone: true,
   error: null,
 };
 
@@ -74,7 +76,6 @@ const walletsSlice = createSlice({
     },
     updateWallets: (state, action) => {
       state.wallets = action.payload;
-      state.status = 'succeeded';
     },
     addWallet: (state, action) => {
       state.wallets.push(action.payload);
@@ -85,25 +86,31 @@ const walletsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchWallets.pending, (state) => {
+        state.fetchWalletsDone = false;
+      })
       .addCase(fetchWallets.fulfilled, (state, action) => {
-        state.status = 'succeeded';
         state.wallets = action.payload;
         state.selectedWalletDetails = state.wallets.find(w => w.publicKey === state.selectedWallet) || null;
+        state.fetchWalletsDone = true;
+
+      })
+      .addCase(fetchTokens.pending, (state) => {
+        state.fetchTokensDone = false;
       })
       .addCase(fetchTokens.fulfilled, (state, action) => {
-        state.status = 'succeeded';
         state.tokens = action.payload;
+        state.fetchTokensDone = true;
       })
       .addCase(getWalletDetails.pending, (state) => {
-        state.status = 'loading';
+        state.getWalletDetailsDone = false;
       })
       .addCase(getWalletDetails.fulfilled, (state, action) => {
         state.selectedWalletAccounts = action.payload || [];
-        state.status = 'succeeded'
+        state.getWalletDetailsDone = true;
       })
       .addCase(getTokensPrices.fulfilled, (state, action) => {
         state.tokenPrices = action.payload || [];
-        state.status = 'succeeded'
       })
   },
 });

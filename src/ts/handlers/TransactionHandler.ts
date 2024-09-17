@@ -2,51 +2,46 @@ import { registerHandler, sendToRenderer } from '../ipcHandler';
 import { CustomEvents, ProcessType } from '../events';
 import sqlite3 from 'sqlite3';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { buy, getPoolKeys, unwrapSol, wrapSol } from '../solana/transactions';
+import { unwrapSol, wrapSol, swapWithRaydiumAPI } from '../solana/transactions';
 import { getWalletSecret } from '../database/wallets';
 import { getKeyPairFromSecret } from '../solana/wallet';
 import * as transactionsDb from '../database/transactions';
 import { BrowserWindow } from 'electron';
-import * as connectionDb from '../database/connections';
-import * as path from 'path';
-import { fork } from 'child_process';
+import { BasePoolKeys, getTokensPrice } from '../solana/utils';
 
 let _poolKeys: any[] = [];
+
+let CachedPoolKeys: BasePoolKeys[] = [];
+
+type ITransactionResponse = {
+  status?: string;
+  message?: string;
+  error?: string;
+};
 
 const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
   registerHandler(
     CustomEvents.swapEvent,
     async (
       e: any,
-      arg: { params: { wallet: string; mint: string; amount: number }; fees: number; simulate: boolean }
+      arg: { params: { wallet: string; mintA: string; mintB: string; amount: number }; fees: number; slippage: number; simulate: boolean }
     ) => {
-      let response: any = null;
-      const wallet = await getWalletSecret(db, arg.params.wallet);
-      if (wallet) {
-        const keyPair = getKeyPairFromSecret(wallet.secretKey);
-        if (keyPair) {
-          let poolKeys =
-            _poolKeys.find((e) => (e.mint === arg.params.mint))?.poolKeys ||
-            (await getPoolKeys(new PublicKey(arg.params.mint), solanaConnection));
-          if (poolKeys) {
-            if (!_poolKeys.find((e) => (e.mint = arg.params.mint)))
-              _poolKeys.push({
-                mint: arg.params.mint,
-                poolKeys: poolKeys,
-              });
-
-            response = await buy(
-              { poolKeys, wallet: keyPair, mint: new PublicKey(arg.params.mint), amount: arg.params.amount },
-              { prioFee: arg.fees },
-              solanaConnection,
-              arg.simulate
-            );
-
+      try {
+        let response: any = null;
+        const wallet = await getWalletSecret(db, arg.params.wallet);
+        if (wallet) {
+          const keyPair = getKeyPairFromSecret(wallet.secretKey);
+          if (keyPair) {
+            response = await swapWithRaydiumAPI(solanaConnection, arg.params.wallet, arg.params.mintA, arg.params.mintB, arg.simulate, arg.params.amount, keyPair, arg.fees, arg.slippage);
+            const prices = await getTokensPrice([arg.params.mintA, 'So11111111111111111111111111111111111111112']);
+            const solanaAmount = arg.params.amount * (prices[arg.params.mintA] / prices['So11111111111111111111111111111111111111112']);
+            
             if (!arg.simulate) {
               if (response.status === 'success') {
                 const transaction = {
                   signature: response.signature,
-                  value: response.amount,
+                  wallet: arg.params.wallet,
+                  value: solanaAmount,
                   date: new Date(),
                   status: 'pending',
                 };
@@ -54,48 +49,34 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
                 if (mainWindow?.isVisible()) {
                   sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
                 }
-  
-                connectionDb.getActiveConnection(db).then((r) => {
-                  const confirmTransactionProcess = fork(
-                    path.join(`${__dirname}/../background-processes`, 'confirm-transaction.js')
-                  );
-                  confirmTransactionProcess?.once('message', (msg: any) => {
-                    if (msg === 'ready') {
-                      confirmTransactionProcess?.send({
-                        type: 'start',
-                        data: {
-                          transactionData: {
-                            block: response.block,
-                            amount: transaction.value,
-                            signature: transaction.signature,
-                          },
-                          connection: r,
-                        },
-                      });
+                if (response.confirmation) {
+                  response.confirmation.then((msg: any) => {
+                    console.log('Transaction confirmed successfully');
+                    let data = {
+                      signature: transaction.signature,
+                      status: msg.status,
+                      date: transaction.date,
+                      value: solanaAmount,
+                    };
+                    transactionsDb.updateTransaction(db, data);
+                    if (mainWindow?.isVisible()) {
+                      sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, data);
                     }
                   });
-                  confirmTransactionProcess?.on('message', (msg: any) => {
-                    if (msg.type === 'transaction-confirmation-done') {
-                      console.log('Transaction confirmed successfully');
-                      transactionsDb.updateTransaction(db, msg.data);
-                      if (mainWindow?.isVisible()) {
-                        sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
-                      }
-                    }
-                  });
-                });
+                }
               }
             }
           }
         }
-      }
 
-      return new Promise((resolve) => {
-        if (response) resolve(response);
-        else {
-          resolve(null);
-        }
-      });
+        return {
+          status: response.status,
+          message: response?.message,
+          error: response?.error,
+        };
+      } catch (e) {
+        console.log(e);
+      }
     }
   );
 };
@@ -115,6 +96,7 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
             if (response.status === 'success') {
               const transaction = {
                 signature: response.signature,
+                wallet: arg.wallet,
                 value: response.amount,
                 date: new Date(),
                 status: 'pending',
@@ -123,36 +105,21 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
               if (mainWindow?.isVisible()) {
                 sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
               }
-
-              connectionDb.getActiveConnection(db).then((r) => {
-                const confirmTransactionProcess = fork(
-                  path.join(`${__dirname}/../background-processes`, 'confirm-transaction.js')
-                );
-                confirmTransactionProcess?.once('message', (msg: any) => {
-                  if (msg === 'ready') {
-                    confirmTransactionProcess?.send({
-                      type: 'start',
-                      data: {
-                        transactionData: {
-                          block: response.block,
-                          amount: transaction.value,
-                          signature: transaction.signature,
-                        },
-                        connection: r,
-                      },
-                    });
+              if (response.confirmation) {
+                response.confirmation.then((msg: any) => {
+                  console.log('Transaction confirmed successfully');
+                  let data = {
+                    signature: transaction.signature,
+                    status: msg.status,
+                    date: transaction.date,
+                    value: transaction.value,
+                  };
+                  transactionsDb.updateTransaction(db, data);
+                  if (mainWindow?.isVisible()) {
+                    sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, data);
                   }
                 });
-                confirmTransactionProcess?.on('message', (msg: any) => {
-                  if (msg.type === 'transaction-confirmation-done') {
-                    console.log('Transaction confirmed successfully');
-                    transactionsDb.updateTransaction(db, msg.data);
-                    if (mainWindow?.isVisible()) {
-                      sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
-                    }
-                  }
-                });
-              });
+              }
             }
           }
         }
@@ -169,8 +136,10 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
 };
 
 const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
-  registerHandler(CustomEvents.unwrapEvent, async (e: any, arg: { wallet: string; amount: number; simulate: boolean }) => {
-    let response: any = null;
+  registerHandler(
+    CustomEvents.unwrapEvent,
+    async (e: any, arg: { wallet: string; amount: number; simulate: boolean }) => {
+      let response: any = null;
       const wallet = await getWalletSecret(db, arg.wallet);
       if (wallet) {
         const keyPair = getKeyPairFromSecret(wallet.secretKey);
@@ -181,6 +150,7 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
             if (response.status === 'success') {
               const transaction = {
                 signature: response.signature,
+                wallet: arg.wallet,
                 value: response.amount,
                 date: new Date(),
                 status: 'pending',
@@ -189,36 +159,21 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
               if (mainWindow?.isVisible()) {
                 sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
               }
-
-              connectionDb.getActiveConnection(db).then((r) => {
-                const confirmTransactionProcess = fork(
-                  path.join(`${__dirname}/../background-processes`, 'confirm-transaction.js')
-                );
-                confirmTransactionProcess?.once('message', (msg: any) => {
-                  if (msg === 'ready') {
-                    confirmTransactionProcess?.send({
-                      type: 'start',
-                      data: {
-                        transactionData: {
-                          block: response.block,
-                          amount: transaction.value,
-                          signature: transaction.signature,
-                        },
-                        connection: r,
-                      },
-                    });
+              if (response.confirmation) {
+                response.confirmation.then((msg: any) => {
+                  console.log('Transaction confirmed successfully');
+                  let data = {
+                    signature: transaction.signature,
+                    status: msg.status,
+                    date: transaction.date,
+                    value: transaction.value,
+                  };
+                  transactionsDb.updateTransaction(db, data);
+                  if (mainWindow?.isVisible()) {
+                    sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, data);
                   }
                 });
-                confirmTransactionProcess?.on('message', (msg: any) => {
-                  if (msg.type === 'transaction-confirmation-done') {
-                    console.log('Transaction confirmed successfully');
-                    transactionsDb.updateTransaction(db, msg.data);
-                    if (mainWindow?.isVisible()) {
-                      sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, msg.data);
-                    }
-                  }
-                });
-              });
+              }
             }
           }
         }
@@ -230,7 +185,8 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
           resolve(null);
         }
       });
-  });
+    }
+  );
 };
 
 const handleTransaction = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null) => {

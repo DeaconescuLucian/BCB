@@ -5,6 +5,7 @@ import { runQuery } from './db';
 export async function createTableTransactions(db: sqlite3.Database) {
     const sql = `CREATE TABLE IF NOT EXISTS transactions (
         signature TEXT PRIMARY KEY,
+        wallet TEXT NOT NULL,
         value REAL NOT NULL,
         date TEXT NOT NULL,
         status TEXT CHECK(status IN ('success', 'fail', 'pending')))`;
@@ -13,8 +14,8 @@ export async function createTableTransactions(db: sqlite3.Database) {
 
 export function insertTransaction(db: sqlite3.Database, t: any): void {
     db.serialize(() => {
-        db.run(`INSERT INTO transactions (signature, value, "date", status) VALUES (?, ?, ?, ?)`,
-            [t.signature, t.value, t.date, t.status], (err: Error | null) => {
+        db.run(`INSERT INTO transactions (signature, wallet, value, "date", status) VALUES (?, ?, ?, ?, ?)`,
+            [t.signature, t.wallet, t.value, t.date.toISOString(), t.status], (err: Error | null) => {
                 if (err) {
                     console.error('Error inserting transaction:', err.message);
                 } else {
@@ -44,7 +45,7 @@ export function getLatestTransactions(db: sqlite3.Database, callback: (err: Erro
 export function updateTransaction(db: sqlite3.Database, t: any): void {
     db.serialize(() => {
         db.run(`UPDATE transactions SET "date" = ? , status = ? WHERE signature = ?`,
-            [t.date, t.status, t.signature], (err: Error | null) => {
+            [t.date.toISOString(), t.status, t.signature], (err: Error | null) => {
                 if (err) {
                     console.error('Error updating transaction:', err.message);
                 } else {

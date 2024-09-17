@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   getWalletDetails,
   fetchWallets,
-} from '../../../store//reducers/wallets.js';
+} from '../../../store/reducers/wallets.js';
 import CopyToClipboard from '../../../components/CopyToClipboard/index.tsx';
 import Button from '../../../components/FormControls/Button.tsx';
 import { CustomEvents } from '../../../../ts/events.ts';

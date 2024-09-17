@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { downSvg } from '../../assets/svg';
 import Dialog from '../Dialog';
-import { crossSvg, addSvg } from '../../assets/svg';
+import { crossSvg, addSvg, starSvg, emptyStarSvg } from '../../assets/svg';
 import SearchBar from '../SearchBar';
 import DefaultCoin from '../../assets/icons/coin.png';
 import CopyToClipboard from '../CopyToClipboard';
 import { CustomEvents } from '../../../ts/events';
 import Loading from '../Loading';
-import { useDispatch } from 'react-redux';
-import { fetchTokens } from '../../store/reducers/wallets';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchTokens, getWalletDetails } from '../../store/reducers/wallets';
 
 interface ITokenSelector {
   onChange: Function;
   initialToken: IToken;
   tokenList: any[];
   hasRemoteSearch: boolean;
+  readOnly?: boolean;
 }
 
 interface IToken {
@@ -25,7 +26,10 @@ interface IToken {
   amount: number;
 }
 
-const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch }: ITokenSelector) => {
+const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, readOnly }: ITokenSelector) => {
+  const { selectedWallet } = useSelector(
+    (state) => state.wallets
+  );
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(initialToken);
   const [showDialog, setShowDialog] = useState(false);
@@ -90,12 +94,47 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch }: I
     setLoading(false);
   };
 
+  const addToFavourites = async (token) => {
+    setLoading(true);
+    const result = await window.electron.invoke(CustomEvents.addTokenToFavouritesEvent, {
+      mint: token.address,
+      icon: token.logoURI,
+      name: token.name,
+      symbol: token.symbol,
+      isNft: false,
+      decimals: 9,
+    });
+    if(result)
+    {
+      if(result.success)
+      {
+        dispatch(getWalletDetails(selectedWallet));
+        dispatch(fetchTokens());
+      }
+    }
+    setLoading(false);
+  }
+
+  const removeFromFavourites = async (address) => {
+    setLoading(true);
+    const result = await window.electron.invoke(CustomEvents.removeTokenFromFavouritesEvent, address);
+    if(result)
+    {
+      if(result.success)
+      {
+        dispatch(getWalletDetails(selectedWallet));
+        dispatch(fetchTokens());
+      }
+    }
+    setLoading(false);
+  }
+
   return (
     <>
       <div
         className="token-selector"
         onClick={() => {
-          setShowDialog(true);
+          if (!readOnly) setShowDialog(true);
         }}
       >
         <div className="icon-container">{token && <img src={token?.logoURI || DefaultCoin} />}</div>
@@ -103,7 +142,13 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch }: I
         {downSvg}
       </div>
       {showDialog && (
-        <Dialog className="token-selector-dialog" onClose={() => {setShowDialog(false)}}>
+        <Dialog
+          className="token-selector-dialog"
+          onClose={() => {
+            setFilter('');
+            setShowDialog(false);
+          }}
+        >
           <div className="token-selector-dialog-header">
             <div className="title">
               {' '}
@@ -166,7 +211,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch }: I
                         <div className="name-container">
                           <div className="symbol">
                             <span>{t.symbol || 'N/A'}</span>
-                            {t.isNew && (
+                            {t.isNew ? (
                               <span
                                 className="add"
                                 onClick={(e) => {
@@ -177,6 +222,34 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch }: I
                               >
                                 {addSvg} Add token
                               </span>
+                            ) : (
+                              <>
+                                {t.favouriteIndex ? (
+                                  <span
+                                    className="fav"
+                                    title="Remove from favourites"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      removeFromFavourites(t.address);
+                                    }}
+                                  >
+                                    {starSvg}
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="not-fav"
+                                    title="Add to favourites"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      addToFavourites(t);
+                                    }}
+                                  >
+                                    {emptyStarSvg}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                           <span className="name">{t.name || 'N/A'}</span>

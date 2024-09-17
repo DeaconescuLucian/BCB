@@ -1,5 +1,6 @@
 .tab-strip {
-  position: relative;
+  position: sticky;
+  top: 0px;
   width: calc(100% - 10px);
   color: @color-font-gray;
   padding-top: 10px;
@@ -7,6 +8,7 @@
   background-color: @color-base;
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
+  z-index: 200;
 
   .tab-item {
     position: relative;

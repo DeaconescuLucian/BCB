@@ -5,7 +5,8 @@ import TransactionItem from './TransactionItem';
 import Tabstrip from '../Tabstrip';
 import Empty from '../Empty';
 import { useSelector, useDispatch } from 'react-redux';
-import {updateTerminalHeight} from '../../store/reducers/terminal'
+import { updateTerminalHeight } from '../../store/reducers/terminal';
+import { downSvg, upSvg } from '../../assets/svg';
 
 function TransactionHistory(props) {
   const { terminalHeight } = useSelector((state) => state.terminal);
@@ -17,8 +18,10 @@ function TransactionHistory(props) {
   const componentRef = useRef(null);
   const [startY, setStartY] = useState(0);
   const [height, setHeight] = useState(150);
+  const defaultHeight = 150;
   const minHeight = 38;
-  const maxHeight = 690;
+  const maxHeight = 600;
+  const [isClosed, setIsClosed] = useState(false);
 
   const transactionProcess = ProcessType.TRANSACTION;
 
@@ -65,7 +68,7 @@ function TransactionHistory(props) {
     if (height - distanceDragged > minHeight && height - distanceDragged < maxHeight) {
       if (componentRef.current) {
         props.onResize(distanceDragged);
-        dispatch(updateTerminalHeight(height - distanceDragged))
+        dispatch(updateTerminalHeight(height - distanceDragged));
         componentRef.current.style.height = `${height - distanceDragged}px`;
         componentRef.current.style.maxHeight = `${height - distanceDragged}px`;
       }
@@ -76,18 +79,21 @@ function TransactionHistory(props) {
     const distanceDragged = event.clientY - startY;
     if (height - distanceDragged > minHeight && height - distanceDragged < maxHeight) {
       props.onResizeEnd(distanceDragged);
-      dispatch(updateTerminalHeight(height - distanceDragged))
+      dispatch(updateTerminalHeight(height - distanceDragged));
       setHeight((prev) => prev - distanceDragged);
+      setIsClosed(false);
     }
-    if (height - distanceDragged < minHeight) {
+    if (height - distanceDragged <= minHeight) {
       props.onResizeEnd(height - minHeight);
-      dispatch(updateTerminalHeight(minHeight))
+      dispatch(updateTerminalHeight(minHeight));
       setHeight(minHeight);
+      setIsClosed(true);
     }
     if (height - distanceDragged > maxHeight) {
       props.onResizeEnd(height - maxHeight);
-      dispatch(updateTerminalHeight(maxHeight))
+      dispatch(updateTerminalHeight(maxHeight));
       setHeight(maxHeight);
+      setIsClosed(false);
     }
   };
 
@@ -128,6 +134,7 @@ function TransactionHistory(props) {
                       value={tr.value}
                       signature={tr.signature}
                       date={tr.date}
+                      wallet={tr.wallet}
                     ></TransactionItem>
                   )
               )
@@ -165,6 +172,33 @@ function TransactionHistory(props) {
           </>
         )}
       </div>
+      {isClosed ? (
+        <div
+          className="open-close-button"
+          onClick={() => {
+            setIsClosed(!isClosed);
+            props.onResize(height - defaultHeight);
+            props.onResizeEnd(height - defaultHeight);
+            dispatch(updateTerminalHeight(defaultHeight));
+            setHeight(defaultHeight);
+          }}
+        >
+          {upSvg}
+        </div>
+      ) : (
+        <div
+          className="open-close-button"
+          onClick={() => {
+            setIsClosed(!isClosed);
+            props.onResize(height - minHeight);
+            props.onResizeEnd(height - minHeight);
+            dispatch(updateTerminalHeight(minHeight));
+            setHeight(minHeight);
+          }}
+        >
+          {downSvg}
+        </div>
+      )}
     </div>
   );
 }

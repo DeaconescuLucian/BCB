@@ -17,10 +17,10 @@ function Trade() {
   const getActiveTab = () => {
     let t = window.location.href.split('?')[0].split('/');
     switch (t[t.length - 1]) {
-      case 'buy':
+      case 'swap':
         setActiveTab({ name: 'Swap', url: '/swap' });
         break;
-      case 'sell':
+      case 'wrap-unwrap':
         setActiveTab({ name: 'Wrap / Unrwap', url: '/wrap-unwrap' });
         break;
       default:

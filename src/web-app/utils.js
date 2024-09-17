@@ -143,10 +143,9 @@ export function updatePageSettings(setting, value, page) {
         settings = JSON.parse(settings);
         settings[setting] = value;
     } else {
-        if (token2)
-            settings = {
-            };
-        settings[setting] = value
+        settings = {
+            [setting]: value
+        };
     }
     if (settings !== null) window.localStorage.setItem(page, JSON.stringify(settings));
 

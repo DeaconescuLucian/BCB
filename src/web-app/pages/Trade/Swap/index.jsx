@@ -10,17 +10,19 @@ import { CustomEvents } from '../../../../ts/events.ts';
 import Slider from '../../../components/Slider/index.tsx';
 import Input from '../../../components/FormControls/Input.tsx';
 import Switch from '../../../components/Switch/index.tsx';
-import { formatNumber, formatTinyNumber, tinyNumber } from '../../../utils.js';
-import { backSvg, swapSvg } from '../../../assets/svg/index.jsx';
-import { navigateBack, checkForPreviousLocation } from '../../../utils.js';
+import { formatNumber, formatTinyNumber, tinyNumber, navigateBack, checkForPreviousLocation } from '../../../utils.js';
+import { backSvg, swapSvg, settingsSvg } from '../../../assets/svg/index.jsx';
 import { useNavigate } from 'react-router-dom';
 import TokenSelector from '../../../components/TokenSelector/index.tsx';
 import { updatePageSettings } from '../../../utils.js';
+import FeeAndSlippageSelector from '../../../components/FeeAndSlippageSelector/index.tsx';
 
 function Swap() {
+  const pageSettings = 'swap-settings';
   const { selectedWalletDetails, selectedWalletAccounts, tokens, selectedWallet } = useSelector(
     (state) => state.wallets
   );
+  const { fee, slippage } = useSelector((state) => state.feeAndSlippage);
   const dispatch = useDispatch();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -30,30 +32,16 @@ function Swap() {
   const [token2Price, setToken2Price] = useState(null);
   const [priceRatio, setPriceRatio] = useState(undefined);
   const [amountToBuy, setAmountToBuy] = useState(0);
-  const [simulate, setSimulate] = useState(JSON.parse(window.localStorage.getItem('swap-settings')).simulate || false);
-  const [solanaPrice, setSolanaPrice] = useState(0);
-  const [fee, setFee] = useState(0.00005);
-  const [wrapAmount, setWrapAmount] = useState(0);
-  const [wsolBalance, setWsolBalance] = useState(0);
+  const [simulate, setSimulate] = useState(JSON.parse(window.localStorage.getItem(pageSettings)).simulate || false);
+
   const [ownedTokenList, setOwnedTokenList] = useState([]);
   const [otherTokenList, setOtherTokenList] = useState([]);
   const [inputError, setInputError] = useState(null);
   const loadingParentRef = useRef(null);
   const navigate = useNavigate();
 
-  const pageSettings = 'swap-settings';
-  const updateSolanaPrice = async () => {
-    const result1 = await window.electron.invoke(
-      CustomEvents.getTokenPriceEvent,
-      'So11111111111111111111111111111111111111112'
-    );
-    if (result1.success) setSolanaPrice(result1.data);
-  };
-
   useEffect(() => {
     try {
-      updateSolanaPrice();
-
       let swapSettings = window.localStorage.getItem('swap-settings');
       if (swapSettings) {
         swapSettings = JSON.parse(swapSettings);
@@ -100,9 +88,6 @@ function Swap() {
   };
 
   useEffect(() => {
-    setWsolBalance(
-      selectedWalletAccounts?.find((e) => e.mint === 'So11111111111111111111111111111111111111112')?.amount || 0
-    );
     const newOwnedTokenList =
       selectedWalletAccounts
         ?.filter((e) => e.isNft === 0)
@@ -112,14 +97,27 @@ function Swap() {
           symbol: a.symbol,
           logoURI: a.icon,
           amount: a.amount,
-        })) || [];
+          favouriteIndex: a.favouriteIndex
+        }))
+        .sort((a, b) => {
+          if (a.favouriteIndex === null) return 1;
+          if (b.favouriteIndex === null) return -1;
+          return a.favouriteIndex - b.favouriteIndex;
+        }) || [];
+
+    const otherTokens = otherTokenList.map((e) => {
+      let oT = newOwnedTokenList.find((t) => e.address === t.address);
+      if (oT) return { ...e, amount: oT.amount };
+      else return e;
+    });
     setOwnedTokenList(newOwnedTokenList);
+    setOtherTokenList(otherTokens);
 
     const type = window.location.search?.split('?')[1]?.split('=')[0];
 
     const mint = window.location.search?.split('?')[1]?.split('=')[1];
 
-    const token = newOwnedTokenList.find((t) => t.address === mint)
+    const token = newOwnedTokenList.find((t) => t.address === mint);
 
     if (type && token) {
       updateTokensAfterNavigation(type, token);
@@ -127,7 +125,7 @@ function Swap() {
   }, [selectedWalletAccounts]);
 
   useEffect(() => {
-    let wallet = JSON.parse(window.localStorage.getItem(pageSettings)).wallet || '';
+    let wallet = JSON.parse(window.localStorage.getItem(pageSettings))?.wallet || '';
     if (selectedWallet !== wallet) {
       setToken1(null);
       setToken2(null);
@@ -139,7 +137,12 @@ function Swap() {
   }, [selectedWallet]);
 
   useEffect(() => {
-    setOtherTokenList(tokens);
+    const otherTokens = tokens.map((e) => {
+      let oT = ownedTokenList.find((t) => e.address === t.address);
+      if (oT) return { ...e, amount: oT.amount };
+      else return e;
+    });
+    setOtherTokenList(otherTokens);
   }, [tokens]);
 
   useEffect(() => {
@@ -169,11 +172,13 @@ function Swap() {
     const result = await window.electron.invoke(CustomEvents.swapEvent, {
       params: {
         wallet: selectedWalletDetails?.publicKey,
-        mint1: token1?.mint,
-        mint2: token1?.mint,
+        mintA: token1.address,
+        mintB: token2.address,
         amount: amountToBuy,
       },
+      slippage: slippage,
       simulate: simulate,
+      fees: fee,
     });
     if (result) {
       if (result.data) {
@@ -202,7 +207,6 @@ function Swap() {
       publicKey: selectedWalletDetails.publicKey,
       existingMints: selectedWalletAccounts.map((e) => ({ mint: e.mint, icon: e.icon })),
     });
-    updateSolanaPrice();
     if (result) {
       if (result.success) {
         dispatch(getWalletDetails(selectedWalletDetails.publicKey));
@@ -264,11 +268,11 @@ function Swap() {
         </span>
         <div className="header-buttons">
           {' '}
+          <FeeAndSlippageSelector></FeeAndSlippageSelector>
           <Switch
             theme="primary"
             value={simulate}
             onChange={() => {
-              console.log('here1');
               updatePageSettings('simulate', !simulate, pageSettings);
               setSimulate(!simulate);
             }}
@@ -297,6 +301,7 @@ function Swap() {
         </span>
         <div className="header-buttons">
           {' '}
+          <FeeAndSlippageSelector></FeeAndSlippageSelector>
           <Switch theme="primary" value={simulate} onChange={() => setSimulate(!simulate)}></Switch>
           <Button
             onClick={() => {
@@ -417,7 +422,10 @@ function Swap() {
           </div>
           <span className="middle"> &asymp; </span>
           <div className="right-side">
-            <span className="value">{priceRatio < tinyNumber ? formatTinyNumber(priceRatio) : priceRatio?.toFixed(9)}</span> <span className="currency">{token2?.symbol}</span>
+            <span className="value">
+              {priceRatio < tinyNumber ? formatTinyNumber(priceRatio) : priceRatio?.toFixed(9)}
+            </span>{' '}
+            <span className="currency">{token2?.symbol}</span>
           </div>
         </div>
       ) : (
@@ -436,7 +444,13 @@ function Swap() {
           <span className="middle">&asymp;</span>
           <div className="right-side">
             {' '}
-            <span className="value">{token1Price ? token1Price < tinyNumber ? formatTinyNumber(Number(token1Price)) : Number(token1Price)?.toFixed(9) : '-'} </span>
+            <span className="value">
+              {token1Price
+                ? token1Price < tinyNumber
+                  ? formatTinyNumber(Number(token1Price))
+                  : Number(token1Price)?.toFixed(9)
+                : '-'}{' '}
+            </span>
             <span className="currency">$</span>
           </div>
         </div>
@@ -451,13 +465,19 @@ function Swap() {
           <span className="middle">&asymp;</span>
           <div className="right-side">
             {' '}
-            <span className="value">{token2Price ? token2Price < tinyNumber ? formatTinyNumber(Number(token2Price)) : Number(token2Price)?.toFixed(9) : '-'} </span>
+            <span className="value">
+              {token2Price
+                ? token2Price < tinyNumber
+                  ? formatTinyNumber(Number(token2Price))
+                  : Number(token2Price)?.toFixed(9)
+                : '-'}{' '}
+            </span>
             <span className="currency">$</span>
           </div>
         </div>
       )}
       <Button
-        text={'SWAP'}
+        text={'Swap'}
         theme="primary"
         onClick={() => {
           swap();

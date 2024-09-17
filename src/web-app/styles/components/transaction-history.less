@@ -212,8 +212,30 @@
   }
 
   .tab-strip {
+    position: relative;
     background-color: @color-dark;
     border-radius: 0;
     font-size: 12px;
+  }
+
+  .open-close-button {
+    width: fit-content;
+    position: absolute;
+    top: 7px;
+    right: 5px;
+    cursor: pointer;
+    z-index: 201;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      fill: @color-font-brand;
+    }
+
+    &:hover {
+      svg {
+        fill: @color-brand;
+      }
+    }
   }
 }

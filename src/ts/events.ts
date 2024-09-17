@@ -56,7 +56,11 @@ export const CustomEvents = {
   wrapEvent: 'wrap',
   unwrapEvent: 'unwrap',
   getTokenList: 'get-token-list',
-  addTokenEvent: 'add-token'
+  addTokenEvent: 'add-token',
+  getWSOLEvent: 'get-wsol',
+  deactivateConnectionEvent: 'deactivate-connection',
+  addTokenToFavouritesEvent: 'add-token-to-favourites',
+  removeTokenFromFavouritesEvent: 'remove-token-from-favourites'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

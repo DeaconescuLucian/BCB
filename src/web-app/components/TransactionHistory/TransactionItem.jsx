@@ -41,10 +41,10 @@ const TransactionItem = memo((props) => {
       <div className="time">{time}</div>
       <div className="signature truncate">{props.signature}</div>
       <CopyToClipboard text={props.signature}></CopyToClipboard>
-      <div className="signature truncate">{props.signature}</div>
-      <CopyToClipboard text={props.signature}></CopyToClipboard>
+      <div className="signature truncate">{props.wallet}</div>
+      <CopyToClipboard text={props.wallet}></CopyToClipboard>
       <div className="value">
-        <span>{props.value.toFixed(8)} SOL</span>
+        <span>{parseFloat(props.value?.toFixed(8))} SOL</span>
       </div>
       <div className="view">{viewSvg}</div>
     </div>

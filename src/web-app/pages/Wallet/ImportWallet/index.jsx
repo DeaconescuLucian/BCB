@@ -4,8 +4,8 @@ import Button from '../../../components/FormControls/Button.tsx';
 import Info from '../../../components/Info/index.tsx';
 import { CustomEvents } from '../../../../ts/events.ts';
 import { useToast } from '../../../contexts/ToastContext.tsx';
-import { useDispatch } from "react-redux";
-import { fetchWallets } from "../../../store/reducers/wallets.js";
+import { useDispatch } from 'react-redux';
+import { fetchWallets } from '../../../store/reducers/wallets.js';
 import Loading from '../../../components/Loading/index.tsx';
 
 function ImportWallet() {
@@ -17,7 +17,10 @@ function ImportWallet() {
 
   const handleImportWallet = async () => {
     setLoading(true);
-    const result = await window.electron.invoke(CustomEvents.importWalletEvent, {secretKey: secretKey, alias: walletAlias});
+    const result = await window.electron.invoke(CustomEvents.importWalletEvent, {
+      secretKey: secretKey,
+      alias: walletAlias,
+    });
     if (result) {
       setLoading(false);
       if (result.data.message) {
@@ -37,8 +40,7 @@ function ImportWallet() {
 
   const validateWalletAlias = (value) => {
     const errorMessage = 'Wallet alias must be between 3 and 20 characters long.';
-    if(value.length < 3)
-      return errorMessage;
+    if (value.length < 3) return errorMessage;
 
     return null;
   };
@@ -56,14 +58,26 @@ function ImportWallet() {
       <div className="import-wallet-page-container">
         <div className="label-with-copy">
           {' '}
-          <span>Secret key: </span>
+          <span>Alias </span>
         </div>
-        <Input type="text" validate={validateSecretKey} onChange={onSecretKeyInputChange} theme="primary" placeholder='Enter a valid secret key'></Input>
+        <Input
+          type="text"
+          validate={validateWalletAlias}
+          onChange={onWalletAliasInputChange}
+          theme="primary"
+          placeholder="Enter an alias for your wallet"
+        ></Input>
         <div className="label-with-copy">
           {' '}
-          <span>Wallet alias: </span>
+          <span>Secret key </span>
         </div>
-        <Input type="text" validate={validateWalletAlias} onChange={onWalletAliasInputChange} theme="primary" placeholder='Enter an alias for your wallet'></Input>
+        <Input
+          type="text"
+          validate={validateSecretKey}
+          onChange={onSecretKeyInputChange}
+          theme="primary"
+          placeholder="Enter a valid secret key"
+        ></Input>
         <Button
           onClick={() => {
             handleImportWallet();
@@ -71,12 +85,12 @@ function ImportWallet() {
           theme="primary"
           type="import-wallet"
           text="Import wallet"
-          disabled={!!!secretKey  || !!!walletAlias}
+          disabled={!!!secretKey || !!!walletAlias}
           tooltipDisabled={'Enter a valid secret key and an wallet alias.'}
         ></Button>
       </div>
       <Info text="The secret key along with its public key will be stored locally."></Info>
-      {loading  && <Loading></Loading>}
+      {loading && <Loading></Loading>}
     </div>
   );
 }

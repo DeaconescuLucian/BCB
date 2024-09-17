@@ -97,7 +97,8 @@ export async function getWalletTokenAccounts(
         t.symbol AS symbol,
         t.icon AS icon,
         t.decimals AS decimals,
-        t.isNft AS isNft
+        t.isNft AS isNft,
+        t.favouriteIndex
       FROM 
         walletTokenAccounts wta
       JOIN 
