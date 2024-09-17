@@ -54,6 +54,7 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
                     console.log('Transaction confirmed successfully');
                     let data = {
                       signature: transaction.signature,
+                      wallet: arg.params.wallet,
                       status: msg.status,
                       date: transaction.date,
                       value: solanaAmount,
@@ -110,6 +111,7 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
                   console.log('Transaction confirmed successfully');
                   let data = {
                     signature: transaction.signature,
+                    wallet: arg.wallet,
                     status: msg.status,
                     date: transaction.date,
                     value: transaction.value,
@@ -164,6 +166,7 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
                   console.log('Transaction confirmed successfully');
                   let data = {
                     signature: transaction.signature,
+                    wallet: arg.wallet,
                     status: msg.status,
                     date: transaction.date,
                     value: transaction.value,

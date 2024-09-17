@@ -16,6 +16,7 @@ exports.getConnections = getConnections;
 exports.updateActiveConnection = updateActiveConnection;
 exports.getActiveConnection = getActiveConnection;
 exports.insertDefaultConnection = insertDefaultConnection;
+exports.deactivateConnection = deactivateConnection;
 const db_1 = require("./db");
 function createTableConnections(db) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -228,6 +229,50 @@ function insertDefaultConnection(db, connection) {
                             resolve();
                         });
                     }
+                });
+            });
+        });
+    });
+}
+function deactivateConnection(db, callback) {
+    db.serialize(() => {
+        db.run('BEGIN TRANSACTION', (err) => {
+            if (err) {
+                console.error('Error beginning transaction:', err.message);
+                if (callback)
+                    callback(err);
+                return;
+            }
+            db.run(`UPDATE connections SET isActive = 0 WHERE isActive = 1`, (err) => {
+                if (err) {
+                    console.error('Error updating isActive to 0:', err.message);
+                    db.run('ROLLBACK', () => {
+                        if (callback)
+                            callback(err);
+                    });
+                    return;
+                }
+                db.run(`UPDATE connections SET isActive = 1 WHERE connection = 'mainnet-beta'`, (err) => {
+                    if (err) {
+                        console.error('Error updating isActive to 1:', err.message);
+                        db.run('ROLLBACK', () => {
+                            if (callback)
+                                callback(err);
+                        });
+                        return;
+                    }
+                    db.run('COMMIT', (err) => {
+                        if (err) {
+                            console.error('Error committing transaction:', err.message);
+                            if (callback)
+                                callback(err);
+                        }
+                        else {
+                            console.log('Transaction committed successfully.');
+                            if (callback)
+                                callback(null);
+                        }
+                    });
                 });
             });
         });

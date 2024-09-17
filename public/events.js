@@ -40,11 +40,15 @@ exports.CustomEvents = {
     getTokenDetailsEvent: 'get-token-details',
     getTokensPricesEvent: 'get-token-prices',
     getTokenPriceEvent: 'get-token-price',
-    buyEvent: 'buy',
+    swapEvent: 'swap',
     wrapEvent: 'wrap',
     unwrapEvent: 'unwrap',
     getTokenList: 'get-token-list',
-    addTokenEvent: 'add-token'
+    addTokenEvent: 'add-token',
+    getWSOLEvent: 'get-wsol',
+    deactivateConnectionEvent: 'deactivate-connection',
+    addTokenToFavouritesEvent: 'add-token-to-favourites',
+    removeTokenFromFavouritesEvent: 'remove-token-from-favourites'
 };
 function verifyUniqueEvents(processType) {
     const eventSet = new Set(Object.values(exports.CustomEvents));

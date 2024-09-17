@@ -18,6 +18,7 @@ function createTableTransactions(db) {
     return __awaiter(this, void 0, void 0, function* () {
         const sql = `CREATE TABLE IF NOT EXISTS transactions (
         signature TEXT PRIMARY KEY,
+        wallet TEXT NOT NULL,
         value REAL NOT NULL,
         date TEXT NOT NULL,
         status TEXT CHECK(status IN ('success', 'fail', 'pending')))`;
@@ -26,7 +27,7 @@ function createTableTransactions(db) {
 }
 function insertTransaction(db, t) {
     db.serialize(() => {
-        db.run(`INSERT INTO transactions (signature, value, "date", status) VALUES (?, ?, ?, ?)`, [t.signature, t.value, t.date, t.status], (err) => {
+        db.run(`INSERT INTO transactions (signature, wallet, value, "date", status) VALUES (?, ?, ?, ?, ?)`, [t.signature, t.wallet, t.value, t.date.toISOString(), t.status], (err) => {
             if (err) {
                 console.error('Error inserting transaction:', err.message);
             }
@@ -52,7 +53,7 @@ function getLatestTransactions(db, callback) {
 }
 function updateTransaction(db, t) {
     db.serialize(() => {
-        db.run(`UPDATE transactions SET "date" = ? , status = ? WHERE signature = ?`, [t.date, t.status, t.signature], (err) => {
+        db.run(`UPDATE transactions SET "date" = ? , status = ? WHERE signature = ?`, [t.date.toISOString(), t.status, t.signature], (err) => {
             if (err) {
                 console.error('Error updating transaction:', err.message);
             }

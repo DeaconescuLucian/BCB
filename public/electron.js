@@ -101,12 +101,12 @@ function startBackgroundProcess(processType, pid) {
             backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('exit', onExit);
             const onMessage = (message) => {
                 if (message !== 'ready') {
-                    if (processType.type === 'transaction') {
-                        transactionsDb.insertTransaction(dbConnection, message);
-                        if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
-                            (0, ipcHandler_1.sendToRenderer)(mainWindow, processType.updateEvent, message);
-                        }
-                    }
+                    // if (processType.type === 'transaction') {
+                    //   transactionsDb.insertTransaction(dbConnection, message);
+                    //   if (mainWindow?.isVisible()) {
+                    //     sendToRenderer(mainWindow, processType.updateEvent, message);
+                    //   }
+                    // }
                 }
             };
             backgroundProcess === null || backgroundProcess === void 0 ? void 0 : backgroundProcess.on('message', onMessage);
@@ -163,9 +163,9 @@ function stopBackgroundProcess(backgroundProcess) {
 }
 function createWindow() {
     mainWindow = new electron_1.BrowserWindow({
-        minWidth: 1156,
-        minHeight: 780,
-        width: 1156,
+        minWidth: 1280,
+        minHeight: 787,
+        width: 1280,
         height: 787,
         frame: false,
         show: false,

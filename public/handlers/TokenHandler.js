@@ -54,7 +54,6 @@ const GetTokenPriceHandler = (solanaConnection) => {
 };
 const GetTokensHandler = (db) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getTokenList, () => __awaiter(void 0, void 0, void 0, function* () {
-        console.log('Fetching fucking tokens');
         return new Promise((resolve, reject) => {
             tokenDb.getTokens(db, (err, rows) => __awaiter(void 0, void 0, void 0, function* () {
                 if (err) {
@@ -77,6 +76,13 @@ const GetTokensHandler = (db) => {
                         ];
                         const tokensSet = new Set(tokensArray.map((e) => e.address));
                         const uniqueTokensArray = Array.from(tokensSet).map((address) => tokensArray.find((e) => e.address === address));
+                        uniqueTokensArray.sort((a, b) => {
+                            if (a.favouriteIndex === null)
+                                return 1;
+                            if (b.favouriteIndex === null)
+                                return -1;
+                            return a.favouriteIndex - b.favouriteIndex;
+                        });
                         resolve(uniqueTokensArray);
                     }
                     catch (error) {
@@ -101,10 +107,51 @@ const AddTokenHandler = (db) => {
         });
     }));
 };
+const GetWsolHandler = (db) => {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.getWSOLEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            tokenDb.getWSOL(db, (err, rows) => __awaiter(void 0, void 0, void 0, function* () {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    try {
+                        const tokens = yield Promise.all((rows === null || rows === void 0 ? void 0 : rows.map((row) => __awaiter(void 0, void 0, void 0, function* () {
+                            return Object.assign({}, row);
+                        }))) || []);
+                        resolve(tokens[0]);
+                    }
+                    catch (error) {
+                        reject(error);
+                    }
+                }
+            }));
+        });
+    }));
+};
+const AddTokenToFavouritesHandler = (db) => {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.addTokenToFavouritesEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        return new Promise((resolve) => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield tokenDb.addTokenToFavourites(db, arg);
+            resolve('done');
+        }));
+    }));
+};
+const RemoveTokenFromFavouritesHandler = (db) => {
+    (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.removeTokenFromFavouritesEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
+        return new Promise((resolve) => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield tokenDb.removeTokenFomFavourites(db, arg);
+            resolve('done');
+        }));
+    }));
+};
 const handleToken = (db, solanaConnection) => {
     GetTokenDetailsHandler(solanaConnection);
     GetTokenPriceHandler(solanaConnection);
     GetTokensHandler(db);
     AddTokenHandler(db);
+    GetWsolHandler(db);
+    AddTokenToFavouritesHandler(db);
+    RemoveTokenFromFavouritesHandler(db);
 };
 exports.default = handleToken;

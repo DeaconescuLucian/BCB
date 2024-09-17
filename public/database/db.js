@@ -57,6 +57,7 @@ function initDatabase(db) {
                     yield (0, walletTokenAccounts_1.createTableWalletTokenAccounts)(db);
                     yield (0, connections_1.createTableConnections)(db);
                     yield (0, connections_1.insertDefaultConnection)(db, 'mainnet-beta');
+                    yield (0, tokens_1.insertWSOL)(db);
                     resolve();
                 }
                 catch (err) {
