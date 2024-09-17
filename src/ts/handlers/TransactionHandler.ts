@@ -7,24 +7,19 @@ import { getWalletSecret } from '../database/wallets';
 import { getKeyPairFromSecret } from '../solana/wallet';
 import * as transactionsDb from '../database/transactions';
 import { BrowserWindow } from 'electron';
-import { BasePoolKeys, getTokensPrice } from '../solana/utils';
-
-let _poolKeys: any[] = [];
-
-let CachedPoolKeys: BasePoolKeys[] = [];
-
-type ITransactionResponse = {
-  status?: string;
-  message?: string;
-  error?: string;
-};
+import { getTokensPrice } from '../solana/utils';
 
 const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
   registerHandler(
     CustomEvents.swapEvent,
     async (
       e: any,
-      arg: { params: { wallet: string; mintA: string; mintB: string; amount: number }; fees: number; slippage: number; simulate: boolean }
+      arg: {
+        params: { wallet: string; mintA: string; mintB: string; amount: number };
+        fees: number;
+        slippage: number;
+        simulate: boolean;
+      }
     ) => {
       try {
         let response: any = null;
@@ -32,10 +27,21 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
         if (wallet) {
           const keyPair = getKeyPairFromSecret(wallet.secretKey);
           if (keyPair) {
-            response = await swapWithRaydiumAPI(solanaConnection, arg.params.wallet, arg.params.mintA, arg.params.mintB, arg.simulate, arg.params.amount, keyPair, arg.fees, arg.slippage);
+            response = await swapWithRaydiumAPI(
+              solanaConnection,
+              arg.params.wallet,
+              arg.params.mintA,
+              arg.params.mintB,
+              arg.simulate,
+              arg.params.amount,
+              keyPair,
+              arg.fees,
+              arg.slippage
+            );
             const prices = await getTokensPrice([arg.params.mintA, 'So11111111111111111111111111111111111111112']);
-            const solanaAmount = arg.params.amount * (prices[arg.params.mintA] / prices['So11111111111111111111111111111111111111112']);
-            
+            const solanaAmount =
+              arg.params.amount * (prices[arg.params.mintA] / prices['So11111111111111111111111111111111111111112']);
+
             if (!arg.simulate) {
               if (response.status === 'success') {
                 const transaction = {
@@ -76,6 +82,7 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
           error: response?.error,
         };
       } catch (e) {
+        console.log('exceptie aici');
         console.log(e);
       }
     }
@@ -92,19 +99,21 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
         const keyPair = getKeyPairFromSecret(wallet.secretKey);
         if (keyPair) {
           response = await wrapSol(keyPair, arg.amount, solanaConnection, arg.simulate);
-
           if (!arg.simulate) {
             if (response.status === 'success') {
               const transaction = {
                 signature: response.signature,
                 wallet: arg.wallet,
-                value: response.amount,
+                value: Number(response.amount),
                 date: new Date(),
                 status: 'pending',
               };
               transactionsDb.insertTransaction(db, transaction);
               if (mainWindow?.isVisible()) {
-                sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
+                sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, {
+                  ...transaction,
+                  date: transaction.date.toISOString(),
+                });
               }
               if (response.confirmation) {
                 response.confirmation.then((msg: any) => {
@@ -114,11 +123,14 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
                     wallet: arg.wallet,
                     status: msg.status,
                     date: transaction.date,
-                    value: transaction.value,
+                    value: Number(transaction.value),
                   };
                   transactionsDb.updateTransaction(db, data);
                   if (mainWindow?.isVisible()) {
-                    sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, data);
+                    sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, {
+                      ...data,
+                      date: data.date.toISOString(),
+                    });
                   }
                 });
               }
@@ -127,12 +139,11 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
         }
       }
 
-      return new Promise((resolve) => {
-        if (response) resolve(response);
-        else {
-          resolve(null);
-        }
-      });
+      return {
+        status: response.status,
+        message: response?.message,
+        error: response?.error,
+      };
     }
   );
 };
@@ -153,13 +164,16 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
               const transaction = {
                 signature: response.signature,
                 wallet: arg.wallet,
-                value: response.amount,
+                value: Number(response.amount),
                 date: new Date(),
                 status: 'pending',
               };
               transactionsDb.insertTransaction(db, transaction);
               if (mainWindow?.isVisible()) {
-                sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, transaction);
+                sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, {
+                  ...transaction,
+                  date: new Date().toISOString(),
+                });
               }
               if (response.confirmation) {
                 response.confirmation.then((msg: any) => {
@@ -169,11 +183,14 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
                     wallet: arg.wallet,
                     status: msg.status,
                     date: transaction.date,
-                    value: transaction.value,
+                    value: Number(transaction.value),
                   };
                   transactionsDb.updateTransaction(db, data);
                   if (mainWindow?.isVisible()) {
-                    sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, data);
+                    sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, {
+                      ...data,
+                      date: transaction.date.toISOString(),
+                    });
                   }
                 });
               }
@@ -182,12 +199,11 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
         }
       }
 
-      return new Promise((resolve) => {
-        if (response) resolve(response);
-        else {
-          resolve(null);
-        }
-      });
+      return {
+        status: response.status,
+        message: response?.message,
+        error: response?.error,
+      };
     }
   );
 };

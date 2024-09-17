@@ -42,6 +42,7 @@ export const fetchTokens = createAsyncThunk('wallets/fetchTokens', async () => {
 
 export const getWalletDetails = createAsyncThunk('wallets/getWalletDetails', async (publicKey) => {
   try {
+    console.log(publicKey);
     const result = await window.electron.invoke(CustomEvents.getWalletDetailsEvent, publicKey);
     if (result && result.success) {
       return result.data;

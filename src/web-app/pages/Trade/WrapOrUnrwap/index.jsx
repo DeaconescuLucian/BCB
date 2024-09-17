@@ -87,9 +87,8 @@ function WrapOrUnrwap() {
     });
     if (result) {
       if (result.data?.message) {
-        let publicKey = selectedWalletDetails?.publicKey;
-        dispatch(updateSelectedWallet(publicKey));
-        dispatch(getWalletDetails(publicKey));
+        dispatch(updateSelectedWallet(selectedWallet));
+        dispatch(getWalletDetails(selectedWallet));
         setLoading(false);
         showToast(result.data.message, 'success');
       } else {
@@ -100,7 +99,6 @@ function WrapOrUnrwap() {
       if (!result.data) {
         showToast('Something went wrong.', 'fail');
       }
-      setLoading(false);
     }
   };
 
@@ -113,9 +111,8 @@ function WrapOrUnrwap() {
     });
     if (result) {
       if (result.data?.message) {
-        let publicKey = selectedWalletDetails?.publicKey;
-        dispatch(updateSelectedWallet(publicKey));
-        dispatch(getWalletDetails(publicKey));
+        dispatch(updateSelectedWallet(selectedWallet));
+        dispatch(getWalletDetails(selectedWallet));
         showToast(result.data.message, 'success');
       } else {
         if (result.data?.error) {

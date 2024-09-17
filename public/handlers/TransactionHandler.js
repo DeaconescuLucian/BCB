@@ -39,8 +39,6 @@ const wallets_1 = require("../database/wallets");
 const wallet_1 = require("../solana/wallet");
 const transactionsDb = __importStar(require("../database/transactions"));
 const utils_1 = require("../solana/utils");
-let _poolKeys = [];
-let CachedPoolKeys = [];
 const SwapHandler = (solanaConnection, db, mainWindow) => {
     (0, ipcHandler_1.registerHandler)(events_1.CustomEvents.swapEvent, (e, arg) => __awaiter(void 0, void 0, void 0, function* () {
         try {
@@ -92,6 +90,7 @@ const SwapHandler = (solanaConnection, db, mainWindow) => {
             };
         }
         catch (e) {
+            console.log('exceptie aici');
             console.log(e);
         }
     }));
@@ -109,13 +108,13 @@ const WrapHandler = (solanaConnection, db, mainWindow) => {
                         const transaction = {
                             signature: response.signature,
                             wallet: arg.wallet,
-                            value: response.amount,
+                            value: Number(response.amount),
                             date: new Date(),
                             status: 'pending',
                         };
                         transactionsDb.insertTransaction(db, transaction);
                         if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
-                            (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, transaction);
+                            (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, Object.assign(Object.assign({}, transaction), { date: transaction.date.toISOString() }));
                         }
                         if (response.confirmation) {
                             response.confirmation.then((msg) => {
@@ -125,11 +124,11 @@ const WrapHandler = (solanaConnection, db, mainWindow) => {
                                     wallet: arg.wallet,
                                     status: msg.status,
                                     date: transaction.date,
-                                    value: transaction.value,
+                                    value: Number(transaction.value),
                                 };
                                 transactionsDb.updateTransaction(db, data);
                                 if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
-                                    (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, data);
+                                    (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, Object.assign(Object.assign({}, data), { date: data.date.toISOString() }));
                                 }
                             });
                         }
@@ -137,13 +136,11 @@ const WrapHandler = (solanaConnection, db, mainWindow) => {
                 }
             }
         }
-        return new Promise((resolve) => {
-            if (response)
-                resolve(response);
-            else {
-                resolve(null);
-            }
-        });
+        return {
+            status: response.status,
+            message: response === null || response === void 0 ? void 0 : response.message,
+            error: response === null || response === void 0 ? void 0 : response.error,
+        };
     }));
 };
 const UnwrapHandler = (solanaConnection, db, mainWindow) => {
@@ -159,13 +156,13 @@ const UnwrapHandler = (solanaConnection, db, mainWindow) => {
                         const transaction = {
                             signature: response.signature,
                             wallet: arg.wallet,
-                            value: response.amount,
+                            value: Number(response.amount),
                             date: new Date(),
                             status: 'pending',
                         };
                         transactionsDb.insertTransaction(db, transaction);
                         if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
-                            (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, transaction);
+                            (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, Object.assign(Object.assign({}, transaction), { date: new Date().toISOString() }));
                         }
                         if (response.confirmation) {
                             response.confirmation.then((msg) => {
@@ -175,11 +172,11 @@ const UnwrapHandler = (solanaConnection, db, mainWindow) => {
                                     wallet: arg.wallet,
                                     status: msg.status,
                                     date: transaction.date,
-                                    value: transaction.value,
+                                    value: Number(transaction.value),
                                 };
                                 transactionsDb.updateTransaction(db, data);
                                 if (mainWindow === null || mainWindow === void 0 ? void 0 : mainWindow.isVisible()) {
-                                    (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, data);
+                                    (0, ipcHandler_1.sendToRenderer)(mainWindow, events_1.ProcessType.TRANSACTION.updateEvent, Object.assign(Object.assign({}, data), { date: transaction.date.toISOString() }));
                                 }
                             });
                         }
@@ -187,13 +184,11 @@ const UnwrapHandler = (solanaConnection, db, mainWindow) => {
                 }
             }
         }
-        return new Promise((resolve) => {
-            if (response)
-                resolve(response);
-            else {
-                resolve(null);
-            }
-        });
+        return {
+            status: response.status,
+            message: response === null || response === void 0 ? void 0 : response.message,
+            error: response === null || response === void 0 ? void 0 : response.error,
+        };
     }));
 };
 const handleTransaction = (db, solanaConnection, mainWindow) => {

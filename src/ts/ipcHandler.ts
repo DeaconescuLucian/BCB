@@ -15,7 +15,7 @@ export function registerHandler(channel: string, handler: IPCHandler) {
     try {
       const result = await handler(event, ...args);
       event.reply(`${channel}-response`, { success: true, data: result });
-    } catch (error:any) {
+    } catch (error: any) {
       event.reply(`${channel}-response`, { success: false, error: error.message });
     }
   });
