@@ -89,12 +89,12 @@ async function startBackgroundProcess(
 
     const onMessage = (message: any) => {
       if (message !== 'ready') {
-        if (processType.type === 'transaction') {
-          transactionsDb.insertTransaction(dbConnection, message);
-          if (mainWindow?.isVisible()) {
-            sendToRenderer(mainWindow, processType.updateEvent, message);
-          }
-        }
+        // if (processType.type === 'transaction') {
+        //   transactionsDb.insertTransaction(dbConnection, message);
+        //   if (mainWindow?.isVisible()) {
+        //     sendToRenderer(mainWindow, processType.updateEvent, message);
+        //   }
+        // }
       }
     };
 
@@ -158,9 +158,9 @@ async function stopBackgroundProcess(backgroundProcess: ChildProcess | null): Pr
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    minWidth: 1156,
-    minHeight: 780,
-    width: 1156,
+    minWidth: 1280,
+    minHeight: 787,
+    width: 1280,
     height: 787,
     frame: false,
     show: false,

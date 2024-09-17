@@ -1,7 +1,8 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface ILoading {
   parentRef?: React.MutableRefObject<any>;
+  text?: string;
 }
 
 const Loading = (props: ILoading) => {
@@ -18,8 +19,18 @@ const Loading = (props: ILoading) => {
   }, []);
 
   return (
-    <div className="loading-spinner" style={{height: `${parentHeight}px`}}>
-      <div className="spinner" style={{marginTop: `${scrollPosition + (Math.floor(parentBaseHeight / 2)) - 32}px`}}></div>
+    <div className="loading-spinner" style={{ height: `${parentHeight}px` }}>
+      <div className="spinner-wrapper">
+        <div
+          className="spinner"
+          style={{ marginTop: `${scrollPosition + Math.floor(parentBaseHeight / 2) - 32}px` }}
+        ></div>
+        {props.text && (
+          <span style={{ marginTop: `${scrollPosition + Math.floor(parentBaseHeight / 2) - 32}px` }}>
+            {props.text}
+          </span>
+        )}
+      </div>
     </div>
   );
 };

@@ -71,35 +71,27 @@ function ConnectionSettings() {
     }
   };
 
-  const deleteActiveConnection = async (c) => {
+  const deactivateConnection = async (c) => {
     setLoading(true);
-    const result = await window.electron.invoke(CustomEvents.updateActiveConnectionEvent, 'mainnet-beta');
+    const result = await window.electron.invoke(CustomEvents.deactivateConnectionEvent);
     if (result) {
       if (result.success) {
-        const result1 = await window.electron.invoke(CustomEvents.deleteConnectionEvent, c);
-        if (result1) {
-          setLoading(false);
-          if (result1.data.message) {
-            showToast(result1.data.message, 'success');
-          } else {
-            if (result1.data.error) {
-              showToast(result1.data.error, 'fail');
-            }
+        setLoading(false);
+        if (result.data === null) {
+          showToast('Connection deactivated successfully', 'success');
+        } else {
+          if (result.data.error) {
+            showToast(result.data.error, 'fail');
           }
-          fetchConnections();
-          return;
         }
-      } else {
-        showToast(result.error, 'fail');
+        fetchConnections();
       }
-      fetchConnections();
     }
   };
 
   const fetchConnections = async () => {
     const result = await window.electron.invoke(CustomEvents.getConnectionsEvent);
     if (result && result.success) {
-      console.log(result.data);
       setConnections(result.data);
     }
   };
@@ -153,18 +145,17 @@ function ConnectionSettings() {
                     readonly={true}
                     readOnlyValue={connections.find((c) => c.isActive)?.connection || 'mainnet-beta'}
                   ></Input>
-                  {connections.find((c) => c.isActive) && connections.find((c) => c.isActive).connection !== 'mainnet-beta' && (
-                    <div className="two-buttons">
+                  {connections.find((c) => c.isActive) &&
+                    connections.find((c) => c.isActive).connection !== 'mainnet-beta' && (
                       <Button
                         onClick={() => {
                           setShowDialog(true);
                         }}
                         theme="error"
                         type="delete"
-                        text="Delete"
+                        text="Deactivate"
                       ></Button>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
               <div className="connection-item">
@@ -208,20 +199,27 @@ function ConnectionSettings() {
       </div>
       {loading && <Loading></Loading>}
       {showDialog && (
-        <Dialog className="delete-active-connection-dialog" onClose={() => {setShowDialog(false);}}>
+        <Dialog
+          className="delete-active-connection-dialog"
+          onClose={() => {
+            setShowDialog(false);
+          }}
+        >
           <div className="header">
-            <h2>This connection is active. Are you sure you want to delete it?</h2>
-            <span>Deleting the active connection will automatically set "mainnet-beta" as your active connection.</span>
+            <h2>This connection is active. Are you sure you want to deactivate it?</h2>
+            <span>
+              Deactivating the active connection will automatically set "mainnet-beta" as your active connection.
+            </span>
           </div>
           <div className="two-buttons">
             <Button
               onClick={() => {
-                deleteActiveConnection(connections.find((c) => c.isActive).connection);
+                deactivateConnection();
                 setShowDialog(false);
               }}
               theme="error"
               type="delete"
-              text="Delete"
+              text="Deactivate"
             ></Button>
             <Button
               onClick={() => {

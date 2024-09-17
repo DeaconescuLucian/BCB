@@ -229,7 +229,7 @@ export async function getPoolKeys(mint: PublicKey, connection: Connection) {
   return poolKeys;
 }
 
-export async function swapWithRaydiumAPI(connection: Connection, wallet: string, inputMint: string, outputMint: string, simulate: boolean, amount: number, keyPair: Keypair) {
+export async function swapWithRaydiumAPI(connection: Connection, wallet: string, inputMint: string, outputMint: string, simulate: boolean, amount: number, keyPair: Keypair, fee: number, slippage: number) {
   const inputTokenAccount = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
   const lastbk = await connection.getLatestBlockhash('finalized');
   const tokenAcc = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
@@ -237,7 +237,7 @@ export async function swapWithRaydiumAPI(connection: Connection, wallet: string,
   const stringAmount = Math.floor(amount * (10**decimals));
 
   const { data: swapResponse } = await axios.get(
-    `https://transaction-v1.raydium.io/compute/swap-base-in?inputMint=${inputMint}&outputMint=${outputMint}&amount=${stringAmount}&slippageBps=100&txVersion=V0`
+    `https://transaction-v1.raydium.io/compute/swap-base-in?inputMint=${inputMint}&outputMint=${outputMint}&amount=${stringAmount}&slippageBps=${slippage * 100}&txVersion=V0`
   );
 
   const { data: swapTransactions } = await axios.post<{
@@ -246,7 +246,7 @@ export async function swapWithRaydiumAPI(connection: Connection, wallet: string,
     success: boolean;
     data: { transaction: string }[];
   }>(`https://transaction-v1.raydium.io/transaction/swap-base-in`, {
-    computeUnitPriceMicroLamports: String(5000),
+    computeUnitPriceMicroLamports: String(fee * LAMPORTS_PER_SOL),
     swapResponse,
     txVersion: 'V0',
     wallet: wallet,

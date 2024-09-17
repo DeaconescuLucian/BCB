@@ -1,0 +1,205 @@
+.fee-and-slippage-dialog {
+  width: 400px;
+  height: 500px;
+  background-color: @color-dark;
+  border-radius: 10px;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: start !important;
+
+  .fee-and-slippage-dialog-header {
+    position: sticky;
+    top: 0px;
+    padding: 15px;
+    background-color: @color-dark;
+    width: calc(100% - 30px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: @color-font-white;
+    font-size: 18px;
+    letter-spacing: 1px;
+    z-index: 100;
+    border-radius: 10px;
+
+    .title {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .subtitle {
+      width: 100%;
+      display: flex;
+      color: @color-font-gray;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+      fill: @color-info;
+      cursor: pointer;
+    }
+
+    .search-bar {
+      width: 350px;
+      border: none;
+      background-color: @color-secondary-base;
+
+      input {
+        background-color: @color-secondary-base;
+      }
+    }
+
+    .token-list-header {
+      position: sticky;
+      top: 0px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      color: @color-info;
+      font-size: 14px;
+    }
+  }
+
+  .fee-and-slippage-dialog-content {
+    width: calc(100% - 30px);
+    height: 400px;
+    padding: 15px;
+    .title-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+
+      .title {
+        color: @color-tertiary-base-hover;
+      }
+
+      .value {
+        color: @color-font-gray;
+      }
+      margin-bottom: 10px;
+      margin-top: 20px;
+    }
+
+    .fee-selector-container {
+      input {
+        font-size: 16px !important;
+        padding: 10px 10px;
+        border-radius: 20px;
+        text-align: center;
+      }
+
+      .input-container {
+        position: relative;
+        &::before {
+          content: 'SOL';
+          color: @color-font-dark-gray;
+          font-size: 14px;
+          position: absolute;
+          right: 10px;
+          top: 10px;
+        }
+      }
+    }
+
+    .slippage-selector-container {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .slippage-items {
+        display: flex;
+        gap: 5px;
+
+        .slippage-item {
+          color: @color-info;
+          background-color: @color-secondary-base;
+          height: fit-content;
+          padding: 10px;
+          border-radius: 20px;
+          cursor: pointer;
+
+          &.selected-item {
+            border: 1px solid @color-brand-secondary;
+            color: @color-font-white;
+            background-color: @color-secondary-base;
+          }
+        }
+      }
+
+      .custom-slippage {
+        display: flex;
+        gap: 10px;
+        align-items: bottom;
+        position: relative;
+
+        span {
+          &:not(.error-message) {
+            display: flex;
+            align-self: center;
+            color: @color-info;
+          }
+        }
+
+        input {
+          font-size: 16px !important;
+          padding: 5px;
+          border-radius: 20px;
+          text-align: center;
+          width: 70px;
+          margin-bottom: 0;
+        }
+
+        .error-message {
+          position: absolute;
+          top: 40px;
+          width: 342px;
+          left: -210px;
+        }
+      }
+    }
+
+    button {
+      position: absolute;
+      bottom: 10px;
+      width: calc(100% - 30px);
+      padding: 10px 15px;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      border: 1px solid @color-tertiary-base !important;
+
+      .text {
+        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        letter-spacing: 1px;
+        color: @color-font-white !important;
+      }
+
+      svg {
+        path {
+          fill: @color-brand-secondary !important;
+        }
+      }
+
+      &:hover {
+        box-shadow: 0px 0px 8px @color-brand !important;
+        .text {
+          color: @color-brand !important;
+        }
+
+        svg {
+          path {
+            fill: @color-brand !important;
+          }
+        }
+      }
+    }
+  }
+}

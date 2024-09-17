@@ -1,0 +1,34 @@
+.new-wallet-page {
+    display: flex;
+    justify-content: space-around;
+    height: calc(100% - 30px);
+    width: 100%;
+    padding-top: 30px;
+
+    .half-page {
+        height: calc(100% - 10px);
+        width: 48%;
+        min-height: max-content;
+        display: flex;
+        flex-direction: column;
+        align-items: space-around;
+        background-color: @color-dark;
+        border-radius: 10px;
+        background: linear-gradient(127deg, @color-dark 28.69%, @color-base 100%);
+        border: 1px solid @color-font-brand;
+
+
+        .title {
+            width: 100%;
+            margin-top: 20px;
+            margin-left: 20px;
+            font-size: 26px;
+            color: @color-font-white;
+        }
+
+        overflow-y: scroll;
+        &::-webkit-scrollbar {
+          display: none;
+        }
+    }
+}

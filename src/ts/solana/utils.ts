@@ -113,6 +113,7 @@ export interface IToken {
   icon?: string;
   decimals: number;
   isNft: boolean;
+  favouriteIndex?: number;
 }
 
 export interface BasePoolKeys {
@@ -296,7 +297,7 @@ export async function getTokenPrice(mint: string) {
     const response = await fetchData(`https://api-v3.raydium.io/mint/price?mints=${mint}`);
     return response.data[mint];
   } catch (error) {
-    console.error('Error fetching SOL price:', error);
+    console.error('Error fetching token price:', error);
     return null;
   }
 }
@@ -306,7 +307,7 @@ export async function getTokensPrice(mints: string[]) {
     const response = await fetchData(`https://api-v3.raydium.io/mint/price?mints=${mints.join(',')}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching SOL price:', error);
+    console.error('Error fetching tokens price:', error);
     return null;
   }
 }

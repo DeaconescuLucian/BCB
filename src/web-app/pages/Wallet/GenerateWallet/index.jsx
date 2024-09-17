@@ -59,7 +59,7 @@ function GenerateWallet() {
           <div className="generated-wallet">
             <div className="label-with-copy">
               {' '}
-              <span>Wallet alias: </span>
+              <span>Alias </span>
             </div>
             <Input
               type="text"
@@ -91,7 +91,7 @@ function GenerateWallet() {
           <div className="generated-wallet">
             <div className="label-with-copy">
               {' '}
-              <span>Wallet alias: </span>
+              <span>Alias </span>
             </div>
             <Input
               type="text"
@@ -104,7 +104,7 @@ function GenerateWallet() {
             <div className="generated-wallet">
               <div className="label-with-copy">
                 {' '}
-                <span>Wallet Address: </span>
+                <span>Address </span>
                 <CopyToClipboard text={wallet.publicKey}></CopyToClipboard>
               </div>
 
@@ -113,7 +113,7 @@ function GenerateWallet() {
             <div className="generated-wallet">
               <div className="label-with-copy">
                 {' '}
-                <span>Secret key: </span>
+                <span>Secret key </span>
                 <CopyToClipboard text={wallet.secretKey}></CopyToClipboard>
               </div>
               <Input type="text" theme="primary" readonly={true} readOnlyValue={wallet.secretKey}></Input>

@@ -40,9 +40,9 @@ img {
   left: 256px;
   width: calc(100vw - @menu-width - 2 * @default-main-container-padding);
   max-width: calc(100vw - @menu-width - 2 * @default-main-container-padding);
-  height: calc(100vh - @default-main-container-padding - @default-terminal-height);
+  height: calc(100vh - @default-terminal-height);
   padding: 30px;
-  padding-bottom: 0;
+  padding-bottom: 0 !important;
   color: @color-font-gray;
 
   &.hidden-right-section {

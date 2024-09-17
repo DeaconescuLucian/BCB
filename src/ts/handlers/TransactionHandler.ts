@@ -7,7 +7,7 @@ import { getWalletSecret } from '../database/wallets';
 import { getKeyPairFromSecret } from '../solana/wallet';
 import * as transactionsDb from '../database/transactions';
 import { BrowserWindow } from 'electron';
-import { BasePoolKeys } from '../solana/utils';
+import { BasePoolKeys, getTokensPrice } from '../solana/utils';
 
 let _poolKeys: any[] = [];
 
@@ -24,7 +24,7 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
     CustomEvents.swapEvent,
     async (
       e: any,
-      arg: { params: { wallet: string; mintA: string; mintB: string; amount: number }; fees: number; simulate: boolean }
+      arg: { params: { wallet: string; mintA: string; mintB: string; amount: number }; fees: number; slippage: number; simulate: boolean }
     ) => {
       try {
         let response: any = null;
@@ -32,12 +32,16 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
         if (wallet) {
           const keyPair = getKeyPairFromSecret(wallet.secretKey);
           if (keyPair) {
-            response = await swapWithRaydiumAPI(solanaConnection, arg.params.wallet, arg.params.mintA, arg.params.mintB, arg.simulate, arg.params.amount, keyPair);
+            response = await swapWithRaydiumAPI(solanaConnection, arg.params.wallet, arg.params.mintA, arg.params.mintB, arg.simulate, arg.params.amount, keyPair, arg.fees, arg.slippage);
+            const prices = await getTokensPrice([arg.params.mintA, 'So11111111111111111111111111111111111111112']);
+            const solanaAmount = arg.params.amount * (prices[arg.params.mintA] / prices['So11111111111111111111111111111111111111112']);
+            
             if (!arg.simulate) {
               if (response.status === 'success') {
                 const transaction = {
                   signature: response.signature,
-                  value: response.amount,
+                  wallet: arg.params.wallet,
+                  value: solanaAmount,
                   date: new Date(),
                   status: 'pending',
                 };
@@ -52,7 +56,7 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
                       signature: transaction.signature,
                       status: msg.status,
                       date: transaction.date,
-                      value: transaction.value,
+                      value: solanaAmount,
                     };
                     transactionsDb.updateTransaction(db, data);
                     if (mainWindow?.isVisible()) {
@@ -92,6 +96,7 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
             if (response.status === 'success') {
               const transaction = {
                 signature: response.signature,
+                wallet: arg.wallet,
                 value: response.amount,
                 date: new Date(),
                 status: 'pending',
@@ -145,6 +150,7 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
             if (response.status === 'success') {
               const transaction = {
                 signature: response.signature,
+                wallet: arg.wallet,
                 value: response.amount,
                 date: new Date(),
                 status: 'pending',

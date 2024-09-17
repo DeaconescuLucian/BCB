@@ -61,6 +61,23 @@ const UpdateActiveConnectionHandler = (db: sqlite3.Database, solanaConnection: C
   });
 };
 
+const DeactivateConnectionHandler = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null) => {
+  registerHandler(CustomEvents.deactivateConnectionEvent, async (e: any, arg: any) => {
+    return new Promise((resolve) => {
+      connectionDb.deactivateConnection(db, (result: any) => {
+        if (!result) {
+          try {
+            updateSolanaConnection(db, solanaConnection, mainWindow, 'mainnet-beta');
+          } catch (error) {
+            console.log(error);
+          }
+        }
+        resolve(result);
+      });
+    });
+  });
+};
+
 const DeleteConnectionHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.deleteConnectionEvent, async (e: any, arg: string) => {
     return new Promise((resolve) => {
@@ -75,6 +92,7 @@ const handleConnection = (db: sqlite3.Database, solanaConnection: Connection, ma
   CreateConnectionHandler(db);
   GetConnectionsHandler(db);
   UpdateActiveConnectionHandler(db, solanaConnection, mainWindow);
+  DeactivateConnectionHandler(db, solanaConnection, mainWindow);
   DeleteConnectionHandler(db);
 };
 

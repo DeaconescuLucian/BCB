@@ -227,6 +227,50 @@ export function insertDefaultConnection(
       });
     });
   })
+}
 
+export function deactivateConnection(
+  db: sqlite3.Database,
+  callback?: (err: Error | null) => void
+): void {
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION', (err: Error | null) => {
+      if (err) {
+        console.error('Error beginning transaction:', err.message);
+        if (callback) callback(err);
+        return;
+      }
+
+      db.run(`UPDATE connections SET isActive = 0 WHERE isActive = 1`, (err: Error | null) => {
+        if (err) {
+          console.error('Error updating isActive to 0:', err.message);
+          db.run('ROLLBACK', () => {
+            if (callback) callback(err);
+          });
+          return;
+        }
+
+        db.run(`UPDATE connections SET isActive = 1 WHERE connection = 'mainnet-beta'`, (err: Error | null) => {
+          if (err) {
+            console.error('Error updating isActive to 1:', err.message);
+            db.run('ROLLBACK', () => {
+              if (callback) callback(err);
+            });
+            return;
+          }
+
+          db.run('COMMIT', (err: Error | null) => {
+            if (err) {
+              console.error('Error committing transaction:', err.message);
+              if (callback) callback(err);
+            } else {
+              console.log('Transaction committed successfully.');
+              if (callback) callback(null);
+            }
+          });
+        });
+      });
+    });
+  });
 }
 
