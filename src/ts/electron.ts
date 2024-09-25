@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu } from 'electron';
+import { app, BrowserWindow, Tray, Menu, ipcMain } from 'electron';
 import * as path from 'path';
 import * as isDev from 'electron-is-dev';
 import * as remoteMain from '@electron/remote/main';
@@ -8,11 +8,16 @@ import { registerHandler, sendToRenderer } from './ipcHandler';
 import { setupHandlers } from './handlers';
 import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './events';
 import sqlite3 from 'sqlite3';
+import { getKeyPairFromSecret } from './solana/wallet';
 import * as db from './database/db';
+import * as walletdb from './database/wallets';
 import * as transactionsDb from './database/transactions';
 import { createConnection } from './solana/utils';
 import { Connection } from '@solana/web3.js';
 import * as connectionDb from './database/connections';
+import { startProcess } from './solana/bot/tracker';
+import { electron } from 'process';
+
 
 if (!verifyUniqueEvents(ProcessType)) {
   execSync('yarn run close-web-app');
@@ -37,14 +42,17 @@ type ProcessObject = {
 let mainBackgroundProcess: ChildProcess | null = null;
 let secondaryBackgroundProcesses: ProcessObject[] = [];
 
-async function startBackgroundProcess(
+async function spawnBackgroundProcess(
   processType: ScriptConfig,
-  pid?: number
+  pid?: number,
 ): Promise<{ message: string; pid: number | undefined }> {
   let backgroundProcess: ChildProcess | null;
   return new Promise((resolve, reject) => {
     console.log('Starting background process...');
-    if (processType !== ProcessType.MAIN) {
+    if (processType === ProcessType.MAIN){
+        backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
+      }
+    else{
       if (
         (pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) ||
         (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction')
@@ -62,9 +70,7 @@ async function startBackgroundProcess(
           await stopBackgroundProcess(backgroundProcess);
         });
       }
-    } else {
-      backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
-    }
+    } 
 
     const timeout = setTimeout(() => {
       console.log('Timeout reached, resolving without confirmation');
@@ -242,9 +248,9 @@ function registerHandlers() {
     return await stopBackgroundProcess(mainBackgroundProcess);
   });
 
-  registerHandler(ProcessType.TRANSACTION.startEvent, async (e: any, arg: number) => {
-    return await startBackgroundProcess(ProcessType.TRANSACTION, arg);
-  });
+  // registerHandler(ProcessType.TRANSACTION.startEvent, async (e: any, arg: number) => {
+  //   return await startBackgroundProcess(ProcessType.TRANSACTION, arg);
+  // });
 
   registerHandler(CustomEvents.getLatestTransactionsEvent, async () => {
     return new Promise((resolve, reject) => {
@@ -274,7 +280,14 @@ app.on('ready', async () => {
     return;
   }
 
-  await startBackgroundProcess(ProcessType.MAIN);
+  registerHandlers();
+
+  const wallets = await mainWindow?.webContents.executeJavaScript(`window.electron.invoke('get-wallets')`);
+  const s = await walletdb.getWalletSecret(dbConnection, wallets.data[0].publicKey)
+  const keyPair = getKeyPairFromSecret(s.secretKey);
+
+  startProcess({connection: solanaConnection, wallet: keyPair!});
+
 });
 
 app.on('window-all-closed', (event: any) => {

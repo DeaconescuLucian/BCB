@@ -1,8 +1,8 @@
 import { registerHandler, sendToRenderer } from '../ipcHandler';
 import { CustomEvents, ProcessType } from '../events';
 import sqlite3 from 'sqlite3';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { unwrapSol, wrapSol, swapWithRaydiumAPI } from '../solana/transactions';
+import { Connection, PublicKey, TransactionResponse } from '@solana/web3.js';
+import { unwrapSol, wrapSol, swapWithRaydiumAPI, TransactionResult } from '../solana/transactions';
 import { getWalletSecret } from '../database/wallets';
 import { getKeyPairFromSecret } from '../solana/wallet';
 import * as transactionsDb from '../database/transactions';
@@ -13,12 +13,6 @@ let _poolKeys: any[] = [];
 
 let CachedPoolKeys: BasePoolKeys[] = [];
 
-type ITransactionResponse = {
-  status?: string;
-  message?: string;
-  error?: string;
-};
-
 const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWindow: BrowserWindow | null) => {
   registerHandler(
     CustomEvents.swapEvent,
@@ -27,7 +21,7 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
       arg: { params: { wallet: string; mintA: string; mintB: string; amount: number }; fees: number; slippage: number; simulate: boolean }
     ) => {
       try {
-        let response: any = null;
+        let response: TransactionResult | null = null;
         const wallet = await getWalletSecret(db, arg.params.wallet);
         if (wallet) {
           const keyPair = getKeyPairFromSecret(wallet.secretKey);
@@ -35,9 +29,8 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
             response = await swapWithRaydiumAPI(solanaConnection, arg.params.wallet, arg.params.mintA, arg.params.mintB, arg.simulate, arg.params.amount, keyPair, arg.fees, arg.slippage);
             const prices = await getTokensPrice([arg.params.mintA, 'So11111111111111111111111111111111111111112']);
             const solanaAmount = arg.params.amount * (prices[arg.params.mintA] / prices['So11111111111111111111111111111111111111112']);
-            
             if (!arg.simulate) {
-              if (response.status === 'success') {
+              if (response.success) {
                 const transaction = {
                   signature: response.signature,
                   wallet: arg.params.wallet,
@@ -71,9 +64,9 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
         }
 
         return {
-          status: response.status,
-          message: response?.message,
-          error: response?.error,
+          status: response?.success ? 'success' : 'fail',
+          message: response?.success ? 'Transaction successful' : 'Transaction failed',
+          error: response?.error ? response.error : null,
         };
       } catch (e) {
         console.log(e);
