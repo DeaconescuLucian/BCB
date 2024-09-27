@@ -100,9 +100,7 @@ const GetWalletsHandler = (db: sqlite3.Database) => {
 const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
   registerHandler(CustomEvents.updateWalletEvent, async (e: any, arg: {publicKey: string, existingMints: {mint: string, icon?: string}[]}) => {
     const publicKey = new PublicKey(arg.publicKey);
-    console.log(publicKey);
     const solBalance = await getSolanaBalance(solanaConnection, publicKey);
-    console.log(solBalance)
     let error: string | undefined | null = null;
     await new Promise<void>((resolve, reject) => {
       updateWalletBalance(db, { publicKey: arg.publicKey, balance: solBalance }, (err: Error | null) => {

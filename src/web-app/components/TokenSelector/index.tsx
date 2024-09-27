@@ -210,7 +210,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
                         </div>
                         <div className="name-container">
                           <div className="symbol">
-                            <span>{t.symbol || 'N/A'}</span>
+                            <span className='truncate'>{t.symbol || 'N/A'}</span>
                             {t.isNew ? (
                               <span
                                 className="add"

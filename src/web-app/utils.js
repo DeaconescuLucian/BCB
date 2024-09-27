@@ -11,7 +11,7 @@ export function timeAgo(date) {
     const years = Math.floor(days / 365);
 
     if (diffInSeconds < 60) {
-        return 'Less than a minute ago';
+        return 'Just now';
     } else if (minutes === 1) {
         return '1 minute ago';
     } else if (minutes < 60) {

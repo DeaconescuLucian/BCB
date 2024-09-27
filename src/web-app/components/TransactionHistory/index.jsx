@@ -117,10 +117,10 @@ function TransactionHistory(props) {
         {activeTab.name === 'Transactions' && (
           <>
             <div className={`transaction-item header`}>
-              <div className="status">Status</div>
+              <div className="status">Status/Type</div>
               <div className="time">Time</div>
               <div className="signature truncate">Signature</div>
-              <div className="signature truncate">From</div>
+              <div className="from truncate">From</div>
               <div className="value">Value (SOL)</div>
               <div className="view">View</div>
             </div>
@@ -131,6 +131,7 @@ function TransactionHistory(props) {
                     <TransactionItem
                       key={tr.signature}
                       status={tr.status}
+                      type={tr.type}
                       value={tr.value}
                       signature={tr.signature}
                       date={tr.date}

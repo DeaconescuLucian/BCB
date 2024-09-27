@@ -60,7 +60,9 @@ export const CustomEvents = {
   getWSOLEvent: 'get-wsol',
   deactivateConnectionEvent: 'deactivate-connection',
   addTokenToFavouritesEvent: 'add-token-to-favourites',
-  removeTokenFromFavouritesEvent: 'remove-token-from-favourites'
+  removeTokenFromFavouritesEvent: 'remove-token-from-favourites',
+  simpleTransferEvent: 'simple-transfer',
+  tokenTransferEvent: 'token-transfer'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

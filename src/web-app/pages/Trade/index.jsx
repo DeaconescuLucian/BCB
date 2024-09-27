@@ -5,10 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { navigateAndSave } from '../../utils.js';
 import WrapOrUnrwap from './WrapOrUnrwap/index.jsx';
 import Swap from './Swap/index.jsx';
+import Transfer from './Transfer/index.jsx';
 
 function Trade() {
   const [tabs] = useState([
-    {  name: 'Swap', url: '/swap' } ,
+    {  name: 'Swap', url: '/swap' },
+    {  name: 'Transfer', url: '/transfer' },
     { name: 'Wrap / Unrwap', url: '/wrap-unwrap' },
   ]);
   const [activeTab, setActiveTab] = useState({ name: 'Swap', url: '/swap' });
@@ -23,6 +25,9 @@ function Trade() {
       case 'wrap-unwrap':
         setActiveTab({ name: 'Wrap / Unrwap', url: '/wrap-unwrap' });
         break;
+        case 'transfer':
+          setActiveTab({ name: 'Transfer', url: '/transfer' });
+          break;
       default:
         setActiveTab({ name: 'Swap', url: '/swap' });
         break;
@@ -47,6 +52,7 @@ function Trade() {
       <div className="trade-page">
         {window.location.href.includes('swap') && <Swap></Swap>}
         {window.location.href.includes('wrap-unwrap') && <WrapOrUnrwap></WrapOrUnrwap>}
+        {window.location.href.includes('transfer') && <Transfer></Transfer>}
       </div>
     </Page>
   );

@@ -3,7 +3,7 @@ import * as bs58 from 'bs58';
 
 export const generateWallet = () => {
   const keyPair = Keypair.generate();
-  return { publicKey: keyPair.publicKey.toBase58(), secretKey: keyPair.secretKey };
+  return { publicKey: keyPair.publicKey.toBase58(), secretKey: bs58.encode(keyPair.secretKey) };
 };
 
 export function importKeypair(param: string) {
