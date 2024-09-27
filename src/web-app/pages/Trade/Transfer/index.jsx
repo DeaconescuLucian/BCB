@@ -11,12 +11,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import { updateSelectedWallet, getWalletDetails, fetchWallets } from '../../../store/reducers/wallets.js';
 import { CustomEvents } from '../../../../ts/events.ts';
 import { useToast } from '../../../contexts/ToastContext.tsx';
-import { checkForPreviousLocation } from '../../../utils.js';
 import Switch from '../../../components/Switch/index.tsx';
 import Slider from '../../../components/Slider/index.tsx';
 import WalletSelector from '../../../components/WalletSelector/index.tsx';
 import Input from '../../../components/FormControls/Input.tsx';
-import { formatNumber } from '../../../utils.js';
+import { formatNumber, navigateBack, checkForPreviousLocation } from '../../../utils.js';
 import Loading from '../../../components/Loading/index.tsx';
 
 function Transfer() {
@@ -36,6 +35,7 @@ function Transfer() {
       : { name: 'SOL', url: '/transfer' }
   );
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { tokens, wallets } = useSelector((state) => state.wallets);
   const [simulate, setSimulate] = useState(JSON.parse(window.localStorage.getItem('swap-settings')).simulate || false);
   const { fee, slippage } = useSelector((state) => state.feeAndSlippage);
