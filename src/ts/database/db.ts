@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 import { createTableTransactions } from './transactions';
 import { createTableWallets } from './wallets';
 import { createTableWalletTokenAccounts } from './walletTokenAccounts';
-import { createTableTokens, insertWSOL } from './tokens';
+import { createTableTokens, insertUSDC, insertWSOL } from './tokens';
 import { createTableConnections, insertDefaultConnection } from './connections';
 
 export function runQuery(db: sqlite3.Database, sql: string): Promise<void> {
@@ -40,6 +40,7 @@ export async function initDatabase(db: sqlite3.Database): Promise<void> {
                 await createTableConnections(db);
                 await insertDefaultConnection(db, 'mainnet-beta');
                 await insertWSOL(db);
+                await insertUSDC(db);
                 resolve();
             } catch (err) {
                 reject(err);

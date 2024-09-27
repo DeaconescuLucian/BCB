@@ -219,6 +219,72 @@ export function insertWSOL(db: sqlite3.Database): Promise<void> {
   });
 }
 
+export function insertUSDC(db: sqlite3.Database): Promise<void> {
+  const insertStatement = db.prepare(
+    `INSERT INTO tokens (mint, name, symbol, icon, decimals, isNft, favouriteIndex) VALUES ('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', 'USD Coin', 'USDC', 'https://img-v1.raydium.io/icon/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v.png', 6, 0, 1)`
+  );
+
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      // Start the transaction
+      db.run('BEGIN TRANSACTION');
+
+      let hasError = false;
+
+      // Check if the connection already exists
+      db.get(
+        `SELECT 1 FROM tokens WHERE mint = ?`,
+        ['So11111111111111111111111111111111111111112'],
+        (err: Error | null, row: any) => {
+          if (err) {
+            console.error('Error checking for existing USDC:', err.message);
+            hasError = true;
+          } else if (row) {
+            console.log(`Token ${'USDC'} already exists. Skipping insert.`);
+            hasError = true;
+          } else {
+            // Insert the new connection
+            insertStatement.run((err: Error | null) => {
+              if (err) {
+                console.error('Error inserting USDC:', err.message);
+                hasError = true;
+              }
+            });
+          }
+
+          // Finalize the statement
+          insertStatement.finalize((err: Error | null) => {
+            if (err) {
+              console.error('Error finalizing statement:', err.message);
+              hasError = true;
+            }
+
+            if (hasError) {
+              // Rollback the transaction if there was an error
+              db.run('ROLLBACK', (err: Error | null) => {
+                if (err) {
+                  console.error('Error rolling back transaction:', err.message);
+                }
+                resolve();
+              });
+            } else {
+              // Commit the transaction if there were no errors
+              db.run('COMMIT', (err: Error | null) => {
+                if (err) {
+                  console.error('Error committing transaction:', err.message);
+                } else {
+                  console.log('Transaction committed successfully.');
+                }
+                resolve();
+              });
+            }
+          });
+        }
+      );
+    });
+  });
+}
+
 export function addTokenToFavourites(db: sqlite3.Database, token: IToken): Promise<void> {
   let error: any = null;
   const insertStatement = db.prepare(
