@@ -17,6 +17,7 @@ import {
   createCloseAccountInstruction,
   createSyncNativeInstruction,
   TOKEN_PROGRAM_ID,
+  createTransferInstruction,
 } from '@solana/spl-token';
 import BN from 'bn.js';
 import { findRaydiumpoolKeys, getRaydiumPoolsbyMints, BasePoolKeys } from './utils';
@@ -34,7 +35,7 @@ async function simulateTransaction(tx: VersionedTransaction, connection: Connect
       signature: '',
       block: null,
       amount: 0,
-      confirmation: null
+      confirmation: null,
     };
   } else {
     console.log(`Simulation successful`);
@@ -44,14 +45,13 @@ async function simulateTransaction(tx: VersionedTransaction, connection: Connect
       signature: '',
       block: null,
       amount: 0,
-      confirmation: null
+      confirmation: null,
     };
   }
 }
 
 export async function confirmTransaction(connection: Connection, params: { signature: string; block: any }) {
   const { signature, block } = params;
-
   try {
     const result = await connection.confirmTransaction(
       { signature: signature, blockhash: block.blockhash, lastValidBlockHeight: block.lastValidBlockHeight },
@@ -114,7 +114,7 @@ async function sendTransaction(
           signature: signature,
           block: block,
           amount: amount,
-          confirmation: confirmation
+          confirmation: confirmation,
         };
       } else {
         return {
@@ -123,7 +123,7 @@ async function sendTransaction(
           signature: '',
           block: null,
           amount: 0,
-          confirmation: null
+          confirmation: null,
         };
       }
     }
@@ -136,7 +136,7 @@ async function sendTransaction(
       signature: '',
       block: null,
       amount: 0,
-      confirmation: null
+      confirmation: null,
     };
   }
 }
@@ -180,7 +180,14 @@ interface sellParams {
 
 interface simpleTransferParams {
   walletA: Keypair;
-  walletB: Keypair | PublicKey;
+  walletB: PublicKey;
+  amount: number;
+}
+
+interface simpleTokenTransferParams {
+  walletA: Keypair;
+  walletB: PublicKey;
+  mint: PublicKey;
   amount: number;
 }
 
@@ -203,10 +210,10 @@ export async function simpleTransfer(
     connection.getMinimumBalanceForRentExemption(0),
   ]);
 
-  const toPubkey = walletB instanceof PublicKey ? walletB : walletB.publicKey;
+  const toPubkey = walletB;
 
   let instructions = [
-    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5000 }),
     ComputeBudgetProgram.setComputeUnitLimit({ units: fees.prioFee * LAMPORTS_PER_SOL }),
     SystemProgram.transfer({
       fromPubkey: walletA.publicKey,
@@ -216,7 +223,43 @@ export async function simpleTransfer(
   ];
 
   const tx = await createSignedTransaction(instructions, connection, walletA, lastbk.blockhash);
-  return sendTransaction(tx, lastbk, connection, simulate);
+  return sendTransaction(tx, lastbk, connection, simulate, amount / LAMPORTS_PER_SOL);
+}
+
+export async function simpleTokenTransfer(
+  params: simpleTokenTransferParams,
+  fees: feesParams,
+  connection: Connection,
+  simulate: boolean
+) {
+  let { walletA, walletB, amount, mint } = params;
+
+  const [lastbk, accountBalance, rent] = await Promise.all([
+    connection.getLatestBlockhash('finalized'),
+    connection.getBalance(walletA.publicKey, 'confirmed'),
+    connection.getMinimumBalanceForRentExemption(0),
+  ]);
+
+  const fromTokenAccount = getAssociatedTokenAddressSync(mint, walletA.publicKey, true);
+
+  const decimals = (await connection.getTokenAccountBalance(fromTokenAccount)).value.decimals;
+
+  const toTokenAccount = getAssociatedTokenAddressSync(mint, walletB, true);
+
+  let instructions = [
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 50000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: fees.prioFee * LAMPORTS_PER_SOL }),
+    createAssociatedTokenAccountIdempotentInstruction(walletA.publicKey, toTokenAccount, walletB, mint),
+    createTransferInstruction(
+      fromTokenAccount,
+      toTokenAccount,
+      walletA.publicKey,
+      Number(amount.toFixed(decimals)) * 10 ** decimals
+    ),
+  ];
+
+  const tx = await createSignedTransaction(instructions, connection, walletA, lastbk.blockhash);
+  return sendTransaction(tx, lastbk, connection, simulate, amount);
 }
 
 export async function getPoolKeys(mint: PublicKey, connection: Connection) {
@@ -229,16 +272,38 @@ export async function getPoolKeys(mint: PublicKey, connection: Connection) {
   return poolKeys;
 }
 
-export async function swapWithRaydiumAPI(connection: Connection, wallet: string, inputMint: string, outputMint: string, simulate: boolean, amount: number, keyPair: Keypair, fee: number, slippage: number) {
+export async function swapWithRaydiumAPI(
+  connection: Connection,
+  wallet: string,
+  inputMint: string,
+  outputMint: string,
+  simulate: boolean,
+  amount: number,
+  keyPair: Keypair,
+  fee: number,
+  slippage: number
+) {
+  console.log('Swap using Raydium api');
   const inputTokenAccount = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
   const lastbk = await connection.getLatestBlockhash('finalized');
   const tokenAcc = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
   const decimals = (await connection.getTokenAccountBalance(tokenAcc)).value.decimals;
-  const stringAmount = Math.floor(amount * (10**decimals));
+  const stringAmount = Math.floor(Number(Number(amount).toFixed(decimals)) * 10 ** decimals);
 
   const { data: swapResponse } = await axios.get(
-    `https://transaction-v1.raydium.io/compute/swap-base-in?inputMint=${inputMint}&outputMint=${outputMint}&amount=${stringAmount}&slippageBps=${slippage * 100}&txVersion=V0`
+    `https://transaction-v1.raydium.io/compute/swap-base-in?inputMint=${inputMint}&outputMint=${outputMint}&amount=${stringAmount}&slippageBps=${slippage *
+      100}&txVersion=V0`
   );
+
+  console.log({
+    computeUnitPriceMicroLamports: String(fee * LAMPORTS_PER_SOL),
+    swapResponse,
+    txVersion: 'V0',
+    wallet: wallet,
+    wrapSol: false,
+    unwrapSol: false,
+    inputAccount: inputTokenAccount.toString(),
+  })
 
   const { data: swapTransactions } = await axios.post<{
     id: string;
@@ -252,18 +317,47 @@ export async function swapWithRaydiumAPI(connection: Connection, wallet: string,
     wallet: wallet,
     wrapSol: false,
     unwrapSol: false,
-    inputAccount: inputTokenAccount,
+    inputAccount: inputTokenAccount.toString(),
   });
-  const allTxBuf = swapTransactions.data.map((tx) => Buffer.from(tx.transaction, 'base64'));
-  const allTransactions = allTxBuf.map((txBuf) =>
-    VersionedTransaction.deserialize(txBuf)
+
+  const txBuf = Buffer.from(swapTransactions.data[0].transaction, 'base64')
+  const transaction = VersionedTransaction.deserialize(txBuf)
+  transaction.sign([keyPair]);
+  return sendTransaction(transaction!, lastbk, connection, simulate, amount);
+}
+
+export async function swapWithJupiterAPI(
+  connection: Connection,
+  wallet: string,
+  inputMint: string,
+  outputMint: string,
+  simulate: boolean,
+  amount: number,
+  keyPair: Keypair,
+  fee: number,
+  slippage: number
+) {
+  console.log('Swap using Jupiter api');
+  // const inputTokenAccount = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
+  const lastbk = await connection.getLatestBlockhash('finalized');
+  const tokenAcc = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
+  const decimals = (await connection.getTokenAccountBalance(tokenAcc)).value.decimals;
+  const stringAmount = Math.floor(Number(amount.toFixed(decimals)) * 10 ** decimals);
+
+  const { data: swapResponse } = await axios.get(
+    `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${stringAmount}&slippageBps=${slippage *
+      100}&swapMode=ExactIn&onlyDirectRoutes=false&asLegacyTransaction=false&maxAccounts=64&minimizeSlippage=false`
   );
-  let transaction: VersionedTransaction;
-  for (const tx of allTransactions) {
-    transaction = tx as VersionedTransaction;
-    transaction.sign([keyPair]);
-    break;
-  }
+
+  const { data: swapTransaction } = await axios.post<any>(`https://quote-api.jup.ag/v6/swap`, {
+    quoteResponse: swapResponse,
+    userPublicKey: wallet,
+    wrapAndUnwrapSol: false,
+  });
+
+  const swapTransactionBuf = Buffer.from(swapTransaction.swapTransaction, 'base64');
+  var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+  transaction.sign([keyPair]);
   return sendTransaction(transaction!, lastbk, connection, simulate, amount);
 }
 

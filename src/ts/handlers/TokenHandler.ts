@@ -43,7 +43,7 @@ const GetTokensHandler = (db: sqlite3.Database) => {
               ...tokens,
               ...(response || []).map((e: any) => ({
                 name: e.name,
-                symbol: e.symbol,
+                symbol: e.mint === 'So11111111111111111111111111111111111111112' ? 'WSOL' : e.symbol,
                 address: e.address,
                 logoURI: e.logoURI,
               })),

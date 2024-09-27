@@ -9,7 +9,7 @@ export async function createTableWalletTokenAccounts(db: sqlite3.Database) {
         mint TEXT,
         amount REAL NOT NULL,
         FOREIGN KEY (publicKey) REFERENCES wallets(publicKey) ON DELETE CASCADE ON UPDATE CASCADE,
-        FOREIGN KEY (mint) REFERENCES tokens(mint) ON DELETE CASCADE ON UPDATE CASCADE
+        FOREIGN KEY (mint) REFERENCES tokens(mint)
     )`;
   await runQuery(db, sql);
 }

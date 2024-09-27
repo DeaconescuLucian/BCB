@@ -56,7 +56,7 @@ function WrapOrUnrwap() {
   }, [selectedWalletAccounts]);
 
   useEffect(() => {
-    setWrapAmount((Number(selectedWalletDetails?.balance / 2).toFixed(9)));
+    setWrapAmount(Number(selectedWalletDetails?.balance / 2).toFixed(9));
   }, [selectedWalletDetails]);
 
   const handleUpdateWallet = async () => {

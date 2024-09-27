@@ -52,14 +52,17 @@ function App() {
           mainContainerRef.current.style.maxHeight = `${newSize}px`;
         }}
       ></TransactionHistory>
-      <div className="main-container" ref={mainContainerRef}>
-        <Routes>
-          <Route path="/home" element={<Home></Home>} />
-          <Route path="/wallet-page/*" element={<WalletPage></WalletPage>} />
-          <Route path="/trade/*" element={<Trade></Trade>} />
-          <Route path="/settings/*" element={<Settings></Settings>} />
-        </Routes>
-      </div>
+      {(fetchWalletsDone && fetchTokensDone && getWalletDetailsDone) && (
+        <div className="main-container" ref={mainContainerRef}>
+          <Routes>
+            <Route path="/home" element={<Home></Home>} />
+            <Route path="/wallet-page/*" element={<WalletPage></WalletPage>} />
+            <Route path="/trade/*" element={<Trade></Trade>} />
+            <Route path="/settings/*" element={<Settings></Settings>} />
+          </Routes>
+        </div>
+      )}
+
       {(!fetchWalletsDone || !fetchTokensDone || !getWalletDetailsDone) && (
         <Loading parentRef={appRef} text={'Gettings things ready'}></Loading>
       )}

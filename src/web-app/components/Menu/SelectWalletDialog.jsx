@@ -3,14 +3,13 @@ import Dialog from '../Dialog';
 import ClickOutside from '../ClickOutside';
 import { useSelector, useDispatch } from 'react-redux';
 import { crossSvg } from '../../assets/svg';
-import { updateSelectedWallet, getWalletDetails } from '../../store/reducers/wallets';
 import SearchBar from '../SearchBar';
 import CopyToClipboard from '../CopyToClipboard';
 
 const SelectWalletDialog = (props) => {
   const { selectedWalletDetails, wallets } = useSelector((state) => state.wallets);
-  const dispatch = useDispatch();
   const [filter, setFilter] = useState('');
+  const [wallet, setWallet] = useState(props.wallet);
 
   return (
     <Dialog className="token-selector-dialog wallet-dialog" onClose={props.onClose}>
@@ -41,7 +40,7 @@ const SelectWalletDialog = (props) => {
           ></SearchBar>
         </div>
         <div className="token-list-header">
-          <span>Token</span>
+          <span>Wallet</span>
           <span>Balance/Address</span>
         </div>
       </div>
@@ -53,20 +52,19 @@ const SelectWalletDialog = (props) => {
               .map((t) => (
                 <div
                   className={`token-list-item ${
-                    selectedWalletDetails?.publicKey === t.publicKey ? 'selected-wallet' : ''
+                    wallet?.publicKey === t.publicKey ? 'selected-wallet' : ''
                   }`}
                   key={`toke-list-item-${t.mint}`}
                   onClick={() => {
-                    dispatch(updateSelectedWallet(t.publicKey));
-                    dispatch(getWalletDetails(t.publicKey));
-                    window.localStorage.setItem('wallet-address', t.publicKey);
+                    setWallet(t);
+                    props.onChange(t.publicKey)
                   }}
                 >
                   <div className="left-side">
                     {' '}
                     <div className="name-container">
                       <div className="symbol">
-                        <span>{t.alias}</span>
+                        <span className='truncate'>{t.alias}</span>
                       </div>
                       <span className="name">{t.tokenAccounts} Token Accounts</span>
                     </div>

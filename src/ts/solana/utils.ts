@@ -512,22 +512,3 @@ export async function getRaydiumPoolsbyMints(connection:  Connection, baseMint: 
 //     data: aData,
 //   });
 // }
-
-
-
-export async function getget(baseMint?: string, quoteMint?: string, limit: number = 100, amount: number = 10000) {
-  try{
-    baseMint = baseMint ? baseMint : raydium.WSOL.mint
-    quoteMint = quoteMint ? quoteMint : `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
-    const msg = `https://transaction-v1.raydium.io/compute/swap-base-in?inputMint=${baseMint}&outputMint=${quoteMint}&amount=${amount}&slippageBps=0.1&txVersion=V0`
-    console.log(msg)
-    const response = await fetchData(msg);
-    console.log(response.data)
-
-
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching pools:', error);
-    return null;
-  }
-}

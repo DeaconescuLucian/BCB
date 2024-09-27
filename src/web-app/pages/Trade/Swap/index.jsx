@@ -19,6 +19,16 @@ import FeeAndSlippageSelector from '../../../components/FeeAndSlippageSelector/i
 
 function Swap() {
   const pageSettings = 'swap-settings';
+  let swapSettingsString = window.localStorage.getItem(pageSettings);
+  let swapSettings = null;
+  if (swapSettingsString) {
+    swapSettings = JSON.parse(swapSettingsString);
+  }
+  const calculatePriceRatio = (price1, price2) => {
+    if (!price1 || !price2) return undefined;
+    else return price1 / price2;
+  };
+
   const { selectedWalletDetails, selectedWalletAccounts, tokens, selectedWallet } = useSelector(
     (state) => state.wallets
   );
@@ -26,39 +36,34 @@ function Swap() {
   const dispatch = useDispatch();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [token1, setToken1] = useState(null);
-  const [token2, setToken2] = useState(null);
-  const [token1Price, setToken1Price] = useState(null);
-  const [token2Price, setToken2Price] = useState(null);
-  const [priceRatio, setPriceRatio] = useState(undefined);
+  const [token1, setToken1] = useState(
+    swapSettings?.token1 ? tokens.find((w) => w.address === swapSettings?.token1.address) : null
+  );
+
+  const [token2, setToken2] = useState(
+    swapSettings?.token2 ? tokens.find((w) => w.address === swapSettings?.token2.address) : null
+  );
+  const [token1Price, setToken1Price] = useState(swapSettings.token1Price ?? 0);
+  const [token2Price, setToken2Price] = useState(swapSettings.token2Price ?? 0);
+  const [priceRatio, setPriceRatio] = useState(calculatePriceRatio(swapSettings.token1Price, swapSettings.token2Price));
   const [amountToBuy, setAmountToBuy] = useState(0);
   const [simulate, setSimulate] = useState(JSON.parse(window.localStorage.getItem(pageSettings)).simulate || false);
 
   const [ownedTokenList, setOwnedTokenList] = useState([]);
   const [otherTokenList, setOtherTokenList] = useState([]);
   const [inputError, setInputError] = useState(null);
+  const [swapAPI, setSwapApi] = useState(swapSettings.swapAPI ?? 'raydium');
   const loadingParentRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     try {
-      let swapSettings = window.localStorage.getItem('swap-settings');
-      if (swapSettings) {
-        swapSettings = JSON.parse(swapSettings);
-        if (swapSettings.token1) {
-          setToken1(swapSettings.token1);
-          setToken1Price(swapSettings.token1Price);
-          if (!amountToBuy && !swapSettings.amountToBuy)
-            setAmountToBuy((ownedTokenList.find((t) => t.address === swapSettings.token1.address)?.amount || 0) / 2);
-        }
-        if (swapSettings.token2) {
-          setToken2(swapSettings.token2);
-          setToken2Price(swapSettings.token2Price);
-        }
-        if (swapSettings.amountToBuy) {
-          setAmountToBuy(swapSettings.amountToBuy);
-        }
-        calculatePriceRatio(swapSettings.token1Price, swapSettings.token2Price);
+      if (swapSettings.token1) {
+        if (!amountToBuy && !swapSettings.amountToBuy)
+          setAmountToBuy((ownedTokenList.find((t) => t.address === swapSettings.token1.address)?.amount || 0) / 2);
+      }
+      if (swapSettings.amountToBuy) {
+        setAmountToBuy(swapSettings.amountToBuy);
       }
     } catch (error) {
       console.log(error);
@@ -73,7 +78,7 @@ function Swap() {
       setToken1Price(tPrice);
       setToken2(null);
       setToken2Price(null);
-      calculatePriceRatio(tPrice, null);
+      setPriceRatio(calculatePriceRatio(tPrice, null));
     }
     if (type === 'mint2') {
       setToken2(token);
@@ -82,7 +87,7 @@ function Swap() {
       setToken2Price(tPrice);
       setToken1(null);
       setToken1Price(null);
-      calculatePriceRatio(null, tPrice);
+      setPriceRatio(calculatePriceRatio(null, tPrice));
     }
     window.localStorage.setItem('url', '/trade/swap');
   };
@@ -94,10 +99,10 @@ function Swap() {
         .map((a) => ({
           address: a.mint,
           name: a.name,
-          symbol: a.symbol,
+          symbol: a.mint === 'So11111111111111111111111111111111111111112' ? 'WSOL' : a.symbol,
           logoURI: a.icon,
           amount: a.amount,
-          favouriteIndex: a.favouriteIndex
+          favouriteIndex: a.favouriteIndex,
         }))
         .sort((a, b) => {
           if (a.favouriteIndex === null) return 1;
@@ -112,6 +117,10 @@ function Swap() {
     });
     setOwnedTokenList(newOwnedTokenList);
     setOtherTokenList(otherTokens);
+
+    setToken1(
+      token1 ? { ...token1, amount: newOwnedTokenList.find((t) => t.address === token1.address)?.amount } : null
+    );
 
     const type = window.location.search?.split('?')[1]?.split('=')[0];
 
@@ -167,6 +176,10 @@ function Swap() {
     updatePageSettings('amountToBuy', amountToBuy, pageSettings);
   }, [amountToBuy]);
 
+  useEffect(() => {
+    updatePageSettings('swapAPI', swapAPI, pageSettings);
+  }, [swapAPI]);
+
   const swap = async () => {
     setLoading(true);
     const result = await window.electron.invoke(CustomEvents.swapEvent, {
@@ -179,6 +192,7 @@ function Swap() {
       slippage: slippage,
       simulate: simulate,
       fees: fee,
+      swapAPI: swapAPI,
     });
     if (result) {
       if (result.data) {
@@ -226,11 +240,6 @@ function Swap() {
     return result.data;
   };
 
-  const calculatePriceRatio = (price1, price2) => {
-    if (!price1 || !price2) setPriceRatio(undefined);
-    else return setPriceRatio(price1 / price2);
-  };
-
   const validateAmount = (val) => {
     if (val > token1?.amount) {
       setInputError('Insufficient balance');
@@ -252,7 +261,7 @@ function Swap() {
     setAmountToBuy(newAmountToBuy);
     setToken1Price(token2Price);
     setToken2Price(token1Price);
-    calculatePriceRatio(token2Price, token1Price);
+    setPriceRatio(calculatePriceRatio(token2Price, token1Price));
   };
 
   const walletTitle = selectedWalletDetails ? (
@@ -269,6 +278,37 @@ function Swap() {
         <div className="header-buttons">
           {' '}
           <FeeAndSlippageSelector></FeeAndSlippageSelector>
+          <div className="platform-selector">
+            <div className="platform-selector-title">Swap API</div>
+            <div className="options">
+              <div className="option">
+                <div
+                  className={`radio-button ${swapAPI === 'raydium' ? 'checked' : ''}`}
+                  onClick={() => {
+                    setSwapApi('raydium');
+                  }}
+                ></div>
+                <label>
+                  <img
+                    src="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/logo.png"
+                    alt=""
+                    title="Raydium"
+                  />
+                </label>
+              </div>
+              <div className="option">
+                <div
+                  className={`radio-button ${swapAPI === 'jupiter' ? 'checked' : ''}`}
+                  onClick={() => {
+                    setSwapApi('jupiter');
+                  }}
+                ></div>
+                <label>
+                  <img src="https://static.jup.ag/jup/icon.png" alt="" title="Jupiter" />
+                </label>
+              </div>
+            </div>
+          </div>
           <Switch
             theme="primary"
             value={simulate}
@@ -347,7 +387,7 @@ function Swap() {
               setAmountToBuy(t.amount / 2);
               const tPrice = await handleGetTokenPrice(t.address);
               setToken1Price(tPrice);
-              calculatePriceRatio(tPrice, token2Price);
+              setPriceRatio(calculatePriceRatio(tPrice, token2Price));
             }}
             initialToken={token1}
             tokenList={ownedTokenList}
@@ -385,7 +425,7 @@ function Swap() {
               setToken2(t);
               const tPrice = await handleGetTokenPrice(t.address);
               setToken2Price(tPrice);
-              calculatePriceRatio(token1Price, tPrice);
+              setPriceRatio(calculatePriceRatio(token1Price, tPrice));
             }}
             initialToken={token2}
             tokenList={otherTokenList}

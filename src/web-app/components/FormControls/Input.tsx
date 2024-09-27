@@ -98,7 +98,6 @@ function Input(props: IInput) {
         className={`${props.theme ? `theme-${props.theme}` : null}`}
         type="text"
         value={value || props.readOnlyValue || ''}
-        defaultValue={props.readOnlyValue ? props.readOnlyValue : ''}
         onChange={handleChange}
         onKeyDown={(e) => {
           if (props.type === 'number' && e.key === 'Enter') {

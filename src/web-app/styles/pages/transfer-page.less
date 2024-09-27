@@ -1,0 +1,174 @@
+.transfer-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: scroll;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .transfer-data {
+    position: relative;
+    width: 934px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    .side {
+      position: relative;
+      width: 45%;
+      padding: 10px;
+      margin-top: 20px;
+
+      .title {
+        letter-spacing: 2px;
+        font-size: 20px;
+        color: @color-font-white;
+        margin-bottom: 40px;
+      }
+    }
+
+    .left-side {
+      .swap-container {
+        .swap-token-selector-container {
+          svg {
+            fill: @color-brand-secondary !important;
+          }
+          width: calc(100% - 20px);
+
+          .value-container {
+            justify-content: flex-start;
+
+            .value {
+              font-size: 10px;
+              margin-top: 2px;
+            }
+          }
+
+          .token-selector-dialog-header {
+            .title {
+              margin-bottom: 0px;
+            }
+          }
+        }
+      }
+    }
+
+    .right-side {
+      .transfer-type-container {
+        position: relative;
+        background-color: @color-secondary-base;
+        min-height: 256px;
+        height: 256px;
+        width: 100%;
+        border-radius: 10px;
+      }
+
+      .tab-strip {
+        background-color: @color-dark;
+
+        .active-tab {
+          border-bottom: 2px solid @color-brand-secondary;
+        }
+      }
+
+      .transfer-type-container-content {
+        position: relative;
+        width: 100%;
+        height: calc(100% - 30px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        .swap-container {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+          .swap-token-selector-container {
+            background-color: @color-base !important;
+            position: relative;
+            width: calc(100% - 20px);
+
+            .input-container {
+              position: unset;
+            }
+
+            .value-container {
+              position: unset;
+            }
+
+            .token-selector-dialog-header {
+              .title {
+                margin-bottom: 0px;
+              }
+            }
+
+            .error-message {
+              top: 130px;
+              left: 0px;
+              width: 376px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .tranfer-details-container {
+    width: 904px;
+    background-color: @color-dark;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .summary {
+        span {
+           word-break: break-all;
+           color: @color-font-white;
+
+           &.pKey {
+            color: @color-font-gray;
+            font-size: 10px;
+           }
+
+           &.alias {
+            color: @color-brand-secondary;
+           }
+
+           &.amount {
+            color: @color-font-brand;
+           }
+
+           &.token {
+            color: @color-info;
+           }
+        }
+    }
+
+    .error {
+        color: @color-brand-secondary;
+    }
+
+    .button-container {
+      margin-top: 30px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      button {
+        width: 45%;
+        background-color: @color-base !important;
+      }
+    }
+  }
+  .wallet-title {
+    z-index: 300;
+    margin-bottom: 20px;
+  }
+}

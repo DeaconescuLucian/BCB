@@ -259,6 +259,12 @@ function ViewWallet() {
                           navigateAndSave(navigate, `/trade/swap?mint1=${r.mint}`, true);
                         },
                       },
+                      {
+                        name: 'Transfer',
+                        action: (r) => {
+                          navigateAndSave(navigate, `/trade/transfer?mint=${r.mint}&wallet=${selectedWalletDetails.publicKey}`, true);
+                        },
+                      },
                     ],
                   },
                 ]}

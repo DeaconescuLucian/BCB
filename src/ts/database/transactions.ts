@@ -8,14 +8,15 @@ export async function createTableTransactions(db: sqlite3.Database) {
         wallet TEXT NOT NULL,
         value REAL NOT NULL,
         date TEXT NOT NULL,
-        status TEXT CHECK(status IN ('success', 'fail', 'pending')))`;
+        status TEXT CHECK(status IN ('success', 'fail', 'pending')),
+        type TEXT )`;
     await runQuery(db, sql);    
 }
 
 export function insertTransaction(db: sqlite3.Database, t: any): void {
     db.serialize(() => {
-        db.run(`INSERT INTO transactions (signature, wallet, value, "date", status) VALUES (?, ?, ?, ?, ?)`,
-            [t.signature, t.wallet, t.value, t.date.toISOString(), t.status], (err: Error | null) => {
+        db.run(`INSERT INTO transactions (signature, wallet, value, "date", status, type) VALUES (?, ?, ?, ?, ?, ?)`,
+            [t.signature, t.wallet, t.value, t.date.toISOString(), t.status, t.type], (err: Error | null) => {
                 if (err) {
                     console.error('Error inserting transaction:', err.message);
                 } else {

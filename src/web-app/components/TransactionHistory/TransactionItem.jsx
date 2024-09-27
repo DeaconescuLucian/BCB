@@ -37,16 +37,22 @@ const TransactionItem = memo((props) => {
 
   return (
     <div className={`transaction-item ${props.status} ${animation ? 'animation' : ''}`}>
-      <div className="status">{renderIcon()}</div>
+      <div className="status">
+        {renderIcon()} <span className="break-word">{props.type}</span>
+      </div>
       <div className="time">{time}</div>
-      <div className="signature truncate">{props.signature}</div>
-      <CopyToClipboard text={props.signature}></CopyToClipboard>
-      <div className="signature truncate">{props.wallet}</div>
-      <CopyToClipboard text={props.wallet}></CopyToClipboard>
+      <div className="signature">
+        <div className="truncate">{props.signature}</div> <CopyToClipboard text={props.signature}></CopyToClipboard>
+      </div>
+      <div className="from">
+        <div className="truncate">{props.wallet}</div> <CopyToClipboard text={props.wallet}></CopyToClipboard>
+      </div>
       <div className="value">
         <span>{parseFloat(props.value?.toFixed(8))} SOL</span>
       </div>
-      <div className="view">{viewSvg}</div>
+      <div className="view" title="View" onClick={() => {
+         window.open(`https://solscan.io/tx/${props.signature}`, '_blank');
+      }}>{viewSvg}</div>
     </div>
   );
 });

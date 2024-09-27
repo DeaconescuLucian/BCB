@@ -7,15 +7,17 @@ import home_icon from '../../assets/icons/home.svg';
 import { useNavigate } from 'react-router-dom';
 import { navigateAndSave } from '../../utils';
 import { useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { viewSvg, rightSvg } from '../../assets/svg';
 import SelectWalletDialog from './SelectWalletDialog';
+import { updateSelectedWallet, getWalletDetails } from '../../store/reducers/wallets';
 
 function Menu() {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState('home-menu-item');
   const location = useLocation();
   const { selectedWalletDetails } = useSelector((state) => state.wallets);
+  const dispatch = useDispatch();
   const [showSelectWalletDialog, setShowSelectWalletDialog] = useState(false);
 
   const handleMenuItemClick = (e) => {
@@ -72,6 +74,7 @@ function Menu() {
           break;
         case '/trade/swap':
         case '/trade/wrap-unwrap':
+        case '/trade/transfer':
           changeSelectedTab('trade-menu-item');
           break;
         case '/settings/license':
@@ -190,6 +193,12 @@ function Menu() {
           onClose={() => {
             setShowSelectWalletDialog(false);
           }}
+          onChange={(publicKey) => {
+            dispatch(updateSelectedWallet(publicKey));
+            dispatch(getWalletDetails(publicKey));
+            window.localStorage.setItem('wallet-address', publicKey);
+          }}
+          wallet={selectedWalletDetails}
         ></SelectWalletDialog>
       )}
     </>

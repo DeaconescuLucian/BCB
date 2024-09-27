@@ -35,7 +35,6 @@ function GenerateWallet() {
   const handleGenerateWallet = async () => {
     const result = await window.electron.invoke(CustomEvents.generateWalletEvent);
     if (result.data) {
-      result.data.secretKey = Object.values(result.data.secretKey).join(',');
       setWallet(result.data);
       setWalletSaved(false);
     }
