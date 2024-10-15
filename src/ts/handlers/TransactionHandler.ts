@@ -9,6 +9,7 @@ import {
   simpleTransfer,
   simpleTokenTransfer,
   swapWithJupiterAPI,
+  TransactionResult,
 } from '../solana/transactions';
 import { getWalletSecret } from '../database/wallets';
 import { getKeyPairFromSecret } from '../solana/wallet';
@@ -64,7 +65,7 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
       }
     ) => {
       try {
-        let response: any = null;
+        let response: TransactionResult | null = null;
         const wallet = await getWalletSecret(db, arg.params.wallet);
         if (wallet) {
           const keyPair = getKeyPairFromSecret(wallet.secretKey);

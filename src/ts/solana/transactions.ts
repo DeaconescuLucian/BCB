@@ -31,7 +31,7 @@ export interface TransactionResult {
   confirmation?: Promise<any>;
 }
 
-async function simulateTransaction(tx: VersionedTransaction, connection: Connection) {
+export async function simulateTransaction(tx: VersionedTransaction, connection: Connection) {
   const sim = await connection.simulateTransaction(tx, { commitment: 'processed' });
   if (sim.value.err) {
     console.log(sim.value.logs);
@@ -132,7 +132,7 @@ export async function sendTransaction(
   }
 }
 
-async function createSignedTransaction(
+export async function createSignedTransaction(
   instructions: TransactionInstruction[],
   connection: Connection,
   signer: Keypair,
@@ -285,16 +285,6 @@ export async function swapWithRaydiumAPI(
     `https://transaction-v1.raydium.io/compute/swap-base-in?inputMint=${inputMint}&outputMint=${outputMint}&amount=${stringAmount}&slippageBps=${slippage *
       100}&txVersion=V0`
   );
-
-  console.log({
-    computeUnitPriceMicroLamports: String(fee * LAMPORTS_PER_SOL),
-    swapResponse,
-    txVersion: 'V0',
-    wallet: wallet,
-    wrapSol: false,
-    unwrapSol: false,
-    inputAccount: inputTokenAccount.toString(),
-  });
 
   const { data: swapTransactions } = await axios.post<{
     id: string;
