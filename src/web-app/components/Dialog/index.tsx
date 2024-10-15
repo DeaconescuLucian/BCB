@@ -15,7 +15,7 @@ function Dialog(props: IDialog) {
   }, [terminalHeight]);
   return (
     <div className="dialog-wrapper" style={{ height: dialogWrapperHeight }}>
-      <ClickOutside onClickOutside={() => props.onClose()} className='click-outside-dialog'>
+      <ClickOutside onClickOutside={() => {props.onClose()}} className='click-outside-dialog'>
         <div className={`dialog ${props.className ? props.className : ''}`}>{props.children}</div>
       </ClickOutside>
     </div>

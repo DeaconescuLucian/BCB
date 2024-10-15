@@ -9,6 +9,7 @@ import { CustomEvents } from '../../../ts/events';
 import Loading from '../Loading';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchTokens, getWalletDetails } from '../../store/reducers/wallets';
+import { updatePageSettings } from '../../utils';
 
 interface ITokenSelector {
   onChange: Function;
@@ -30,9 +31,17 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
   const { selectedWallet } = useSelector(
     (state) => state.wallets
   );
+
+  const pageSettings = 'token-selector';
+  let tokenSelectorSettingsString = window.localStorage.getItem(pageSettings);
+  let tokenSelectorSettings: any = null;
+  if (tokenSelectorSettingsString) {
+    tokenSelectorSettings = JSON.parse(tokenSelectorSettingsString);
+  }
+
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState(initialToken);
-  const [showDialog, setShowDialog] = useState(false);
+  const [showDialog, setShowDialog] = useState(tokenSelectorSettings?.showDialog || false);
   const [filter, setFilter] = useState('');
   const [tokenBatchNo, setTokenBatchNo] = useState(1);
   const tokenBatchSize = 20;
@@ -89,7 +98,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
       decimals: 9,
     });
     if (result && result.success) {
-      dispatch(fetchTokens());
+      dispatch(fetchTokens(false));
     }
     setLoading(false);
   };
@@ -109,7 +118,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
       if(result.success)
       {
         dispatch(getWalletDetails(selectedWallet));
-        dispatch(fetchTokens());
+        dispatch(fetchTokens(false));
       }
     }
     setLoading(false);
@@ -123,7 +132,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
       if(result.success)
       {
         dispatch(getWalletDetails(selectedWallet));
-        dispatch(fetchTokens());
+        dispatch(fetchTokens(false));
       }
     }
     setLoading(false);
@@ -134,7 +143,10 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
       <div
         className="token-selector"
         onClick={() => {
-          if (!readOnly) setShowDialog(true);
+          if (!readOnly) {
+            setShowDialog(true);
+            updatePageSettings('showDialog', true, pageSettings);
+          }
         }}
       >
         <div className="icon-container">{token && <img src={token?.logoURI || DefaultCoin} />}</div>
@@ -147,6 +159,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
           onClose={() => {
             setFilter('');
             setShowDialog(false);
+            updatePageSettings('showDialog', false, pageSettings);
           }}
         >
           <div className="token-selector-dialog-header">
@@ -157,6 +170,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
                 onClick={() => {
                   setFilter('');
                   setShowDialog(false);
+                  updatePageSettings('showDialog', false, pageSettings);
                 }}
               >
                 {crossSvg}
@@ -195,10 +209,11 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
                   .map((t) => (
                     <div
                       className="token-list-item"
-                      key={`toke-list-item-${t.mint}`}
+                      key={`token-list-item-${t.address}`}
                       onClick={() => {
                         setToken(t);
                         setShowDialog(false);
+                        updatePageSettings('showDialog', false, pageSettings);
                         setFilter('');
                         onChange(t);
                       }}
@@ -232,6 +247,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
                                       e.preventDefault();
                                       e.stopPropagation();
                                       removeFromFavourites(t.address);
+                                      updatePageSettings('showDialog', true, pageSettings);
                                     }}
                                   >
                                     {starSvg}
@@ -244,6 +260,7 @@ const TokenSelector = ({ onChange, initialToken, tokenList, hasRemoteSearch, rea
                                       e.preventDefault();
                                       e.stopPropagation();
                                       addToFavourites(t);
+                                      updatePageSettings('showDialog', true, pageSettings);
                                     }}
                                   >
                                     {emptyStarSvg}

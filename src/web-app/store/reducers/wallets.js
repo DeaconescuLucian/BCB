@@ -27,11 +27,15 @@ export const fetchWallets = createAsyncThunk('wallets/fetchWallets', async () =>
   }
 });
 
-export const fetchTokens = createAsyncThunk('wallets/fetchTokens', async () => {
+export const fetchTokens = createAsyncThunk('wallets/fetchTokens', async (updateStatus) => {
   try {
     const result = await window.electron.invoke(CustomEvents.getTokenList);
     if (result && result.success) {
-      return result.data;
+      const response = {
+        data: result.data,
+        updateStatus: updateStatus
+      }
+      return response;
     }
     throw new Error('Failed to fetch wallets');
   } catch (error) {
@@ -95,12 +99,14 @@ const walletsSlice = createSlice({
         state.fetchWalletsDone = true;
 
       })
-      .addCase(fetchTokens.pending, (state) => {
-        state.fetchTokensDone = false;
+      .addCase(fetchTokens.pending, (state, action) => {
+        if (action.meta.arg)
+          state.fetchTokensDone = false;
       })
       .addCase(fetchTokens.fulfilled, (state, action) => {
-        state.tokens = action.payload;
-        state.fetchTokensDone = true;
+        state.tokens = action.payload.data;
+        if (action.payload.updateStatus)
+          state.fetchTokensDone = true;
       })
       .addCase(getWalletDetails.pending, (state) => {
         state.getWalletDetailsDone = false;

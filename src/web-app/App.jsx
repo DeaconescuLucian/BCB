@@ -29,7 +29,7 @@ function App() {
       dispatch(updateSelectedWallet(pub));
       dispatch(getWalletDetails(pub));
     }
-    dispatch(fetchTokens());
+    dispatch(fetchTokens(true));
     navigate(window.localStorage.getItem('url') || `/home`);
   }, []);
 
