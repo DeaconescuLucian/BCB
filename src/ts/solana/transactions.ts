@@ -24,8 +24,15 @@ import { findRaydiumpoolKeys, getRaydiumPoolsbyMints, BasePoolKeys } from './uti
 import { sign } from 'crypto';
 import axios from 'axios';
 
+export interface TransactionResult {
+  success: boolean;
+  signature?: string;
+  error?: string;
+  confirmation?: Promise<any>;
+}
+
 async function simulateTransaction(tx: VersionedTransaction, connection: Connection) {
-  const sim = await connection.simulateTransaction(tx, { commitment: 'confirmed' });
+  const sim = await connection.simulateTransaction(tx, { commitment: 'processed' });
   if (sim.value.err) {
     console.log(sim.value.logs);
     console.log(sim.value.err);
@@ -94,50 +101,34 @@ export async function confirmTransaction(connection: Connection, params: { signa
   }
 }
 
-async function sendTransaction(
+export async function sendTransaction(
   tx: VersionedTransaction,
   block: any,
   connection: Connection,
-  simulate: boolean,
-  amount?: number
-) {
-  try {
-    if (simulate) return simulateTransaction(tx, connection);
-    else {
-      const signature = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: true });
-      const confirmation = confirmTransaction(connection, { signature: signature, block: block });
-      console.log(`Transaction sent: ${signature}`);
-      if (signature) {
-        return {
-          status: 'success',
-          message: `Transaction sent: ${signature}`,
-          signature: signature,
-          block: block,
-          amount: amount,
-          confirmation: confirmation,
-        };
-      } else {
-        return {
-          status: 'fail',
-          message: `Transaction could not be sent.`,
-          signature: '',
-          block: null,
-          amount: 0,
-          confirmation: null,
-        };
-      }
-    }
-  } catch (e) {
-    console.log(`Error sending transaction`);
-    console.log(e);
+  simulate: boolean
+): Promise<TransactionResult> {
+  if (simulate) {
+    const simResult = await simulateTransaction(tx, connection);
     return {
-      status: 'fail',
-      error: 'Transaction could not be sent.',
-      signature: '',
-      block: null,
-      amount: 0,
-      confirmation: null,
+      success: simResult.status === 'success',
+      error: simResult.status === 'fail' ? simResult.error : undefined,
     };
+  } else {
+    try {
+      const signature = await connection.sendRawTransaction(tx.serialize(), { skipPreflight: true });
+      console.log(`Transaction sent: ${signature}`);
+      return {
+        success: true,
+        signature,
+        confirmation: confirmTransaction(connection, { signature, block }),
+      };
+    } catch (e) {
+      console.log(`Error sending transaction`, e);
+      return {
+        success: false,
+        error: 'Transaction could not be sent.',
+      };
+    }
   }
 }
 
@@ -200,7 +191,7 @@ export async function simpleTransfer(
   fees: feesParams,
   connection: Connection,
   simulate: boolean
-) {
+): Promise<TransactionResult> {
   let { walletA, walletB, amount } = params;
   amount = amount * LAMPORTS_PER_SOL;
 
@@ -223,7 +214,7 @@ export async function simpleTransfer(
   ];
 
   const tx = await createSignedTransaction(instructions, connection, walletA, lastbk.blockhash);
-  return sendTransaction(tx, lastbk, connection, simulate, amount / LAMPORTS_PER_SOL);
+  return sendTransaction(tx, lastbk, connection, simulate);
 }
 
 export async function simpleTokenTransfer(
@@ -231,7 +222,7 @@ export async function simpleTokenTransfer(
   fees: feesParams,
   connection: Connection,
   simulate: boolean
-) {
+): Promise<TransactionResult> {
   let { walletA, walletB, amount, mint } = params;
 
   const [lastbk, accountBalance, rent] = await Promise.all([
@@ -259,7 +250,7 @@ export async function simpleTokenTransfer(
   ];
 
   const tx = await createSignedTransaction(instructions, connection, walletA, lastbk.blockhash);
-  return sendTransaction(tx, lastbk, connection, simulate, amount);
+  return sendTransaction(tx, lastbk, connection, simulate);
 }
 
 export async function getPoolKeys(mint: PublicKey, connection: Connection) {
@@ -282,7 +273,7 @@ export async function swapWithRaydiumAPI(
   keyPair: Keypair,
   fee: number,
   slippage: number
-) {
+): Promise<TransactionResult> {
   console.log('Swap using Raydium api');
   const inputTokenAccount = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
   const lastbk = await connection.getLatestBlockhash('finalized');
@@ -303,7 +294,7 @@ export async function swapWithRaydiumAPI(
     wrapSol: false,
     unwrapSol: false,
     inputAccount: inputTokenAccount.toString(),
-  })
+  });
 
   const { data: swapTransactions } = await axios.post<{
     id: string;
@@ -320,10 +311,10 @@ export async function swapWithRaydiumAPI(
     inputAccount: inputTokenAccount.toString(),
   });
 
-  const txBuf = Buffer.from(swapTransactions.data[0].transaction, 'base64')
-  const transaction = VersionedTransaction.deserialize(txBuf)
+  const txBuf = Buffer.from(swapTransactions.data[0].transaction, 'base64');
+  const transaction = VersionedTransaction.deserialize(txBuf);
   transaction.sign([keyPair]);
-  return sendTransaction(transaction!, lastbk, connection, simulate, amount);
+  return sendTransaction(transaction!, lastbk, connection, simulate);
 }
 
 export async function swapWithJupiterAPI(
@@ -336,9 +327,8 @@ export async function swapWithJupiterAPI(
   keyPair: Keypair,
   fee: number,
   slippage: number
-) {
+): Promise<TransactionResult> {
   console.log('Swap using Jupiter api');
-  // const inputTokenAccount = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
   const lastbk = await connection.getLatestBlockhash('finalized');
   const tokenAcc = getAssociatedTokenAddressSync(new PublicKey(inputMint), new PublicKey(wallet), true);
   const decimals = (await connection.getTokenAccountBalance(tokenAcc)).value.decimals;
@@ -358,7 +348,7 @@ export async function swapWithJupiterAPI(
   const swapTransactionBuf = Buffer.from(swapTransaction.swapTransaction, 'base64');
   var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
   transaction.sign([keyPair]);
-  return sendTransaction(transaction!, lastbk, connection, simulate, amount);
+  return sendTransaction(transaction!, lastbk, connection, simulate);
 }
 
 export async function swap(
@@ -482,7 +472,7 @@ export async function swap(
     }
 
     const tx = await createSignedTransaction(instructions, connection, wallet, lastbk.blockhash);
-    return sendTransaction(tx, lastbk, connection, simulate, params.amount);
+    return sendTransaction(tx, lastbk, connection, simulate);
   } catch (e) {
     console.log(e);
   }
@@ -497,7 +487,7 @@ export async function unwrapSol(wallet: Keypair, connection: Connection, amount:
     createCloseAccountInstruction(ata, wallet.publicKey, wallet.publicKey),
   ];
   const tx = await createSignedTransaction(instructions, connection, wallet);
-  return sendTransaction(tx, blockhash, connection, simulate, amount);
+  return sendTransaction(tx, blockhash, connection, simulate);
 }
 
 export async function wrapSol(wallet: Keypair, amount: number, connection: Connection, simulate: boolean) {
@@ -515,7 +505,7 @@ export async function wrapSol(wallet: Keypair, amount: number, connection: Conne
     createSyncNativeInstruction(ata),
   ];
   const tx = await createSignedTransaction(instructions, connection, wallet);
-  return sendTransaction(tx, blockhash, connection, simulate, amount);
+  return sendTransaction(tx, blockhash, connection, simulate);
 }
 
 export async function sell(params: sellParams, fees: feesParams, connection: Connection, simulate: boolean) {

@@ -24,7 +24,7 @@ const saveTransactionHelper = (
   db: sqlite3.Database
 ) => {
   if (!simulate) {
-    if (response.status === 'success') {
+    if (response.success) {
       transactionsDb.insertTransaction(db, transaction);
       if (window?.isVisible()) {
         sendToRenderer(window, ProcessType.TRANSACTION.updateEvent, transaction);
@@ -35,7 +35,7 @@ const saveTransactionHelper = (
           let data = {
             signature: transaction.signature,
             wallet: transaction.wallet,
-            status: msg.status,
+            status: msg?.status || 'fail',
             date: transaction.date,
             value: transaction.value,
             type: transaction.type,
@@ -111,9 +111,9 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
         }
 
         return {
-          status: response.status,
-          message: response?.message,
-          error: response?.error,
+          status: response?.success ? 'success' : 'fail',
+          message: response?.success ? 'Transaction successful' : 'Transaction failed',
+          error: response?.error ? response.error : null,
         };
       } catch (e) {
         console.log(e);
@@ -135,7 +135,7 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
           const transaction = {
             signature: response.signature,
             wallet: arg.wallet,
-            value: Number(response.amount),
+            value: Number(arg.amount),
             date: new Date(),
             status: 'pending',
             type: 'wrap',
@@ -145,9 +145,9 @@ const WrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
       }
 
       return {
-        status: response?.status,
-        message: response?.message,
-        error: response?.error,
+        status: response?.success ? 'success' : 'fail',
+        message: response?.success ? 'Transaction successful' : 'Transaction failed',
+        error: response?.error ? response.error : null,
       };
     }
   );
@@ -166,7 +166,7 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
           const transaction = {
             signature: response.signature,
             wallet: arg.wallet,
-            value: Number(response.amount),
+            value: Number(arg.amount),
             date: new Date(),
             status: 'pending',
             type: 'unwrap',
@@ -176,9 +176,9 @@ const UnwrapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainW
       }
 
       return {
-        status: response?.status,
-        message: response?.message,
-        error: response?.error,
+        status: response?.success ? 'success' : 'fail',
+        message: response?.success ? 'Transaction successful' : 'Transaction failed',
+        error: response?.error ? response.error : null,
       };
     }
   );
@@ -206,7 +206,7 @@ const SimpleTransferHandler = (
           const transaction = {
             signature: response.signature,
             wallet: arg.walletA,
-            value: Number(response.amount),
+            value: Number(arg.amount),
             date: new Date(),
             status: 'pending',
             type: 'transfer',
@@ -216,9 +216,9 @@ const SimpleTransferHandler = (
       }
 
       return {
-        status: response?.status,
-        message: response?.message,
-        error: response?.error,
+        status: response?.success ? 'success' : 'fail',
+        message: response?.success ? 'Transaction successful' : 'Transaction failed',
+        error: response?.error ? response.error : null,
       };
     }
   );
@@ -267,9 +267,9 @@ const SimpleTokenTransferHandler = (
       }
 
       return {
-        status: response?.status,
-        message: response?.message,
-        error: response?.error,
+        status: response?.success ? 'success' : 'fail',
+        message: response?.success ? 'Transaction successful' : 'Transaction failed',
+        error: response?.error ? response.error : null,
       };
     }
   );
