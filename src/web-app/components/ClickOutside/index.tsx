@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from 'react';
 interface IClickProps {
   children: JSX.Element | JSX.Element[];
   className?: string;
+  exclude?: string;
   onClickOutside: (ev: MouseEvent) => void;
 }
 
@@ -11,7 +12,19 @@ export default function ClickOutside(props: IClickProps) {
   useEffect(() => {
     function handleClickOutside(event) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        props.onClickOutside(event);
+        if(props.exclude)
+        {
+          if(props.exclude !== event.srcElement.className) {
+            props.onClickOutside(event);
+          }
+        }
+        else 
+        {
+          if(event.srcElement.className !== 'image-container')
+          {
+            props.onClickOutside(event);
+          }
+        }
       }
     }
 

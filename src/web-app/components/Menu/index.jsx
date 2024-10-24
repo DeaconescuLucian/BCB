@@ -4,6 +4,7 @@ import trade_icon from '../../assets/icons/trade.svg';
 import settings_icon from '../../assets/icons/settings.svg';
 import logout_icon from '../../assets/icons/logout.svg';
 import home_icon from '../../assets/icons/home.svg';
+import track_icon from '../../assets/icons/track.svg';
 import { useNavigate } from 'react-router-dom';
 import { navigateAndSave } from '../../utils';
 import { useLocation } from 'react-router-dom';
@@ -76,6 +77,9 @@ function Menu() {
         case '/trade/wrap-unwrap':
         case '/trade/transfer':
           changeSelectedTab('trade-menu-item');
+          break;
+        case '/track':
+          changeSelectedTab('track-menu-item');
           break;
         case '/settings/license':
         case '/settings/connection':
@@ -168,6 +172,17 @@ function Menu() {
           >
             <img src={trade_icon}></img>
             <span>Trade</span>
+          </div>
+          <div
+            id="track-menu-item"
+            className="app-menu-item"
+            onClick={(e) => {
+              handleMenuItemClick(e);
+              navigateAndSave(navigate, '/track');
+            }}
+          >
+            <img src={track_icon}></img>
+            <span>Tracking</span>
           </div>
           <div className="app-menu-footer">
             <div
