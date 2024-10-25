@@ -12,6 +12,7 @@ import { fetchWallets, fetchTokens, updateSelectedWallet, getWalletDetails } fro
 import { getValuesFromLocalStorage } from './store/reducers/feeAndSlippage';
 import { useNavigate } from 'react-router-dom';
 import Loading from './components/Loading';
+import Tracking from './pages/Tracking';
 
 function App() {
   const { fetchWalletsDone, fetchTokensDone, getWalletDetailsDone } = useSelector((state) => state.wallets);
@@ -59,6 +60,7 @@ function App() {
             <Route path="/wallet-page/*" element={<WalletPage></WalletPage>} />
             <Route path="/trade/*" element={<Trade></Trade>} />
             <Route path="/settings/*" element={<Settings></Settings>} />
+            <Route path="/track" element={<Tracking></Tracking>} />
           </Routes>
         </div>
       )}

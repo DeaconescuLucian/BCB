@@ -1,0 +1,448 @@
+.tracking-page {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 50px);
+
+  .content {
+    display: flex;
+    column-gap: 20px;
+    row-gap: 20px;
+    flex-wrap: wrap;
+    position: relative;
+    width: 100%;
+    height: fit-content;
+    max-height: calc(100% - 10px);
+    padding-bottom: 100px;
+  }
+}
+
+.tracking-card {
+  min-width: 295px;
+  height: 200px;
+  background-color: @color-secondary-base;
+  box-shadow: 3px 3px 6px @color-tertiary-base;
+  border-radius: 10px;
+
+  .default-card {
+    width: 100%;
+    height: 100%;
+    color: @color-font-white;
+    font-size: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 10px;
+
+    svg {
+      fill: @color-font-white;
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+
+    .dialog-wrapper {
+      cursor: default;
+    }
+
+    .new-process-dialog {
+      width: 400px;
+      min-height: 500px;
+      height: 500px;
+      background-color: @color-dark;
+      border-radius: 10px;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: start !important;
+      cursor: default;
+
+      svg {
+        margin-right: 0px;
+      }
+
+      .new-process-dialog-header {
+        position: sticky;
+        top: 0px;
+        padding: 15px;
+        background-color: @color-dark;
+        width: calc(100% - 30px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: @color-font-white;
+        font-size: 18px;
+        letter-spacing: 1px;
+        z-index: 100;
+        border-radius: 10px;
+
+        .title {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+        }
+
+        .subtitle {
+          width: 100%;
+          display: flex;
+          color: @color-font-gray;
+          font-size: 14px;
+          margin-bottom: 30px;
+        }
+
+        svg {
+          width: 20px;
+          height: 20px;
+          fill: @color-info;
+          cursor: pointer;
+        }
+      }
+
+      .new-process-dialog-content {
+        position: relative;
+        width: calc(100% - 30px);
+        padding: 0px 15px;
+        max-height: 400px;
+        height: 400px;
+        overflow-y: scroll;
+        &::-webkit-scrollbar {
+          display: none;
+        }
+
+        .dropdown-button {
+          font-size: 14px;
+          padding: 5px 10px;
+          cursor: pointer;
+          width: 202px;
+          background-color: @color-secondary-base;
+
+          svg {
+            position: relative;
+          }
+        }
+
+        .dropdown {
+          position: absolute;
+          z-index: 999999;
+          .dropdown-option {
+            font-size: 14px;
+            width: 200px;
+            padding: 5px, 10px;
+          }
+        }
+
+        .setting-label {
+          font-size: 12px;
+          color: @color-font-gray;
+          margin-bottom: 5px;
+        }
+
+        .filter-panel {
+          width: 100%;
+          font-size: 14px;
+          position: relative;
+          margin-top: 20px;
+
+          .title {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 12px;
+            margin-bottom: 15px;
+            color: @color-font-gray;
+
+            .add-button {
+              color: @color-font-white;
+              cursor: pointer;
+              margin-left: 10px;
+              svg {
+                position: relative;
+                width: 12px;
+                height: 12px;
+                margin-right: 0;
+                top: 2px;
+                fill: @color-brand;
+              }
+            }
+
+            .add-all-button {
+              color: @color-font-white;
+              cursor: pointer;
+              margin-left: 10px;
+              svg {
+                position: relative;
+                width: 12px;
+                height: 12px;
+                margin-right: 0;
+                top: 2px;
+                fill: @color-brand;
+              }
+            }
+
+            .clear-button {
+              color: @color-font-white;
+              cursor: pointer;
+              svg {
+                position: relative;
+                width: 12px;
+                height: 12px;
+                margin-right: 0;
+                top: 2px;
+                fill: @color-fail;
+              }
+            }
+          }
+
+          .filter-panel-content {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            row-gap: 10px;
+            input[type='text'] {
+              text-align: end;
+            }
+          }
+
+          button {
+            width: 100%;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            background-color: @color-base;
+          }
+        }
+
+        .buy-amount-panel {
+          margin-top: 20px;
+
+          .title {
+            width: 100%;
+
+            .tab-strip {
+              background-color: @color-dark;
+              width: 80%;
+              display: flex;
+              justify-content: end;
+              padding-left: 0px;
+              padding-top: 0px;
+              font-size: 12px;
+            }
+          }
+
+          .buy-amount-panel-content {
+            .buy-amount-input-container {
+              display: flex;
+              width: 100%;
+              justify-content: space-between;
+
+              span {
+                margin-right: 10px;
+              }
+
+              .input-container {
+                position: relative;
+                &::before {
+                  content: 'SOL';
+                  color: @color-font-dark-gray;
+                  font-size: 10px;
+                  position: absolute;
+                  right: 5px;
+                  top: 7px;
+                }
+
+                .error-message {
+                  display: none;
+                }
+              }
+
+              input {
+                background-color: @color-secondary-base;
+                color: @color-font-white;
+                
+                width: 100px;
+                
+              }
+
+              input[type='text'] {
+                text-align: end;
+                padding: 5px 30px 5px 5px;
+              }
+
+              .slider-container {
+                display: flex;
+                margin-top: 12px;
+                justify-content: space-between;
+                .range-input-wrapper {
+                  margin-right: 0;
+                  span {
+                    margin-right: 10px;
+                  }
+                }
+
+                span {
+                  margin-right: 0;
+                }
+
+                .val {
+                  color: @color-font-brand;
+                }
+              }
+            }
+            .track-duration-input-container {
+              display: flex;
+              width: 100%;
+              justify-content: space-between;
+
+              span {
+                margin-right: 10px;
+              }
+
+              .input-container {
+                position: relative;
+                &::before {
+                  content: 'SEC';
+                  color: @color-font-dark-gray;
+                  font-size: 10px;
+                  position: absolute;
+                  right: 5px;
+                  top: 7px;
+                }
+
+                .error-message {
+                  display: none;
+                }
+              }
+
+              input {
+                background-color: @color-secondary-base;
+                color: @color-font-white;
+                padding: 5px 30px 5px 5px;
+                width: 100px;
+                text-align: end;
+              }
+            }
+          }
+
+          .error-message {
+            display: block;
+            width: calc(100% - 20px);
+          }
+        }
+
+        .add-filter-dialog {
+          opacity: 1 !important;
+          background-color: @color-dark;
+          border-radius: 10px;
+          z-index: 999999;
+          top: 200px;
+          width: 300px;
+          height: 200px;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: start !important;
+          cursor: default;
+
+          .add-filter-dialog-header {
+            position: sticky;
+            top: 0px;
+            padding: 15px;
+            background-color: @color-dark;
+            width: calc(100% - 30px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: @color-font-white;
+            font-size: 18px;
+            letter-spacing: 1px;
+            z-index: 100;
+            border-radius: 10px;
+    
+            .title {
+              width: 100%;
+              display: flex;
+              justify-content: space-between;
+            }
+    
+            svg {
+              width: 20px;
+              height: 20px;
+              fill: @color-info;
+              cursor: pointer;
+            }
+          }
+
+          .add-filter-dialog-content {
+            position: relative;
+            width: calc(100% - 30px);
+            .dropdown-button {
+              margin-bottom: 10px;
+              width: calc(100% - 30px);
+            }
+
+            .dropdown {
+              width: calc(100% - 10px);
+              max-height: 60px;
+
+              .dropdown-option {
+                width: calc(100% - 23px);
+              }
+            }
+
+            input {
+              width: calc(100% - 30px);
+              color: @color-font-white;
+              padding: 5px 10px;
+              background-color: @color-secondary-base;
+            }
+
+            .checkbox {
+              margin-bottom: 15px;
+            }
+
+            button {
+              background-color: @color-secondary-base;
+              width: calc(100% - 10px);
+              font-size: 14px;
+              line-height: 14px;
+              border-radius: 5px;
+
+              svg {
+                width: 14px;
+                height: 14px;
+              }
+            }
+
+          }
+        }
+
+        .filter-row {
+          display: flex;
+          justify-content: space-between;
+          width: 100%;
+
+          input {
+            background-color: @color-secondary-base;
+            width: 100px;
+            color: @color-font-white;
+            margin-bottom: 0px;
+          }
+
+          .checkbox {
+            svg {
+              top: 3px;
+            }
+          }
+
+          .value-container {
+            display: flex;
+            svg {
+              fill: @color-font-gray;
+              cursor: pointer;
+            }
+          }
+        }
+      }
+    }
+  }
+}
