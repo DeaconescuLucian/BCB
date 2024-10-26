@@ -14,43 +14,61 @@ export async function createTableTrackProcessSettings(db: sqlite3.Database) {
 
 export function insertSettings(
   db: sqlite3.Database,
-  settings: any[],
-  callback: (result: { error?: string; message?: string }) => void
-): void {
-  const insertStatement = db.prepare(
-    `INSERT OR IGNORE INTO trackProcessSettings (trackProcessId, settingId, settingValue) VALUES (?, ?, ?)`
-  );
-
-  db.serialize(() => {
-    db.run('BEGIN TRANSACTION');
-    let hasError = false;
-
-    settings.forEach((s, index) => {
-      insertStatement.run(s.trackProcessId, s.settingId, s.settingValue, (err: Error | null) => {
+  settings: any[]
+): Promise<string> {
+  return new Promise((resolve) => {
+    const insertStatement = db.prepare(
+      `INSERT OR IGNORE INTO trackProcessSettings (trackProcessId, settingId, settingValue) VALUES (?, ?, ?)`
+    );
+    
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION', (err) => {
         if (err) {
-          console.error('Error inserting setting:', err.message);
-          hasError = true;
+          console.error('Error starting transaction:', err.message);
+          return resolve('error');
         }
-      });
-
-      if (index === settings.length - 1) {
-        insertStatement.finalize((err: Error | null) => {
-          if (err) {
-            console.error('Error finalizing statement:', err.message);
-            hasError = true;
-          }
-
-          db.run('COMMIT', (err: Error | null) => {
-            if (err) {
-              console.error('Error committing transaction:', err.message);
-              callback({ error: err.message });
-            } else if (!hasError) {
-              console.log('Transaction committed successfully.');
-              callback({ message: 'Settings inserted successfully.' });
-            }
+    
+        let hasError = false;
+    
+        const promises = settings.map((s) => {
+          return new Promise((resolve) => {
+            insertStatement.run(s.trackProcessId, s.settingId, s.settingValue, (err: any) => {
+              if (err) {
+                console.error('Error inserting setting:', err.message);
+                hasError = true;
+              }
+              resolve('mhm');
+            });
           });
         });
-      }
+    
+        Promise.all(promises).then(() => {
+          if (hasError) {
+            db.run('ROLLBACK', (err) => {
+              if (err) {
+                console.error('Error rolling back transaction:', err.message);
+              }
+              insertStatement.finalize();
+              resolve('error');
+            });
+          } else {
+            db.run('COMMIT', (err) => {
+              if (err) {
+                console.error('Error committing transaction:', err.message);
+                db.run('ROLLBACK', () => {
+                  insertStatement.finalize();
+                  resolve('error');
+                });
+              } else {
+                console.log('Transaction committed successfully.');
+                insertStatement.finalize();
+                resolve('done');
+              }
+            });
+          }
+        });
+      });
     });
   });
 }
+

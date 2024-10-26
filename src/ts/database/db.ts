@@ -17,6 +17,7 @@ export function runQuery(db: sqlite3.Database, sql: string): Promise<void> {
     return new Promise((resolve, reject) => {
         db.run(sql, (err: Error | null) => {
             if (err) {
+                console.log(err);
                 reject(err);
             } else {
                 resolve();

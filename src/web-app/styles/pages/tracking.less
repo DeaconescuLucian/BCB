@@ -235,6 +235,10 @@
               width: 100%;
               justify-content: space-between;
 
+              &.min-buy-amount {
+                margin-top: 20px;
+              }
+
               span {
                 margin-right: 10px;
               }
@@ -288,6 +292,7 @@
                 }
               }
             }
+
             .track-duration-input-container {
               display: flex;
               width: 100%;
@@ -301,6 +306,40 @@
                 position: relative;
                 &::before {
                   content: 'SEC';
+                  color: @color-font-dark-gray;
+                  font-size: 10px;
+                  position: absolute;
+                  right: 5px;
+                  top: 7px;
+                }
+
+                .error-message {
+                  display: none;
+                }
+              }
+
+              input {
+                background-color: @color-secondary-base;
+                color: @color-font-white;
+                padding: 5px 30px 5px 5px;
+                width: 100px;
+                text-align: end;
+              }
+            }
+
+            .percentage-input-container {
+              display: flex;
+              width: 100%;
+              justify-content: space-between;
+
+              span {
+                margin-right: 10px;
+              }
+
+              .input-container {
+                position: relative;
+                &::before {
+                  content: '%';
                   color: @color-font-dark-gray;
                   font-size: 10px;
                   position: absolute;

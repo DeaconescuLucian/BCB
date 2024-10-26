@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Dropdown from '../../../components/FormControls/Dropdown';
 import { addSvg, crossSvg } from '../../../assets/svg';
 import Dialog from '../../../components/Dialog';
@@ -7,8 +7,12 @@ import Checkbox from '../../../components/FormControls/Checkbox';
 import Button from '../../../components/FormControls/Button';
 import Tabstrip from '../../../components/Tabstrip';
 import Slider from '../../../components/Slider';
+import { useSelector } from 'react-redux';
+import { CustomEvents } from '../../../../ts/events';
+import { useToast } from '../../../contexts/ToastContext';
+import Loading from '../../../components/Loading';
 
-type FilterType = 'boolean' | 'number';
+type FilterType = 'bool' | 'number';
 interface INewPoolTrackFilter {
   label: string;
   type: FilterType;
@@ -17,6 +21,7 @@ interface INewPoolTrackFilter {
 
 interface INewPoolsTrackingSettings {
   filters?: {
+    id: number;
     label: string;
     type: FilterType;
     value?: any;
@@ -25,38 +30,15 @@ interface INewPoolsTrackingSettings {
 }
 
 function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
-  const FILTERS = [
-    {
-      label: 'MINIMUM_SOLANA_POOL',
-      type: 'number',
+  const { poolFilters } = useSelector((state: any) => state.poolFilters);
+  const FILTERS = poolFilters.map((f) => {
+    return {
+      id: f.id,
+      label: f.name,
+      type: f.filterType,
       value: null,
-    },
-    {
-      label: 'MAXIMUM_SOLANA_POOL',
-      type: 'number',
-      value: null,
-    },
-    {
-      label: 'MINIMUM_POOL_PERCENTAGE',
-      type: 'number',
-      value: null,
-    },
-    {
-      label: 'MINIMUM_POTATO_COUNT',
-      type: 'number',
-      value: null,
-    },
-    {
-      label: 'NOT_MINTABLE',
-      type: 'boolean',
-      value: null,
-    },
-    {
-      label: 'NOT_FREEZABLE',
-      type: 'boolean',
-      value: null,
-    },
-  ] as INewPoolTrackFilter[];
+    } as INewPoolTrackFilter;
+  });
   const [addedFilters, setAddedFilters] = useState(props.filters || []);
   const [showAddFilterDialog, setShowAddFilterDialog] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(
@@ -76,11 +58,20 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
   ]);
   const [buyAmountTab, setBuyAmountTab] = useState({ name: 'Fixed', url: '/track' });
   const [buyAmount, setBuyAmount] = useState((null as unknown) as number);
+  const [minBuyAmount, setMinBuyAmount] = useState((null as unknown) as number);
   const [budget, setBudget] = useState((null as unknown) as number);
   const [buyAmountError, setBuyAmountError] = useState((null as unknown) as string);
+  const [minBuyAmountError, setMinBuyAmountError] = useState((null as unknown) as string);
   const [budgetError, setBudgetError] = useState((null as unknown) as string);
   const [trackDuration, setTrackDuration] = useState(500);
   const [trackDurationError, setTrackDurationError] = useState((null as unknown) as string);
+  const [targetPercentage, setTargetPercentage] = useState(200);
+  const [targetPercentageError, setTargetPercentageError] = useState((null as unknown) as string);
+  const [stopLossPercentage, setStopLossPercentage] = useState(50);
+  const [stopLossPercentageError, setStopLossPercentageError] = useState((null as unknown) as string);
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(null);
 
   useEffect(() => {
     setDropdownOptions(FILTERS.filter((e) => !addedFilters.find((f) => f.label === e.label)));
@@ -104,6 +95,15 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
     return null;
   };
 
+  const validateMinBuyAmount = (value) => {
+    if (!value) {
+      setMinBuyAmountError('Please select a minimum buy amount');
+      return 'Please select a minimum buy amount';
+    }
+    setMinBuyAmountError((null as unknown) as string);
+    return null;
+  };
+
   const validateBudget = (value) => {
     if (!value) {
       setBudgetError('Please select a budget');
@@ -122,13 +122,49 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
     return null;
   };
 
-  const createProcess = () => {
-    
-  }
+  const validateTargetPercentage = (value) => {
+    if (!value) {
+      setTargetPercentageError('Please select a target percentage');
+      return 'Please select a target percentage';
+    }
+    setTargetPercentageError((null as unknown) as string);
+    return null;
+  };
+
+  const validateStopLossPercentage = (value) => {
+    if (!value) {
+      setStopLossPercentageError('Please select a stop loss percentage');
+      return 'Please select a stop loss percentage';
+    }
+    setStopLossPercentageError((null as unknown) as string);
+    return null;
+  };
+
+  const createProcess = async () => {
+    setLoading(true);
+    const result = await window.electron.invoke(CustomEvents.createTrackProcessEvent, {
+      trackProcessTypeId: 0,
+      createdOn: new Date().toISOString(),
+      poolFilters: addedFilters,
+      settings: [
+        { value: budget, id: 0 },
+        { value: buyAmountTab.name, id: 1 },
+        { value: buyAmount, id: 2 },
+        { value: minBuyAmount, id: 3 },
+        { value: trackDuration, id: 4 },
+        { value: targetPercentage, id: 5 },
+        { value: stopLossPercentage, id: 6 },
+      ],
+    });
+    if (result) {
+      showToast('NPT Process created successfully', 'success');
+      setLoading(false);
+    }
+  };
 
   return (
     <>
-      <div className="filter-panel">
+      <div className="filter-panel" ref={loadingRef}>
         <div className="title">
           <span>Filters</span>
           <span>
@@ -249,24 +285,38 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
               </>
             )}
             {buyAmountTab.name === 'Dynamic' && (
-              <div className="buy-amount-input-container">
-                <Slider
-                  onChange={(val) => {
-                    setBuyAmount(val);
-                  }}
-                  min={0}
-                  max={100}
-                  noInput={true}
-                  step={'0.1'}
-                  theme="primary"
-                  value={buyAmount}
-                  label={
-                    <span>
-                      Amount (<span className="val"> {buyAmount} % </span>)
-                    </span>
-                  }
-                ></Slider>
-              </div>
+              <>
+                <div className="buy-amount-input-container">
+                  <Slider
+                    onChange={(val) => {
+                      setBuyAmount(val);
+                    }}
+                    min={0}
+                    max={100}
+                    noInput={true}
+                    step={'0.1'}
+                    theme="primary"
+                    value={buyAmount}
+                    label={
+                      <span>
+                        Amount (<span className="val"> {buyAmount} % </span>)
+                      </span>
+                    }
+                  ></Slider>
+                </div>
+                <div className="buy-amount-input-container min-buy-amount">
+                  <span>Min amount</span>
+                  <Input
+                    type="number"
+                    onChange={(val) => {
+                      setMinBuyAmount(val);
+                    }}
+                    validate={validateMinBuyAmount}
+                    value={minBuyAmount}
+                  ></Input>
+                </div>
+                {minBuyAmountError && <span className="error-message">{minBuyAmountError}</span>}
+              </>
             )}
             {buyAmountTab.name === 'Algorithmic' && <span>Comming soon</span>}
           </div>
@@ -316,6 +366,50 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
           </div>
         </div>
 
+        <div className="buy-amount-panel">
+          <div className="title">
+            <span>Target percentage *</span>
+          </div>
+          <div className="buy-amount-panel-content">
+            <>
+              <div className="percentage-input-container">
+                <span>Percentage</span>
+                <Input
+                  type="number"
+                  onChange={(val) => {
+                    setTargetPercentage(val);
+                  }}
+                  validate={validateTargetPercentage}
+                  value={targetPercentage}
+                ></Input>
+              </div>
+              {targetPercentageError && <span className="error-message">{targetPercentageError}</span>}
+            </>
+          </div>
+        </div>
+
+        <div className="buy-amount-panel">
+          <div className="title">
+            <span>Stop loss percentage *</span>
+          </div>
+          <div className="buy-amount-panel-content">
+            <>
+              <div className="percentage-input-container">
+                <span>Percentage</span>
+                <Input
+                  type="number"
+                  onChange={(val) => {
+                    setStopLossPercentage(val);
+                  }}
+                  validate={validateStopLossPercentage}
+                  value={stopLossPercentage}
+                ></Input>
+              </div>
+              {stopLossPercentageError && <span className="error-message">{stopLossPercentageError}</span>}
+            </>
+          </div>
+        </div>
+
         <Button
           onClick={() => createProcess()}
           type="add"
@@ -325,6 +419,7 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
           tooltipDisabled="Make sure to set values for all of the required parameters"
         ></Button>
       </div>
+      {loading && <Loading parentRef={loadingRef}></Loading>}
       {showAddFilterDialog && (
         <Dialog onClose={() => setShowAddFilterDialog(false)} className="add-filter-dialog">
           <>

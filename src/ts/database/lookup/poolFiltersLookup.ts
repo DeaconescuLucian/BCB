@@ -20,3 +20,20 @@ export async function insertTrackProcessSettingsLookupValues(db: sqlite3.Databas
                  (5, 'NOT_FREEZABLE', 'bool');`;
     await runQuery(db, sql);    
 }
+
+export function getPoolFilters(db: sqlite3.Database, callback: (err: Error | null, rows?: any[]) => void): void {
+    db.serialize(() => {
+      db.all(
+        `SELECT * FROM poolFiltersLookup`,
+        (err: Error | null, rows: any[]) => {
+          if (err) {
+            console.error('Error retrieving poolFilters:', err.message);
+            callback(err);
+          } else {
+            console.log('Retrieved poolFilters.');
+            callback(null, rows);
+          }
+        }
+      );
+    });
+  }
