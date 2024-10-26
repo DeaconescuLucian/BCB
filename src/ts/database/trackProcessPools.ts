@@ -16,6 +16,6 @@ export async function createTableTrackProcessPools(db: sqlite3.Database) {
 
 export async function insertTrackProcessPool(db: sqlite3.Database, trackProcessPool: any) {
     const sql = `INSERT OR IGNORE INTO trackProcessPools (trackProcessId, poolId, trackedOn, shouldUntrackOn) 
-    VALUES (${trackProcessPool.trackProcessId}, ${trackProcessPool.poolId}, ${trackProcessPool.trackedOn}, ${trackProcessPool.shouldUntrackOn})`;
+    VALUES ('${trackProcessPool.trackProcessId}', ${trackProcessPool.poolId}, ${trackProcessPool.trackedOn}, ${trackProcessPool.shouldUntrackOn})`;
     await runQuery(db, sql);
 }

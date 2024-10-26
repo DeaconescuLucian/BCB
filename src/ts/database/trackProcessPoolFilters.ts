@@ -14,43 +14,62 @@ export async function createTableTrackProcessPoolFilters(db: sqlite3.Database) {
 
 export function insertPoolFilters(
   db: sqlite3.Database,
-  filters: any[],
-  callback: (result: { error?: string; message?: string }) => void
-): void {
-  const insertStatement = db.prepare(
-    `INSERT OR IGNORE INTO trackProcessPoolFilters (trackProcessId, poolFilterId, filterValue) VALUES (?, ?, ?)`
-  );
-
-  db.serialize(() => {
-    db.run('BEGIN TRANSACTION');
-    let hasError = false;
-
-    filters.forEach((f, index) => {
-      insertStatement.run(f.trackProcessId, f.poolFilterId, f.filterValue, (err: Error | null) => {
+  filters: any[]
+): Promise<string> {
+  return new Promise(async (resolve) => {
+    const insertStatement = db.prepare(
+      `INSERT OR IGNORE INTO trackProcessPoolFilters (trackProcessId, poolFilterId, filterValue) VALUES (?, ?, ?)`
+    );
+    
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION', (err) => {
         if (err) {
-          console.error('Error inserting pool filter:', err.message);
-          hasError = true;
+          console.error('Error starting transaction:', err.message);
+          return resolve('error');
         }
-      });
-
-      if (index === filters.length - 1) {
-        insertStatement.finalize((err: Error | null) => {
-          if (err) {
-            console.error('Error finalizing statement:', err.message);
-            hasError = true;
-          }
-
-          db.run('COMMIT', (err: Error | null) => {
-            if (err) {
-              console.error('Error committing transaction:', err.message);
-              callback({ error: err.message });
-            } else if (!hasError) {
-              console.log('Transaction committed successfully.');
-              callback({ message: 'Pool filters inserted successfully.' });
-            }
+    
+        let hasError = false;
+    
+        const promises = filters.map((f) => {
+          return new Promise((resolve) => {
+            insertStatement.run(f.trackProcessId, f.poolFilterId, f.filterValue, (err: any) => {
+              if (err) {
+                console.error('Error inserting pool filter:', err.message);
+                hasError = true;
+                resolve('ceva eroare'); 
+              } else {
+                resolve('da');
+              }
+            });
           });
         });
-      }
+    
+        Promise.all(promises).then(() => {
+          if (hasError) {
+            db.run('ROLLBACK', (err) => {
+              if (err) {
+                console.error('Error rolling back transaction:', err.message);
+              }
+              insertStatement.finalize();
+              resolve('error');
+            });
+          } else {
+            db.run('COMMIT', (err) => {
+              if (err) {
+                console.error('Error committing transaction:', err.message);
+                db.run('ROLLBACK', () => {
+                  insertStatement.finalize();
+                  resolve('error');
+                });
+              } else {
+                console.log('Transaction committed successfully.');
+                insertStatement.finalize();
+                resolve('done');
+              }
+            });
+          }
+        });
+      });
     });
   });
 }

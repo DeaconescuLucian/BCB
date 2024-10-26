@@ -1,6 +1,8 @@
 import handleWallet from './WalletHandler'
 import handleConnection from './ConnectionHandler';
 import handleToken from './TokenHandler';
+import handlePoolFilter from './PoolFilterHandler';
+import handleTrackProcess from './TrackProcessHandler';
 import sqlite3 from 'sqlite3';
 import { Connection } from '@solana/web3.js';
 import handleTransaction from './TransactionHandler';
@@ -12,4 +14,6 @@ export function setupHandlers(db: sqlite3.Database, solanaConnection: Connection
     handleConnection(db, solanaConnection, mainWindow);
     handleToken(db, solanaConnection);
     handleTransaction(db, solanaConnection, mainWindow);
+    handlePoolFilter(db);
+    handleTrackProcess(db);
 }

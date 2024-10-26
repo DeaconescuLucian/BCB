@@ -10,12 +10,14 @@ import WalletPage from './pages/Wallet';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchWallets, fetchTokens, updateSelectedWallet, getWalletDetails } from './store/reducers/wallets';
 import { getValuesFromLocalStorage } from './store/reducers/feeAndSlippage';
+import { fetchPoolFilters } from './store/reducers/poolFilters';
 import { useNavigate } from 'react-router-dom';
 import Loading from './components/Loading';
 import Tracking from './pages/Tracking';
 
 function App() {
   const { fetchWalletsDone, fetchTokensDone, getWalletDetailsDone } = useSelector((state) => state.wallets);
+  const { fetchPoolFiltersDone } = useSelector((state) => state.poolFilters);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [mainHeight, setMainHeight] = useState(607);
@@ -31,6 +33,7 @@ function App() {
       dispatch(getWalletDetails(pub));
     }
     dispatch(fetchTokens(true));
+    dispatch(fetchPoolFilters(true));
     navigate(window.localStorage.getItem('url') || `/home`);
   }, []);
 
@@ -53,7 +56,7 @@ function App() {
           mainContainerRef.current.style.maxHeight = `${newSize}px`;
         }}
       ></TransactionHistory>
-      {(fetchWalletsDone && fetchTokensDone && getWalletDetailsDone) && (
+      {(fetchWalletsDone && fetchTokensDone && getWalletDetailsDone && fetchPoolFiltersDone) && (
         <div className="main-container" ref={mainContainerRef}>
           <Routes>
             <Route path="/home" element={<Home></Home>} />
@@ -65,7 +68,7 @@ function App() {
         </div>
       )}
 
-      {(!fetchWalletsDone || !fetchTokensDone || !getWalletDetailsDone) && (
+      {(!fetchWalletsDone || !fetchTokensDone || !getWalletDetailsDone || !fetchPoolFiltersDone) && (
         <Loading parentRef={appRef} text={'Gettings things ready'}></Loading>
       )}
     </div>

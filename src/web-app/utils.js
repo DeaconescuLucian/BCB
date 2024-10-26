@@ -26,7 +26,7 @@ export function timeAgo(date) {
         return `${days} days ago`;
     } else if (weeks === 1) {
         return '1 week ago';
-    } else if (weeks < 4) {
+    } else if (weeks <= 4) {
         return `${weeks} weeks ago`;
     } else if (months === 1) {
         return '1 month ago';

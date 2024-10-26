@@ -13,6 +13,7 @@ export async function createTableTrackProcess(db: sqlite3.Database) {
 }
 
 export async function insertTrackProcess(db: sqlite3.Database, trackProcess: any) {
-  const sql = `INSERT OR IGNORE INTO trackProcess (id, trackProcessTypeId, createdOn, walletPublicKey, walletSecretKey) VALUES (${trackProcess.id}, ${trackProcess.trackProcessTypeId}, ${trackProcess.createdOn})`;
+  const sql = `INSERT OR IGNORE INTO trackProcess (id, trackProcessTypeId, createdOn, walletPublicKey, walletSecretKey) VALUES 
+  ('${trackProcess.id}', ${trackProcess.trackProcessTypeId}, '${trackProcess.createdOn}', '${trackProcess.walletPublicKey}', '${trackProcess.walletSecretKey}')`;
   await runQuery(db, sql);
 }

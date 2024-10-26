@@ -62,7 +62,9 @@ export const CustomEvents = {
   addTokenToFavouritesEvent: 'add-token-to-favourites',
   removeTokenFromFavouritesEvent: 'remove-token-from-favourites',
   simpleTransferEvent: 'simple-transfer',
-  tokenTransferEvent: 'token-transfer'
+  tokenTransferEvent: 'token-transfer',
+  getPoolFiltersEvent: 'get-pool-filters',
+  createTrackProcessEvent: 'create-track-process'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {
