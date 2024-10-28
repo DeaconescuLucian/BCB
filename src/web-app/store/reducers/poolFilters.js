@@ -7,7 +7,7 @@ const initialState = {
   error: null,
 };
 
-export const fetchPoolFilters = createAsyncThunk('wallets/fetchPoolFilters', async (updateStatus) => {
+export const fetchPoolFilters = createAsyncThunk('poolFilters/fetchPoolFilters', async (updateStatus) => {
   try {
     const result = await window.electron.invoke(CustomEvents.getPoolFiltersEvent);
     if (result && result.success) {
@@ -35,7 +35,6 @@ const poolFiltersSlice = createSlice({
       })
       .addCase(fetchPoolFilters.fulfilled, (state, action) => {
         state.poolFilters = action.payload.data;
-        console.log(action.payload.data)
         if (action.payload.updateStatus)
           state.fetchPoolFiltersDone = true;
       })

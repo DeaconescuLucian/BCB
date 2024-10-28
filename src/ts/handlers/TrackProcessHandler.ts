@@ -77,8 +77,34 @@ const CreateTrackProcessHandler = (db: sqlite3.Database) => {
   });
 };
 
+const GetTrackProcessesHandler = (db: sqlite3.Database) => {
+  registerHandler(CustomEvents.getTrackProcessesEvent, async () => {
+    return new Promise((resolve, reject) => {
+      trackProcessDb.getNPTProcesses(db, async (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          try {
+            const trackProcesses = await Promise.all(
+              rows?.map(async (row: any) => {
+                return {
+                  ...row,
+                };
+              }) || []
+            );
+            resolve(trackProcesses);
+          } catch (error) {
+            reject(error);
+          }
+        }
+      });
+    });
+  });
+};
+
 const handleTrackProcess = (db: sqlite3.Database) => {
   CreateTrackProcessHandler(db);
+  GetTrackProcessesHandler(db);
 };
 
 export default handleTrackProcess;

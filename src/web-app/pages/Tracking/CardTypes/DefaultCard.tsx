@@ -11,7 +11,7 @@ interface TrackingType {
   name: string;
 }
 
-const TrackingCard: React.FC<DefaultCardProps> = () => {
+const DefaultTrackingCard: React.FC<DefaultCardProps> = () => {
   const [showDialog, setShowDialog] = useState(false);
 
   const trackingTypeOptions = [
@@ -80,4 +80,4 @@ const TrackingCard: React.FC<DefaultCardProps> = () => {
   );
 };
 
-export default TrackingCard;
+export default DefaultTrackingCard;

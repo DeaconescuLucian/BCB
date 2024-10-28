@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchWallets, fetchTokens, updateSelectedWallet, getWalletDetails } from './store/reducers/wallets';
 import { getValuesFromLocalStorage } from './store/reducers/feeAndSlippage';
 import { fetchPoolFilters } from './store/reducers/poolFilters';
+import { fetchTrackProcesses } from './store/reducers/trackProcess';
 import { useNavigate } from 'react-router-dom';
 import Loading from './components/Loading';
 import Tracking from './pages/Tracking';
@@ -18,6 +19,7 @@ import Tracking from './pages/Tracking';
 function App() {
   const { fetchWalletsDone, fetchTokensDone, getWalletDetailsDone } = useSelector((state) => state.wallets);
   const { fetchPoolFiltersDone } = useSelector((state) => state.poolFilters);
+  const { fetchTrackProcessesDone } = useSelector((state) => state.trackProcess);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [mainHeight, setMainHeight] = useState(607);
@@ -34,6 +36,7 @@ function App() {
     }
     dispatch(fetchTokens(true));
     dispatch(fetchPoolFilters(true));
+    dispatch(fetchTrackProcesses(true));
     navigate(window.localStorage.getItem('url') || `/home`);
   }, []);
 
@@ -56,7 +59,7 @@ function App() {
           mainContainerRef.current.style.maxHeight = `${newSize}px`;
         }}
       ></TransactionHistory>
-      {(fetchWalletsDone && fetchTokensDone && getWalletDetailsDone && fetchPoolFiltersDone) && (
+      {(fetchWalletsDone && fetchTokensDone && getWalletDetailsDone && fetchPoolFiltersDone && fetchTrackProcessesDone) && (
         <div className="main-container" ref={mainContainerRef}>
           <Routes>
             <Route path="/home" element={<Home></Home>} />
@@ -68,7 +71,7 @@ function App() {
         </div>
       )}
 
-      {(!fetchWalletsDone || !fetchTokensDone || !getWalletDetailsDone || !fetchPoolFiltersDone) && (
+      {(!fetchWalletsDone || !fetchTokensDone || !getWalletDetailsDone || !fetchPoolFiltersDone || !fetchTrackProcessesDone) && (
         <Loading parentRef={appRef} text={'Gettings things ready'}></Loading>
       )}
     </div>
