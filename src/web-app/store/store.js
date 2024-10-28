@@ -3,13 +3,15 @@ import walletsReducer from './reducers/wallets';
 import terminalReducer from './reducers/terminal';
 import feeAndSlippageReducer from './reducers/feeAndSlippage';
 import poolFiltersReducer from './reducers/poolFilters';
+import trackProcessReducer from './reducers/trackProcess';
 
 const store = configureStore({
   reducer: {
     wallets: walletsReducer,
     terminal: terminalReducer,
     feeAndSlippage: feeAndSlippageReducer,
-    poolFilters: poolFiltersReducer
+    poolFilters: poolFiltersReducer,
+    trackProcess: trackProcessReducer
   },
 });
 

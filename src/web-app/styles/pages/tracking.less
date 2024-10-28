@@ -18,7 +18,9 @@
 }
 
 .tracking-card {
+  position: relative;
   min-width: 295px;
+  width: 295px;
   height: 200px;
   background-color: @color-secondary-base;
   box-shadow: 3px 3px 6px @color-tertiary-base;
@@ -484,4 +486,118 @@
       }
     }
   }
+
+  .npt-card {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    font-size: 12px;
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      top: -2px;
+    }
+
+    .row {
+      position: relative;
+      display: flex;
+      width: calc(100% - 10px);
+      padding: 5px;
+      color: @color-tertiary-base-hover;
+
+      &.space-between {
+        justify-content: space-between;
+      }
+
+      &.center {
+        justify-content: center;
+        padding: 0;
+      }
+
+      &.title {
+        margin-bottom: 5px;
+        span {
+          color: @color-brand;
+
+          &.secondary {
+            color: @color-brand-secondary;
+          }
+        }
+      }
+
+      .col-6 {
+        width: 50%;
+      }
+
+      .process-status {
+        &.running {
+          color: @color-success;
+        }
+        &.idle {
+          color: @color-pending;
+        }
+      }
+
+      .truncate {
+        position: relative;
+        max-width: 80%;
+      }
+
+      span {
+        &.icon {
+          position: relative;
+          svg {
+            fill: @color-brand;
+          }
+          margin-right: 10px;
+        }
+
+        &.profit {
+          svg {
+            fill: @color-success;
+            position: relative;
+            margin-right: 10px;
+          }
+          color: @color-success;
+        }
+
+        &.loss {
+          svg {
+            fill: @color-fail;
+            position: relative;
+            margin-right: 10px;
+          }
+          color: @color-fail;
+        }
+
+        &.info {
+          color: @color-font-white;
+        }
+
+        &.currency {
+          font-size: 10px;
+          color: @color-tertiary-base-hover;
+          margin-left: 5px;
+        }
+
+        &.copy-icon {
+          svg {
+            width: 12px !important;
+            height: 12px !important;
+          }
+
+        }
+      }
+    }
+
+    .npt-card-content {
+      margin-top: 20px;
+    }
+  }
+
+
 }

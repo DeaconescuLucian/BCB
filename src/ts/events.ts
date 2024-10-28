@@ -1,3 +1,4 @@
+
 export type ScriptConfig = {
   file: string;
   startEvent: string;
@@ -64,7 +65,8 @@ export const CustomEvents = {
   simpleTransferEvent: 'simple-transfer',
   tokenTransferEvent: 'token-transfer',
   getPoolFiltersEvent: 'get-pool-filters',
-  createTrackProcessEvent: 'create-track-process'
+  createTrackProcessEvent: 'create-track-process',
+  getTrackProcessesEvent: 'get-track-processes'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {
