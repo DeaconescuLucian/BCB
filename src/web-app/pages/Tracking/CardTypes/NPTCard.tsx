@@ -11,7 +11,6 @@ const NPTCard = memo((props: NPTCardProps) => {
   return (
     <div
       className={`npt-card`}
-      key={data.id}
       onClick={() => {
         //
       }}

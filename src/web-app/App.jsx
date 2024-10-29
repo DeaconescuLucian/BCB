@@ -11,10 +11,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchWallets, fetchTokens, updateSelectedWallet, getWalletDetails } from './store/reducers/wallets';
 import { getValuesFromLocalStorage } from './store/reducers/feeAndSlippage';
 import { fetchPoolFilters } from './store/reducers/poolFilters';
-import { fetchTrackProcesses } from './store/reducers/trackProcess';
+import { fetchTrackProcesses,  updateTrackProcess } from './store/reducers/trackProcess';
 import { useNavigate } from 'react-router-dom';
 import Loading from './components/Loading';
 import Tracking from './pages/Tracking';
+import TrackProcess from './pages/Tracking/TrackProcess';
+import { CustomEvents } from '../ts/events';
 
 function App() {
   const { fetchWalletsDone, fetchTokensDone, getWalletDetailsDone } = useSelector((state) => state.wallets);
@@ -38,6 +40,13 @@ function App() {
     dispatch(fetchPoolFilters(true));
     dispatch(fetchTrackProcesses(true));
     navigate(window.localStorage.getItem('url') || `/home`);
+    const unsubscribeUpdateTrackEvent = window.electron.on(CustomEvents.updateTrackProcessEvent, (msg) => {
+      dispatch(updateTrackProcess(msg));
+    });
+
+    return () => {
+      unsubscribeUpdateTrackEvent();
+    }
   }, []);
 
   return (
@@ -67,6 +76,7 @@ function App() {
             <Route path="/trade/*" element={<Trade></Trade>} />
             <Route path="/settings/*" element={<Settings></Settings>} />
             <Route path="/track" element={<Tracking></Tracking>} />
+            <Route path="/track-process/*" element={<TrackProcess></TrackProcess>} />
           </Routes>
         </div>
       )}

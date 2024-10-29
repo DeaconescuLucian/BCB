@@ -302,6 +302,7 @@ function Transfer() {
           <Switch
             theme="primary"
             value={simulate}
+            label={'Simulate'}
             onChange={() => {
               updatePageSettings('simulate', !simulate, 'swap-settings');
               setSimulate(!simulate);

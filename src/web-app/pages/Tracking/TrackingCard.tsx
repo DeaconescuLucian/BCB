@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import DefaultTrackingCard from './CardTypes/DefaultCard';
 import NPTCard from './CardTypes/NPTCard';
+import { navigateAndSave } from '../../utils';
+import { useNavigate } from 'react-router-dom';
 
 type TrackingCardType = 'default' | 'NPT ( New Pools Track )';
 
@@ -10,6 +12,8 @@ interface TrackingCardProps {
 }
 
 const TrackingCard: React.FC<TrackingCardProps> = ({ type, data }) => {
+
+  const navigate = useNavigate();
 
   const renderView = () => {
     switch (type) {
@@ -23,7 +27,9 @@ const TrackingCard: React.FC<TrackingCardProps> = ({ type, data }) => {
   };
 
   return (
-    <div className={`tracking-card`}>
+    <div className={`tracking-card`} key={data?.id} onClick={() => {
+      navigateAndSave(navigate, `/track-process/${data.id}`, true);
+    }}>
       {renderView()}
     </div>
   );

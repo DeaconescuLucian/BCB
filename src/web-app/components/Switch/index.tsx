@@ -25,7 +25,7 @@ const Switch = (props: ISwitch) => {
 
   return (
     <div className="switch-container">
-      <div className="label">Simulate</div>
+      <div className="label">{props.label}</div>
       <label className={`switch ${props.theme ? `theme-${props.theme}` : ''}`}>
         <input
           ref={inputRef}
@@ -36,7 +36,7 @@ const Switch = (props: ISwitch) => {
             setIsDirty(true);
           }}
         />
-        <span className="slider"></span>
+        <span className={`slider ${props.theme ? `theme-${props.theme}` : ''}`}></span>
       </label>
     </div>
   );

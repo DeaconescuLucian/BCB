@@ -10,6 +10,7 @@ interface IColumn {
   iconDefault?: string;
   percentWidth: number;
   canCopy?: boolean;
+  template: (value: any) => JSX.Element;
 }
 
 interface IAction {
@@ -115,7 +116,9 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
                           {column.iconProperty && column.iconDefault && !row[column.iconProperty] && (
                             <img className="no-hover" src={column.iconDefault}></img>
                           )}
-                          {row[column.propertyName] ?? '-'}
+                          {
+                            column.template ? column.template(row[column.propertyName]) : row[column.propertyName]  ?? '-'
+                          }
                         </td>
                       )}
                     </>

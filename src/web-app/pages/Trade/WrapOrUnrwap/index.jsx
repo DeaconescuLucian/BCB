@@ -143,6 +143,7 @@ function WrapOrUnrwap() {
           <Switch
             theme="primary"
             value={simulate}
+            label={'Simulate'}
             onChange={() => {
               updatePageSettings('simulate', !simulate, 'swap-settings');
               setSimulate(!simulate);
@@ -173,7 +174,7 @@ function WrapOrUnrwap() {
         <div className="header-buttons">
           {' '}
           <FeeAndSlippageSelector></FeeAndSlippageSelector>
-          <Switch theme="primary" value={simulate} onChange={() => setSimulate(!simulate)}></Switch>
+          <Switch theme="primary" label={'Simulate'} value={simulate} onChange={() => setSimulate(!simulate)}></Switch>
           <Button
             onClick={() => {
               handleUpdateWallet();

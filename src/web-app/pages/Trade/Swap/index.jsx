@@ -312,6 +312,7 @@ function Swap() {
           <Switch
             theme="primary"
             value={simulate}
+            label={'Simulate'}
             onChange={() => {
               updatePageSettings('simulate', !simulate, pageSettings);
               setSimulate(!simulate);

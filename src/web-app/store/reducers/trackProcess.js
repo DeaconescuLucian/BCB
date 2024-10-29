@@ -4,6 +4,7 @@ import { CustomEvents } from '../../../ts/events';
 const initialState = {
   trackProcesses: [],
   fetchTrackProcessesDone: true,
+  unsubscribe: null,
   error: null,
 };
 
@@ -27,6 +28,25 @@ export const fetchTrackProcesses = createAsyncThunk('trackProcess/fetchTrackProc
 const trackProcessSlice = createSlice({
   name: 'trackProcess',
   initialState,
+  reducers: {
+    updateTrackProcess: (state, action) => {
+        const update = action.payload;
+        switch (update.updateType) {
+          case 'start':
+            state.trackProcesses = state.trackProcesses.map((track) =>
+              track.id === update.id ? { ...track, isActive: true } : track
+            );
+            break;
+          case 'stop':
+            state.trackProcesses = state.trackProcesses.map((track) =>
+              track.id === update.id ? { ...track, isActive: false } : track
+            );
+            break;
+          default:
+            break;
+        }
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchTrackProcesses.pending, (state, action) => {
@@ -35,11 +55,11 @@ const trackProcessSlice = createSlice({
       })
       .addCase(fetchTrackProcesses.fulfilled, (state, action) => {
         state.trackProcesses = action.payload.data;
-        console.log(action.payload.data);
         if (action.payload.updateStatus)
           state.fetchTrackProcessesDone = true;
       })
   },
 });
 
+export const { updateTrackProcess, unsubscribe } = trackProcessSlice.actions;
 export default trackProcessSlice.reducer;
