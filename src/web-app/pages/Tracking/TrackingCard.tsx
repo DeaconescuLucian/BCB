@@ -28,7 +28,7 @@ const TrackingCard: React.FC<TrackingCardProps> = ({ type, data }) => {
 
   return (
     <div className={`tracking-card`} key={data?.id} onClick={() => {
-      navigateAndSave(navigate, `/track-process/${data.id}`, true);
+      navigateAndSave(navigate, `/track-process?id=${data.id}`, true);
     }}>
       {renderView()}
     </div>

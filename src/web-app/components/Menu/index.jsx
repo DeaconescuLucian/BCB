@@ -81,6 +81,9 @@ function Menu() {
         case '/track':
           changeSelectedTab('track-menu-item');
           break;
+        case '/track-process':
+          changeSelectedTab('track-menu-item');
+          break;
         case '/settings/license':
         case '/settings/connection':
           changeSelectedTab('settings-menu-item');

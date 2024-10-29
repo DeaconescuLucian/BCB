@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 
 const TrackProcess = () => {
   const { trackProcesses } = useSelector((state) => state.trackProcess);
-  const trackProcess = trackProcesses.find(tp => tp.id === window.location.pathname.split('/')[2]);
+  const trackProcess = trackProcesses.find(tp => tp.id === window.location.search.split('=')[1]);
   
   const renderView = () => {
     switch (trackProcess.processType) {
