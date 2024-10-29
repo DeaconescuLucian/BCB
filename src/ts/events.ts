@@ -34,7 +34,7 @@ export const ProcessType: ConfigDict = {
     stopEvent: 'stop-transaction-process',
     updateEvent: 'transaction-update',
     type: 'transaction',
-  },
+  }
 };
 
 export const CustomEvents = {
@@ -66,7 +66,11 @@ export const CustomEvents = {
   tokenTransferEvent: 'token-transfer',
   getPoolFiltersEvent: 'get-pool-filters',
   createTrackProcessEvent: 'create-track-process',
-  getTrackProcessesEvent: 'get-track-processes'
+  getTrackProcessesEvent: 'get-track-processes',
+  getTrackProcessDetailsEvent:  'get-track-process-details',
+  startTrackProcessEvent: 'start-track-process',
+  stopTrackProcessEvent: 'stop-track-process',
+  updateTrackProcessEvent: 'update-track-process',
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

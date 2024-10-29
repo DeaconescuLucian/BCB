@@ -1,10 +1,11 @@
-import { registerHandler } from '../ipcHandler';
-import { CustomEvents } from '../events';
+import { registerHandler, sendToRenderer } from '../ipcHandler';
+import { CustomEvents, ProcessType } from '../events';
 import sqlite3 from 'sqlite3';
 import { generateWallet } from '../solana/wallet';
 import * as trackProcessDb from '../database/trackProcess';
 import * as trackProcessPoolFiltersDb from '../database/trackProcessPoolFilters';
 import * as trackProcessSettingsDb from '../database/trackProcessSettings';
+import { BrowserWindow } from 'electron';
 
 function generateGUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -102,9 +103,184 @@ const GetTrackProcessesHandler = (db: sqlite3.Database) => {
   });
 };
 
-const handleTrackProcess = (db: sqlite3.Database) => {
+const GetTrackProcessDetailsHandler = (db: sqlite3.Database) => {
+  registerHandler(CustomEvents.getTrackProcessDetailsEvent, async (e: any, arg: string) => {
+    return new Promise(async (resolve, reject) => {
+      const poolFiltersPromise = new Promise((resolve, reject) => {
+        trackProcessDb.getPoolFilters(db, arg, async (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            try {
+              const poolFilters = await Promise.all(
+                rows?.map(async (row: any) => {
+                  return {
+                    ...row,
+                  };
+                }) || []
+              );
+              resolve(poolFilters);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        });
+      });
+
+      const settingsPromise = new Promise((resolve, reject) => {
+        trackProcessDb.getSettings(db, arg, async (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            try {
+              const settings = await Promise.all(
+                rows?.map(async (row: any) => {
+                  return {
+                    ...row,
+                  };
+                }) || []
+              );
+              resolve(settings);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        });
+      });
+
+      const poolsPromise = new Promise((resolve, reject) => {
+        trackProcessDb.getTrackedPools(db, arg, async (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            try {
+              const pools = await Promise.all(
+                rows?.map(async (row: any) => {
+                  return {
+                    ...row,
+                  };
+                }) || []
+              );
+              resolve(pools);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        });
+      });
+
+      const transactionsPromise = new Promise((resolve, reject) => {
+        trackProcessDb.getTransactions(db, arg, async (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            try {
+              const transactions = await Promise.all(
+                rows?.map(async (row: any) => {
+                  return {
+                    ...row,
+                  };
+                }) || []
+              );
+              resolve(transactions);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        });
+      });
+
+      const positionsPromise = new Promise((resolve, reject) => {
+        trackProcessDb.getPositions(db, arg, async (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            try {
+              const positions = await Promise.all(
+                rows?.map(async (row: any) => {
+                  return {
+                    ...row,
+                  };
+                }) || []
+              );
+              resolve(positions);
+            } catch (error) {
+              reject(error);
+            }
+          }
+        });
+      });
+
+      try {
+        await Promise.all([
+          poolFiltersPromise,
+          settingsPromise,
+          poolsPromise,
+          transactionsPromise,
+          positionsPromise,
+        ]).then((values) => {
+          const [poolFilters, settings, pools, transactions, positions] = values;
+          resolve({
+            poolFilters,
+            settings,
+            pools,
+            transactions,
+            positions,
+          });
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+};
+
+const StartTrackProcessHandler = (db: sqlite3.Database, window: BrowserWindow | null) => {
+  registerHandler(CustomEvents.startTrackProcessEvent, async (e: any, arg: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        await trackProcessDb.startTrackProcess(db, arg).then(async (r) => {
+          sendToRenderer(window, CustomEvents.updateTrackProcessEvent, {
+            id: arg,
+            updateType: 'start',
+          });
+          resolve('process started')
+        });
+      }
+      catch (error) { 
+        reject(error);
+      }
+    });
+
+  });
+};
+
+const StopTrackProcessHandler = (db: sqlite3.Database, window: BrowserWindow | null) => {
+  registerHandler(CustomEvents.stopTrackProcessEvent, async (e: any, arg: string) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        await trackProcessDb.stopTrackProcess(db, arg).then(async (r) => {
+          sendToRenderer(window, CustomEvents.updateTrackProcessEvent, {
+            id: arg,
+            updateType: 'stop',
+          });
+          resolve('process stopped')
+        });
+      }
+      catch (error) { 
+        reject(error);
+      }
+    });
+
+  });
+};
+
+const handleTrackProcess = (db: sqlite3.Database, window: BrowserWindow | null) => {
   CreateTrackProcessHandler(db);
   GetTrackProcessesHandler(db);
+  GetTrackProcessDetailsHandler(db);
+  StartTrackProcessHandler(db, window);
+  StopTrackProcessHandler(db, window);
 };
 
 export default handleTrackProcess;

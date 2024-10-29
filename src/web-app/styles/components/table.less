@@ -56,7 +56,7 @@ table {
           span:not(.copy-icon) {
             position: relative;
             max-width: calc(100% - 12px);
-            width: calc(100% - 12px);
+            width: fit-content;
             overflow: hidden;
             text-overflow: ellipsis;
           }
@@ -124,23 +124,10 @@ table {
         svg {
           cursor: pointer;
           margin-right: 10px;
-
-          path {
-            fill: @color-font-white;
-          }
-
-          circle {
-            fill: @color-font-white;
-          }
+          fill: @color-font-white;
 
           &:hover {
-            path {
-              fill: @color-brand-secondary;
-            }
-
-            circle {
-              fill: @color-brand-secondary;
-            }
+            fill: @color-brand-secondary;
           }
         }
       }
@@ -182,10 +169,7 @@ table {
       svg {
         width: 12px;
         height: 12px;
-
-        path {
-          fill: @color-font-white;
-        }
+        fill: @color-font-white;
       }
 
       &.disabled {

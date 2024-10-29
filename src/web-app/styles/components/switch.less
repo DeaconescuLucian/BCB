@@ -11,6 +11,9 @@
 
     &:checked + .slider {
       background-color: @color-font-brand;
+      &.theme-process-status {
+        background-color: @color-success;
+      }
     }
 
     &:focus + .slider {
@@ -35,6 +38,10 @@
     border-radius: 34px;
     -webkit-transition: 0.4s;
     transition: 0.4s;
+
+    &.theme-process-status {
+      background-color: @color-pending;
+    }
 
     &::before {
       position: absolute;
@@ -61,5 +68,9 @@
         font-size: 12px;
         margin-right: 0;
         color: @color-font-brand;
+
+        &.theme-process-status {
+          color: @color-pending;
+        }
     }
 }

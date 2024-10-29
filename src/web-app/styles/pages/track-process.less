@@ -1,0 +1,128 @@
+.track-process-page {
+  height: calc(100% - 35px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100%;
+
+  .profit {
+    color: @color-success;
+    svg {
+      fill: @color-success !important;
+    }
+  }
+
+  .loss {
+    color: @color-fail;
+    svg {
+      fill: @color-fail !important;
+    }
+  }
+
+  .idle {
+    color: @color-pending;
+  }
+
+  .npt-process {
+    height: 100%;
+    width: 100%;
+    overflow-y: scroll;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .spinner {
+      position: relative;
+      top: 45%;
+    }
+
+    .top-panel {
+      position: sticky;
+      display: flex;
+      top: 0px;
+      color: @color-tertiary-base-hover;
+      z-index: 1000;
+      background-color: @color-base;
+
+      .left-side {
+        width: 50%;
+
+        .copy-icon {
+            svg {
+                width: 14px;
+                height: 14px;
+            }
+        }
+      }
+
+      .right-side {
+        padding-top: 10px;
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+
+        .row {
+          margin-bottom: 5px;
+        }
+      }
+
+      svg {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        fill: @color-tertiary-base-hover;
+      }
+
+      .title {
+        position: relative;
+        font-size: 20px;
+
+        svg {
+          position: relative;
+          width: 24px;
+          height: 24px;
+          top: 6px;
+          margin-right: 0px;
+        }
+      }
+    }
+
+    .tab-strip {
+      padding-left: 0;
+      margin-bottom: 10px;
+    }
+
+    .empty-page {
+      margin-top: 100px;
+    }
+
+    table {
+      font-size: 12px;
+
+      td {
+        span {
+          svg {
+            position: relative;
+            width: 12px;
+            height: 12px;
+            top: 2px;
+          }
+        }
+
+        &.action-cell {
+          svg {
+            width: 14px;
+            height: 14px;
+          }
+        }
+      }
+    }
+
+    .row {
+      display: flex;
+      margin-bottom: 10px;
+    }
+  }
+}

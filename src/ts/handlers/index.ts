@@ -15,5 +15,5 @@ export function setupHandlers(db: sqlite3.Database, solanaConnection: Connection
     handleToken(db, solanaConnection);
     handleTransaction(db, solanaConnection, mainWindow);
     handlePoolFilter(db);
-    handleTrackProcess(db);
+    handleTrackProcess(db, mainWindow);
 }
