@@ -13,8 +13,6 @@ interface TrackingCardProps {
 
 const TrackingCard: React.FC<TrackingCardProps> = ({ type, data }) => {
 
-  const navigate = useNavigate();
-
   const renderView = () => {
     switch (type) {
       case 'default':
@@ -27,9 +25,7 @@ const TrackingCard: React.FC<TrackingCardProps> = ({ type, data }) => {
   };
 
   return (
-    <div className={`tracking-card`} key={data?.id} onClick={() => {
-      navigateAndSave(navigate, `/track-process?id=${data.id}`, true);
-    }}>
+    <div className={`tracking-card`} key={data?.id}>
       {renderView()}
     </div>
   );

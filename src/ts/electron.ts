@@ -13,6 +13,7 @@ import * as transactionsDb from './database/transactions';
 import { createConnection } from './solana/utils';
 import { Connection } from '@solana/web3.js';
 import * as connectionDb from './database/connections';
+import TrackProcessManager from './solana/bot/trackProcessManager';
 
 if (!verifyUniqueEvents(ProcessType)) {
   execSync('yarn run close-web-app');
@@ -25,136 +26,9 @@ let mainWindow: BrowserWindow | null;
 let tray: Tray;
 let dbConnection: sqlite3.Database;
 let solanaConnection: Connection;
+let tpm: TrackProcessManager;
 
 remoteMain.initialize();
-
-type ProcessObject = {
-  process: ChildProcess | null;
-  pid: number | undefined;
-  type: string | undefined;
-};
-
-let mainBackgroundProcess: ChildProcess | null = null;
-let secondaryBackgroundProcesses: ProcessObject[] = [];
-
-async function startBackgroundProcess(
-  processType: ScriptConfig,
-  pid?: number
-): Promise<{ message: string; pid: number | undefined }> {
-  let backgroundProcess: ChildProcess | null;
-  return new Promise((resolve, reject) => {
-    console.log('Starting background process...');
-    if (processType !== ProcessType.MAIN) {
-      if (
-        (pid && secondaryBackgroundProcesses.find((e) => e.pid === pid)) ||
-        (secondaryBackgroundProcesses.find((e) => e.type === 'transaction') && processType.type === 'transaction')
-      ) {
-        console.log(`Process ${pid} already started!`);
-        resolve({ message: `Process ${pid} already started!`, pid: pid });
-      } else {
-        backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
-        secondaryBackgroundProcesses.push({
-          process: backgroundProcess,
-          pid: backgroundProcess?.pid,
-          type: processType.type,
-        });
-        registerHandler(processType.stopEvent, async () => {
-          await stopBackgroundProcess(backgroundProcess);
-        });
-      }
-    } else {
-      backgroundProcess = fork(path.join(`${__dirname}/background-processes`, processType.file));
-    }
-
-    const timeout = setTimeout(() => {
-      console.log('Timeout reached, resolving without confirmation');
-      resolve({ message: 'Process started but no confirmation received', pid: undefined });
-    }, 5000);
-
-    const onError = (error: any) => {
-      console.error('Background process error:', error);
-      clearTimeout(timeout);
-      backgroundProcess = null;
-      reject(error);
-    };
-
-    backgroundProcess?.on('error', onError);
-
-    const onExit = (code: any, signal: any) => {
-      console.log(`Background process exited with code ${code} and signal ${signal}`);
-      backgroundProcess = null;
-    };
-
-    backgroundProcess?.on('exit', onExit);
-
-    const onMessage = (message: any) => {
-      if (message !== 'ready') {
-        // if (processType.type === 'transaction') {
-        //   transactionsDb.insertTransaction(dbConnection, message);
-        //   if (mainWindow?.isVisible()) {
-        //     sendToRenderer(mainWindow, processType.updateEvent, message);
-        //   }
-        // }
-      }
-    };
-
-    backgroundProcess?.on('message', onMessage);
-
-    const onceMessage = (message: any) => {
-      if (message === 'ready') {
-        console.log('Background process is ready, sending start command');
-        if (!pid) {
-          backgroundProcess?.send('start');
-        }
-        clearTimeout(timeout);
-        if (processType === ProcessType.MAIN) {
-          registerHandlers();
-        }
-        resolve({ message: `Started process ${pid ?? backgroundProcess?.pid}.`, pid: pid ?? backgroundProcess?.pid });
-      }
-    };
-
-    backgroundProcess?.once('message', onceMessage);
-
-    if (processType === ProcessType.MAIN) {
-      mainBackgroundProcess = backgroundProcess;
-    }
-  });
-}
-
-async function stopBackgroundProcess(backgroundProcess: ChildProcess | null): Promise<string> {
-  console.log('Entering stopBackgroundProcess function');
-  console.log('Current backgroundProcess state:', backgroundProcess ? 'exists' : 'null');
-  const pid = backgroundProcess?.pid;
-
-  if (!backgroundProcess) {
-    console.log('No process running');
-    return 'No process running';
-  }
-
-  return new Promise((resolve) => {
-    console.log('Stopping background process...');
-    backgroundProcess?.send('stop');
-
-    const forceKillTimeout = setTimeout(() => {
-      if (backgroundProcess && !backgroundProcess.killed) {
-        console.log('Force killing background process');
-        backgroundProcess.kill();
-        backgroundProcess = null;
-        resolve('Forcefully stopped process');
-      }
-      secondaryBackgroundProcesses = secondaryBackgroundProcesses.filter((e) => e.pid === pid);
-    }, 1000);
-
-    backgroundProcess?.once('exit', () => {
-      console.log('Background process exited');
-      clearTimeout(forceKillTimeout);
-      backgroundProcess = null;
-      resolve('Stopped process');
-    });
-    resolve(`Stopped process ${pid}`);
-  });
-}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -204,7 +78,7 @@ function createTray(): void {
           try {
             const result = await connectionDb.getActiveConnection(dbConnection);
             if (result) solanaConnection = createConnection(result);
-            setupHandlers(dbConnection, solanaConnection, mainWindow);
+            setupHandlers(dbConnection, solanaConnection, mainWindow, tpm);
           } catch (error) {
             console.log(error);
           }
@@ -215,16 +89,9 @@ function createTray(): void {
     },
     {
       label: 'Quit',
-      click: () => {
+      click: async () => {
+        await tpm.removeAll();
         execSync('yarn run close-web-app');
-        secondaryBackgroundProcesses.forEach((pr) => {
-          pr.process?.kill();
-          console.log(`Process ${pr.pid} stopped.`);
-        });
-        if (mainBackgroundProcess) {
-          mainBackgroundProcess.kill();
-          console.log('Main process stopped.');
-        }
         db.closeConnection(dbConnection);
         process.exit(1);
       },
@@ -236,15 +103,7 @@ function createTray(): void {
 }
 
 function registerHandlers() {
-  setupHandlers(dbConnection, solanaConnection, mainWindow);
-
-  registerHandler(ProcessType.MAIN.stopEvent, async () => {
-    return await stopBackgroundProcess(mainBackgroundProcess);
-  });
-
-  registerHandler(ProcessType.TRANSACTION.startEvent, async (e: any, arg: number) => {
-    return await startBackgroundProcess(ProcessType.TRANSACTION, arg);
-  });
+  setupHandlers(dbConnection, solanaConnection, mainWindow, tpm);
 
   registerHandler(CustomEvents.getLatestTransactionsEvent, async () => {
     return new Promise((resolve, reject) => {
@@ -263,18 +122,20 @@ app.on('ready', async () => {
   createTray();
   createWindow();
   dbConnection = db.openConnection();
+  tpm = new TrackProcessManager();
   try {
     await db.initDatabase(dbConnection);
     console.log('Database initialized successfully.');
     const result = await connectionDb.getActiveConnection(dbConnection);
     if (result) solanaConnection = createConnection(result);
+    registerHandlers();
   } catch (err) {
     console.error('Error initializing database:', err);
     db.closeConnection(dbConnection);
     return;
   }
 
-  await startBackgroundProcess(ProcessType.MAIN);
+  // await startBackgroundProcess(ProcessType.MAIN);
 });
 
 app.on('window-all-closed', (event: any) => {

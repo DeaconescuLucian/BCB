@@ -2,12 +2,13 @@ import { Cluster, clusterApiUrl, Connection } from '@solana/web3.js';
 import { setupHandlers } from '../handlers';
 import sqlite3 from 'sqlite3';
 import { BrowserWindow } from 'electron';
+import TrackProcessManager from './bot/trackProcessManager';
 
-export function updateSolanaConnection(dbConnection: sqlite3.Database, connection: Connection, mainWindow: BrowserWindow | null,  newConnection: string) {
+export function updateSolanaConnection(dbConnection: sqlite3.Database, connection: Connection, mainWindow: BrowserWindow | null,  newConnection: string, tpm: TrackProcessManager) {
   if (newConnection.startsWith('http')) connection = new Connection(newConnection);
   else connection = new Connection(clusterApiUrl(newConnection as Cluster), 'confirmed');
 
-  setupHandlers(dbConnection, connection, mainWindow);
+  setupHandlers(dbConnection, connection, mainWindow, tpm);
 }
 
 export async function testConnection(connectionString: string) {

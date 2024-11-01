@@ -1,6 +1,8 @@
 import React, { memo } from 'react';
 import { walletSvg, poolSvg, profitSvg, lossSvg } from '../../../assets/svg';
 import CopyToClipboard from '../../../components/CopyToClipboard';
+import { useNavigate } from 'react-router-dom';
+import { navigateAndSave } from '../../../utils';
 
 interface NPTCardProps {
   data: any;
@@ -8,11 +10,12 @@ interface NPTCardProps {
 
 const NPTCard = memo((props: NPTCardProps) => {
     const { data } = props;
+    const navigate = useNavigate();
   return (
     <div
       className={`npt-card`}
       onClick={() => {
-        //
+        navigateAndSave(navigate, `/track-process?id=${data.id}`, true);
       }}
     >
       <div className="row space-between title">
@@ -68,14 +71,14 @@ const NPTCard = memo((props: NPTCardProps) => {
               <div className="col-6">
                 <div className="row center">
                   <span className={data.profit !== 0 ? (data.profit > 0 ? 'profit' : 'loss') : ''}>
-                    {Number(data.profit.toFixed(2))}<span className='currency'>SOL</span>
+                    {Number(data.profit?.toFixed(2))}<span className='currency'>SOL</span>
                   </span>
                 </div>
               </div>
               <div className="col-6">
                 <div className="row center">
                   <span className={data.profit !== 0 ? (data.profit > 0 ? 'profit' : 'loss') : ''}>
-                    {Number(data.profitPercentage.toFixed(2))}%
+                    {Number(data.profitPercentage?.toFixed(2))}%
                   </span>
                 </div>
               </div>
