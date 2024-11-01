@@ -43,7 +43,7 @@ export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | nu
                                                 AND tpposO.status = 'open'
           LEFT JOIN trackProcessPositions tpposC ON tp.id = tpposC.trackProcessId
                                                 AND tpposC.status = 'closed'
-      GROUP BY tp.id;`, 
+      GROUP BY tp.id;`,
       (err: Error | null, rows: any[]) => {
         if (err) {
           console.error('Error retrieving track processes:', err.message);
@@ -57,19 +57,24 @@ export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | nu
   });
 }
 
-export function getTrackedPools(db: sqlite3.Database, tpId: string, callback: (err: Error | null, rows?: any[]) => void): void {
+export function getTrackedPools(
+  db: sqlite3.Database,
+  tpId: string,
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
   db.serialize(() => {
     db.all(
       `SELECT 
           pk.poolId AS poolId,
           pk.baseMint AS baseMint,
-          pk.quoteMint AS quoteMint
+          pk.quoteMint AS quoteMint,
+          pk.marketId as marketId
        FROM trackProcess tp
           RIGHT  JOIN trackProcessPools tpp ON tp.id = tpp.trackProcessId
           RIGHT  JOIN poolKeys pk ON tpp.poolId = pk.poolId
        WHERE tp.id = '${tpId}'
        ORDER BY tpp.trackedOn DESC
-      `, 
+      `,
       (err: Error | null, rows: any[]) => {
         if (err) {
           console.error('Error retrieving pools:', err.message);
@@ -83,7 +88,11 @@ export function getTrackedPools(db: sqlite3.Database, tpId: string, callback: (e
   });
 }
 
-export function getPoolFilters(db: sqlite3.Database, tpId: string, callback: (err: Error | null, rows?: any[]) => void): void {
+export function getPoolFilters(
+  db: sqlite3.Database,
+  tpId: string,
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
   db.serialize(() => {
     db.all(
       `SELECT 
@@ -94,7 +103,7 @@ export function getPoolFilters(db: sqlite3.Database, tpId: string, callback: (er
           RIGHT  JOIN trackProcessPoolFilters tppf ON tp.id = tppf.trackProcessId
           RIGHT  JOIN poolFiltersLookup pfl ON pfl.id = tppf.poolFilterId
        WHERE tp.id = '${tpId}'
-      `, 
+      `,
       (err: Error | null, rows: any[]) => {
         if (err) {
           console.error('Error retrieving pool filters:', err.message);
@@ -108,7 +117,11 @@ export function getPoolFilters(db: sqlite3.Database, tpId: string, callback: (er
   });
 }
 
-export function getSettings(db: sqlite3.Database, tpId: string, callback: (err: Error | null, rows?: any[]) => void): void {
+export function getSettings(
+  db: sqlite3.Database,
+  tpId: string,
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
   db.serialize(() => {
     db.all(
       `SELECT 
@@ -119,7 +132,7 @@ export function getSettings(db: sqlite3.Database, tpId: string, callback: (err: 
           RIGHT  JOIN trackProcessSettings tps ON tp.id = tps.trackProcessId
           RIGHT  JOIN trackProcessSettingsLookup tpsl ON tpsl.id = tps.settingId
        WHERE tp.id = '${tpId}'
-      `, 
+      `,
       (err: Error | null, rows: any[]) => {
         if (err) {
           console.error('Error retrieving pool settings:', err.message);
@@ -133,7 +146,11 @@ export function getSettings(db: sqlite3.Database, tpId: string, callback: (err: 
   });
 }
 
-export function getTransactions(db: sqlite3.Database, tpId: string, callback: (err: Error | null, rows?: any[]) => void): void {
+export function getTransactions(
+  db: sqlite3.Database,
+  tpId: string,
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
   db.serialize(() => {
     db.all(
       `SELECT 
@@ -148,7 +165,7 @@ export function getTransactions(db: sqlite3.Database, tpId: string, callback: (e
           RIGHT JOIN transactions t ON t.signature = tpt.transactionSignature
        WHERE tp.id = '${tpId}'
        ORDER BY t.date DESC
-      `, 
+      `,
       (err: Error | null, rows: any[]) => {
         if (err) {
           console.error('Error retrieving pool transactions:', err.message);
@@ -162,7 +179,11 @@ export function getTransactions(db: sqlite3.Database, tpId: string, callback: (e
   });
 }
 
-export function getPositions(db: sqlite3.Database, tpId: string, callback: (err: Error | null, rows?: any[]) => void): void {
+export function getPositions(
+  db: sqlite3.Database,
+  tpId: string,
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
   db.serialize(() => {
     db.all(
       `SELECT 
@@ -176,7 +197,7 @@ export function getPositions(db: sqlite3.Database, tpId: string, callback: (err:
           RIGHT JOIN trackProcessPositions tpp ON tp.id = tpp.trackProcessId
        WHERE tp.id = '${tpId}'
        ORDER BY tpp.openTime DESC
-      `, 
+      `,
       (err: Error | null, rows: any[]) => {
         if (err) {
           console.error('Error retrieving positions:', err.message);
@@ -198,4 +219,26 @@ export async function startTrackProcess(db: sqlite3.Database, trackProcess: any)
 export async function stopTrackProcess(db: sqlite3.Database, trackProcess: any) {
   const sql = `UPDATE trackProcess SET isActive = 0 WHERE id = '${trackProcess}'`;
   await runQuery(db, sql);
+}
+
+export function getTrackProcessShallowData(
+  db: sqlite3.Database,
+  tpId: string,
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
+  db.serialize(() => {
+    db.all(
+      `SELECT * FROM trackProcess WHERE id = '${tpId}'
+      `,
+      (err: Error | null, rows: any[]) => {
+        if (err) {
+          console.error('Error retrieving track process data:', err.message);
+          callback(err);
+        } else {
+          console.log('Retrieved track process data.');
+          callback(null, rows);
+        }
+      }
+    );
+  });
 }

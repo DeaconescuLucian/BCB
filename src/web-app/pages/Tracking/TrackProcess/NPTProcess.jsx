@@ -338,6 +338,7 @@ const NPTProcess = (props) => {
       const result = await window.electron.invoke(CustomEvents.stopTrackProcessEvent, props.data.id);
       if(result)
       {
+        showToast('Process stopped', 'success')
         setProcessStatus(status);
         setLoading(false);
       }

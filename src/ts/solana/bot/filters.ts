@@ -137,7 +137,6 @@ export class TokenState {
         }
     }
 
-
     public async checkMinimumSolanaPool(value: number): Promise<boolean> {
         await this.initP;
         if(this.quoteMintVault) return this.quoteMintVault! >= value!;
@@ -149,8 +148,6 @@ export class TokenState {
         if(this.quoteMintVault) return this.quoteMintVault! <= value!;
         else return false;
     }
-
-
 
     public async checkMinimumPoolPercentage(value: number): Promise<boolean> {
         await this.initP;
@@ -174,7 +171,6 @@ class LPStateChecker {
     constructor(poolState: LiquidityStateV4, connection: Connection) {
       this.poolState = poolState;
         this.connection = connection;
-
     }
 
     private async createTransactionPromises(transactions: ConfirmedSignatureInfo[]) {
@@ -199,19 +195,12 @@ class LPStateChecker {
               { limit: 100 },
               'confirmed'
           );
-
-        //   console.log(transactions)
   
           if (transactions.length === 0){ 
             console.log(`no transactions found #${i}`);
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }
-
-        //   if(transactions.length !== 0){
-        //   console.log(`transactions found`);
-        //   console.log(transactions)
-        //   }
   
           transactions = transactions.reverse();
           let txs = await this.createTransactionPromises(transactions);
@@ -233,92 +222,4 @@ class LPStateChecker {
       }
     }
   }
-
-
-    public async checkLPMintBurn(poolState: LiquidityStateV4): Promise<boolean | undefined> {
-        try {
-        let transactions: ConfirmedSignatureInfo[] | null = null;
-
-        if (!this.initialTransaction) {
-            transactions = await this.connection.getSignaturesForAddress(
-            poolState.lpMint,
-            {
-                limit: 100,
-            },
-            'confirmed',
-            );
-        } 
-
-        else {
-            transactions = await this.connection.getSignaturesForAddress(
-            poolState.lpMint,
-            {
-                limit: 100,
-                until: this.initialTransaction.signature.signature
-            },
-            'confirmed',
-            );
-        }
-
-        if (!transactions) {
-            return;
-        }
-
-        transactions=transactions.reverse();
-
-        if (this.oldTransactions === transactions) {
-            return;
-        }
-
-        let promises = await this.createTransactionPromises(transactions)
-
-        if(!promises){
-            return;
-        }
-
-        if (!this.initialTransaction && transactions.length === 1) {
-            let restx = await promises[0];
-            this.initialTransaction = {
-            signature: transactions![0],
-            transaction: restx!
-            };
-            return;
-        }
-
-        else if (!this.initialTransaction && transactions.length > 1) {
-            for (let index = 0; index < promises.length; index++) {
-            let restx = await promises[index];
-            if(restx && restx.meta && restx.meta.err === null){
-                this.initialTransaction = {
-                signature: transactions![index],
-                transaction: restx
-                };
-                promises.splice(0, index + 1);
-                transactions!.splice(0, index + 1);
-
-                break;
-            }
-            }
-        }
-
-        if(!promises.length && !transactions.length){
-        return;
-        }
-
-        this.oldTransactions = transactions;
-
-        for (let transactionPromise of promises) {
-        let transactionData = await transactionPromise;
-        if (transactionData && transactionData.meta && transactionData.meta.err === null) {
-            const meta = transactionData.meta
-            return checkIfTransactionIsLPBurn(meta, this.lpMintSupply as number);
-        }
-        }
-
-        } catch (e) {
-        console.log(`Timeout`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return;
-        }
-    }
 }

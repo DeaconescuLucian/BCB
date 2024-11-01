@@ -5,6 +5,7 @@ import { Connection } from '@solana/web3.js';
 import * as connectionDb from '../database/connections';
 import { updateSolanaConnection, testConnection } from '../solana/connection';
 import { BrowserWindow } from 'electron';
+import TrackProcessManager from '../solana/bot/trackProcessManager';
 
 const CreateConnectionHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.createConnectionEvent, async (e: any, arg: any) => {
@@ -44,13 +45,13 @@ const GetConnectionsHandler = (db: sqlite3.Database) => {
   });
 };
 
-const UpdateActiveConnectionHandler = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null) => {
+const UpdateActiveConnectionHandler = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null, tpm: TrackProcessManager) => {
   registerHandler(CustomEvents.updateActiveConnectionEvent, async (e: any, arg: any) => {
     return new Promise((resolve) => {
       connectionDb.updateActiveConnection(db, arg, (result: any) => {
         if (!result) {
           try {
-            updateSolanaConnection(db, solanaConnection, mainWindow, arg);
+            updateSolanaConnection(db, solanaConnection, mainWindow, arg, tpm);
           } catch (error) {
             console.log(error);
           }
@@ -61,13 +62,13 @@ const UpdateActiveConnectionHandler = (db: sqlite3.Database, solanaConnection: C
   });
 };
 
-const DeactivateConnectionHandler = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null) => {
+const DeactivateConnectionHandler = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null, tpm: TrackProcessManager) => {
   registerHandler(CustomEvents.deactivateConnectionEvent, async (e: any, arg: any) => {
     return new Promise((resolve) => {
       connectionDb.deactivateConnection(db, (result: any) => {
         if (!result) {
           try {
-            updateSolanaConnection(db, solanaConnection, mainWindow, 'mainnet-beta');
+            updateSolanaConnection(db, solanaConnection, mainWindow, 'mainnet-beta', tpm);
           } catch (error) {
             console.log(error);
           }
@@ -88,11 +89,11 @@ const DeleteConnectionHandler = (db: sqlite3.Database) => {
   });
 };
 
-const handleConnection = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null) => {
+const handleConnection = (db: sqlite3.Database, solanaConnection: Connection, mainWindow: BrowserWindow | null, tpm: TrackProcessManager) => {
   CreateConnectionHandler(db);
   GetConnectionsHandler(db);
-  UpdateActiveConnectionHandler(db, solanaConnection, mainWindow);
-  DeactivateConnectionHandler(db, solanaConnection, mainWindow);
+  UpdateActiveConnectionHandler(db, solanaConnection, mainWindow, tpm);
+  DeactivateConnectionHandler(db, solanaConnection, mainWindow, tpm);
   DeleteConnectionHandler(db);
 };
 
