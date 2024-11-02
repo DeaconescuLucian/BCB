@@ -1,18 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Dialog from '../Dialog';
 import ClickOutside from '../ClickOutside';
 import { useSelector, useDispatch } from 'react-redux';
 import { crossSvg } from '../../assets/svg';
 import SearchBar from '../SearchBar';
 import CopyToClipboard from '../CopyToClipboard';
+import { CustomEvents } from '../../../ts/events';
+import { fetchWallets, getWalletDetails } from '../../store/reducers/wallets';
+import Loading from '../Loading';
 
 const SelectWalletDialog = (props) => {
-  const { selectedWalletDetails, wallets } = useSelector((state) => state.wallets);
+  const {
+    selectedWalletDetails,
+    wallets,
+    selectedWalletAccounts,
+    fetchWalletsDone,
+    getWalletDetailsDone,
+  } = useSelector((state) => state.wallets);
+  const dispatch = useDispatch();
   const [filter, setFilter] = useState('');
   const [wallet, setWallet] = useState(props.wallet);
+  const [loading, setLoading] = useState(false);
+  const loadingParentRef = useRef(null);
 
   return (
-    <Dialog className="token-selector-dialog wallet-dialog" onClose={props.onClose}>
+    <Dialog className="token-selector-dialog wallet-dialog" onClose={props.onClose} ref={loadingParentRef}>
       <div className="token-selector-dialog-header">
         <div className="title">
           {' '}
@@ -51,20 +63,37 @@ const SelectWalletDialog = (props) => {
               .filter((t) => t.alias?.toLowerCase().includes(filter.toLowerCase()))
               .map((t) => (
                 <div
-                  className={`token-list-item ${
-                    wallet?.publicKey === t.publicKey ? 'selected-wallet' : ''
-                  }`}
-                  key={`toke-list-item-${t.mint}`}
-                  onClick={() => {
-                    setWallet(t);
-                    props.onChange(t.publicKey)
+                  className={`token-list-item ${wallet?.publicKey === t.publicKey ? 'selected-wallet' : ''}`}
+                  key={`toke-list-item-${t.publicKey}`}
+                  onClick={async () => {
+                    if (props.isMain) {
+                      setLoading(true);
+                      const result = await window.electron.invoke(CustomEvents.updateWalletEvent, {
+                        publicKey: t.publicKey,
+                        existingMints: selectedWalletAccounts.map((e) => ({ mint: e.mint, icon: e.icon })),
+                      });
+                      if (result) {
+                        if (result.success) {
+                          setWallet(t);
+                          dispatch(fetchWallets, true);
+                          dispatch(getWalletDetails(selectedWalletDetails.publicKey));
+                        }
+                      }
+                      if (fetchWalletsDone && getWalletDetailsDone) {
+                        props.onChange(t.publicKey);
+                        setLoading(false);
+                      }
+                    } else {
+                      setWallet(t);
+                      props.onChange(t.publicKey);
+                    }
                   }}
                 >
                   <div className="left-side">
                     {' '}
                     <div className="name-container">
                       <div className="symbol">
-                        <span className='truncate'>{t.alias}</span>
+                        <span className="truncate">{t.alias}</span>
                       </div>
                       <span className="name">{t.tokenAccounts} Token Accounts</span>
                     </div>
@@ -80,6 +109,7 @@ const SelectWalletDialog = (props) => {
               ))}
         </div>
       </div>
+      {loading && <Loading parentRef={loadingParentRef} text="Getting wallet data"></Loading>}
     </Dialog>
   );
 };

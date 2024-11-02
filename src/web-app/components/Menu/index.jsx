@@ -217,6 +217,7 @@ function Menu() {
             window.localStorage.setItem('wallet-address', publicKey);
           }}
           wallet={selectedWalletDetails}
+          isMain={true}
         ></SelectWalletDialog>
       )}
     </>

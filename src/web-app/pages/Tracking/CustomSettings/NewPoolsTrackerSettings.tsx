@@ -31,6 +31,9 @@ interface INewPoolsTrackingSettings {
 
 function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
   const { poolFilters } = useSelector((state: any) => state.poolFilters);
+  const { selectedWalletDetails } = useSelector(
+    (state: any) => state.wallets
+  );
   const FILTERS = poolFilters.map((f) => {
     return {
       id: f.id,
@@ -109,6 +112,12 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
       setBudgetError('Please select a budget');
       return 'Please select a budget';
     }
+
+    if(value > selectedWalletDetails.balance)
+    {
+      setBudgetError(`Insuficient balance in wallet ${selectedWalletDetails.alias}`);
+      return `Insuficient balance in wallet ${selectedWalletDetails.alias}`;
+    }
     setBudgetError((null as unknown) as string);
     return null;
   };
@@ -143,6 +152,8 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
   const createProcess = async () => {
     setLoading(true);
     const result = await window.electron.invoke(CustomEvents.createTrackProcessEvent, {
+      parentWallet: selectedWalletDetails.publicKey,
+      budget: budget,
       trackProcessTypeId: 0,
       createdOn: new Date().toISOString(),
       poolFilters: addedFilters,
@@ -157,8 +168,16 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
       ],
     });
     if (result) {
-      showToast('NPT Process created successfully', 'success');
-      setLoading(false);
+      if(result.success)
+      {
+        showToast('NPT Process created successfully', 'success');
+        setLoading(false);
+      }
+      else {
+        showToast('There was an error creating the process', 'fail');
+        setLoading(false);
+      }
+
     }
   };
 
@@ -415,11 +434,11 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
           type="add"
           theme="primary"
           text="Create"
-          disabled={!buyAmount || !budget || !trackDuration}
-          tooltipDisabled="Make sure to set values for all of the required parameters"
+          disabled={!buyAmount || !budget || !trackDuration || loading}
+          tooltipDisabled={loading ? "Creating process" : "Make sure to set values for all of the required parameters"}
         ></Button>
       </div>
-      {loading && <Loading parentRef={loadingRef}></Loading>}
+      {loading && <Loading parentRef={loadingRef} text="Creating proces..."></Loading>}
       {showAddFilterDialog && (
         <Dialog onClose={() => setShowAddFilterDialog(false)} className="add-filter-dialog">
           <>
