@@ -410,6 +410,7 @@ function Transfer() {
                   initialWallet={wallet1}
                   walletList={wallets}
                   hasRemoteSearch={false}
+                  isMain={false}
                 ></WalletSelector>
                 <div className="value-container">
                   <Input readOnlyValue={wallet1?.alias || ''} type="text" theme="primary" readonly={true}></Input>
@@ -437,6 +438,7 @@ function Transfer() {
                   initialWallet={wallet2}
                   walletList={wallets}
                   hasRemoteSearch={false}
+                  isMain={false}
                 ></WalletSelector>
                 <div className="value-container">
                   <Input readOnlyValue={wallet2?.alias || ''} type="text" theme="primary" readonly={true}></Input>

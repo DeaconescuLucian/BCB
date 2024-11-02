@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { downSvg } from '../../assets/svg';
-import Dialog from '../Dialog';
-import { crossSvg, addSvg, starSvg, emptyStarSvg } from '../../assets/svg';
-import SearchBar from '../SearchBar';
-import DefaultCoin from '../../assets/icons/coin.png';
-import CopyToClipboard from '../CopyToClipboard';
-import Loading from '../Loading';
 import SelectWalletDialog from '../Menu/SelectWalletDialog';
 
 interface IWalletSelector {
@@ -14,6 +8,7 @@ interface IWalletSelector {
   walletList: IWallet[];
   hasRemoteSearch: boolean;
   readOnly?: boolean;
+  isMain?: boolean;
 }
 
 interface IWallet {
@@ -21,7 +16,7 @@ interface IWallet {
   alias: string;
 }
 
-const WalletSelector = ({ onChange, initialWallet, walletList, hasRemoteSearch, readOnly }: IWalletSelector) => {
+const WalletSelector = ({ onChange, initialWallet, walletList, hasRemoteSearch, readOnly, isMain }: IWalletSelector) => {
   const [loading, setLoading] = useState(false);
   const [wallet, setWallet] = useState(initialWallet);
   const [showDialog, setShowDialog] = useState(false);
@@ -57,6 +52,7 @@ const WalletSelector = ({ onChange, initialWallet, walletList, hasRemoteSearch, 
             setWallet(walletList.find((w) => w.publicKey === pub) || null);
             onChange(walletList.find((w) => w.publicKey === pub) || null);
           }}
+          isMain={isMain}
           wallet={wallet}
         ></SelectWalletDialog>
       )}

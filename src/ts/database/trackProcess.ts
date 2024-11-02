@@ -31,6 +31,7 @@ export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | nu
           tp.isActive AS isActive,
           tp.lastStartOn AS lastStartOn,
           tpt.name AS processType,
+          tp.createdOn AS createdOn,
           (COALESCE(SUM(tpposC.amount * tpposC.exitPrice) - SUM(tpposC.amount * tpposC.startingPrice), 0) 
           + COALESCE(SUM(tpposO.amount * tpposO.currentPrice) - SUM(tpposO.amount * tpposO.startingPrice), 0) / IIF(COUNT(DISTINCT tpp.poolId) = 0, 1, COUNT(DISTINCT tpp.poolId))) AS profit,
           (((COALESCE(SUM(tpposC.amount * tpposC.exitPrice) - SUM(tpposC.amount * tpposC.startingPrice), 0) 
