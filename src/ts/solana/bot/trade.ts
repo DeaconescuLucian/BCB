@@ -127,7 +127,7 @@ export default class Trade {
     let tokenAccount = this.trackProcess.tokenAccounts.get(poolState.baseMint.toString());
     if (!tokenAccount) {
       const market = await getMinimalMarketV3(this.connection, poolState.marketId, `processed`);
-      tokenAccount = this.trackProcess.saveTokenAccount(poolState.baseMint, market);
+      tokenAccount = this.trackProcess.saveTokenAccount(key, market);
     }
 
     const quoteToken = raydium.Token.WSOL.mint;
@@ -151,8 +151,8 @@ export default class Trade {
     );
 
     const instructions = [
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 15000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 15000 }),
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 100000 }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }),
       createAssociatedTokenAccountIdempotentInstruction(
         this.wallet.publicKey,
         tokenAccount.address,
@@ -163,9 +163,8 @@ export default class Trade {
     ];
 
     const block = await this.connection.getLatestBlockhash('finalized');
-    const tx = await createSignedTransaction(instructions, this.connection, this.wallet);
+    const tx = await createSignedTransaction(instructions, this.connection, this.wallet, block.blockhash);
     const result = await sendTransaction(tx, block, this.connection, this.isSimulated);
-
     if (result.success) {
       if (this.isSimulated) {
         const amount = 0;

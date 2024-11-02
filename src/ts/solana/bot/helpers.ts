@@ -169,6 +169,7 @@ export async function checkSupply(
         const waitTimeInMs = parseFloat(waitTime) * 1000;
         await new Promise((resolve) => setTimeout(resolve, waitTimeInMs));
       }
+      console.log(`error checking supply: ${error}`)
     }
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
