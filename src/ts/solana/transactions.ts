@@ -32,23 +32,38 @@ export interface TransactionResult {
 }
 
 export async function simulateTransaction(tx: VersionedTransaction, connection: Connection) {
-  const sim = await connection.simulateTransaction(tx, { commitment: 'processed' });
-  if (sim.value.err) {
-    console.log(sim.value.logs);
-    console.log(sim.value.err);
+  try {
+    const sim = await connection.simulateTransaction(tx, { commitment: 'processed' });
+    console.log(sim)
+    if (sim.value.err) {
+      console.log(`Simulation failed`);
+      console.log(sim.value.logs);
+      console.log(sim.value.err);
+      return {
+        status: 'fail',
+        error: 'Simulation failed',
+        signature: '',
+        block: null,
+        amount: 0,
+        confirmation: null,
+      };
+    } else {
+      console.log(`Simulation successful`);
+      return {
+        status: 'success',
+        message: 'Simulation successful',
+        signature: '',
+        block: null,
+        amount: 0,
+        confirmation: null,
+      };
+    }
+  } catch (error) {
+    console.log('Simulation error')
+    console.log(error);
     return {
       status: 'fail',
       error: 'Simulation failed',
-      signature: '',
-      block: null,
-      amount: 0,
-      confirmation: null,
-    };
-  } else {
-    console.log(`Simulation successful`);
-    return {
-      status: 'success',
-      message: 'Simulation successful',
       signature: '',
       block: null,
       amount: 0,
@@ -203,13 +218,15 @@ export async function simpleTransfer(
 
   const toPubkey = walletB;
 
+  const decimals = 9;
+
   let instructions = [
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5000 }),
     ComputeBudgetProgram.setComputeUnitLimit({ units: fees.prioFee * LAMPORTS_PER_SOL }),
     SystemProgram.transfer({
       fromPubkey: walletA.publicKey,
       toPubkey: toPubkey,
-      lamports: amount,
+      lamports: Number(amount.toFixed(decimals)),
     }),
   ];
 
