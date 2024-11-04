@@ -30,19 +30,18 @@ function Transfer() {
     { name: 'Token', url: '/transfer' },
   ]);
   const [activeTab, setActiveTab] = useState(
-    transferSettings.activeTab
-      ? tabs.find((t) => t.name === transferSettings.activeTab)
+    transferSettings?.activeTab
+      ? tabs.find((t) => t.name === transferSettings?.activeTab)
       : { name: 'SOL', url: '/transfer' }
   );
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { tokens, wallets } = useSelector((state) => state.wallets);
+  const { wallets } = useSelector((state) => state.wallets);
   const [simulate, setSimulate] = useState(JSON.parse(window.localStorage.getItem('swap-settings')).simulate || false);
-  const { fee, slippage } = useSelector((state) => state.feeAndSlippage);
+  const { fee } = useSelector((state) => state.feeAndSlippage);
   const [loading, setLoading] = useState(false);
   const loadingParentRef = useRef(null);
   const { showToast } = useToast();
-  const [selectedToken, setSelectedToken] = useState(null);
   const [wallet1, setWallet1] = useState(
     transferSettings?.wallet1 ? wallets.find((w) => w.publicKey === transferSettings?.wallet1) : null
   );
@@ -51,11 +50,11 @@ function Transfer() {
   );
   const [wallet1Accounts, setWallet1Accounts] = useState([]);
   const [wsolToken, setWsolToken] = useState(null);
-  const [token, setToken] = useState(transferSettings.token ?? null);
-  const [tokenAmount, setTokenAmount] = useState(transferSettings.tokenAmount ?? null);
-  const [tokenPrice, setTokenPrice] = useState(transferSettings.tokenPrice ?? 0);
+  const [token, setToken] = useState(transferSettings?.token ?? null);
+  const [tokenAmount, setTokenAmount] = useState(transferSettings?.tokenAmount ?? null);
+  const [tokenPrice, setTokenPrice] = useState(transferSettings?.tokenPrice ?? 0);
   const [solanaPrice, setSolanaPrice] = useState(0);
-  const [amount, setAmount] = useState(transferSettings.amount ?? 0);
+  const [amount, setAmount] = useState(transferSettings?.amount ?? 0);
   const [inputError, setInputError] = useState(null);
 
   const getWsolToken = async () => {

@@ -114,7 +114,7 @@ export class TokenState {
     }
 
     public hasFilter(key: FilterKey): boolean {
-        return this.filters.has(key);
+        return this.filters.has(key) && !!this.filters.get(key);
     }
 
     public async checkMintable(): Promise<boolean> {

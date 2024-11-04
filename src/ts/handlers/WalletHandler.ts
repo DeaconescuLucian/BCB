@@ -11,7 +11,7 @@ import {
   getWalletTokenAccounts,
   insertWalletTokenAccounts,
   updateTokenAccountBalances,
-  deleteTokenAccounts
+  deleteTokenAccounts,
 } from '../database/walletTokenAccounts';
 import { updateWalletBalance } from '../database/wallets';
 import { ITokenAccount, IToken } from '../solana/utils';
@@ -25,14 +25,18 @@ const ImportWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
       return new Promise((resolve) => {
         walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias, balance: solBalance }, (result: any) => {
           if (!result.error)
+            //TODO: needs fix when wallet is empty
             getTokensOwnedByWallet(solanaConnection, new PublicKey(response.data?.publicKey)).then((res) => {
-              insertTokens(db, res.tokens, (r) => {
-                if (!r.error) {
-                  insertWalletTokenAccounts(db, res.accounts, (r) => {
-                    resolve(result);
-                  });
-                }
-              });
+              if (res.tokens.length) {
+                insertTokens(db, res.tokens, (r) => {
+                  if (!r.error) {
+                    if (res.accounts.length)
+                      insertWalletTokenAccounts(db, res.accounts, (r) => {
+                        resolve(result);
+                      });
+                  }
+                });
+              }
             });
           else {
             resolve(result);
@@ -98,122 +102,127 @@ const GetWalletsHandler = (db: sqlite3.Database) => {
 };
 
 const UpdateWalletHandler = (db: sqlite3.Database, solanaConnection: Connection) => {
-  registerHandler(CustomEvents.updateWalletEvent, async (e: any, arg: {publicKey: string, existingMints: {mint: string, icon?: string}[]}) => {
-    const publicKey = new PublicKey(arg.publicKey);
-    const solBalance = await getSolanaBalance(solanaConnection, publicKey);
-    let error: string | undefined | null = null;
-    await new Promise<void>((resolve, reject) => {
-      updateWalletBalance(db, { publicKey: arg.publicKey, balance: solBalance }, (err: Error | null) => {
-        if (err) {
-          error = err.message;
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
-
-    await getTokensOwnedByWallet(solanaConnection, publicKey, arg.existingMints).then(async (res) => {
-      const tokenAccs = await getWalletTokenAccounts(db, arg.publicKey);
-      let tokenAccsToInsert: ITokenAccount[] = [];
-      let tokenAccsToUpdate: ITokenAccount[] = [];
-      let tokenAccsToDelete: any[];
-      let tokensToInsert: IToken[] = [];
-      let tokensToUpdate: IToken[] = [];
-
-      res.accounts.filter(a => !a.toDelete).forEach((acc) => {
-        let token = res.tokens.find((t) => t.mint === acc.mint);
-        if (tokenAccs?.find((a) => a.accountAddress === acc.accountAddress)) {
-          tokenAccsToUpdate.push(acc);
-          if (token) tokensToUpdate.push(token);
-        } else {
-          tokenAccsToInsert.push(acc);
-          if (token) tokensToInsert.push(token);
-        }
+  registerHandler(
+    CustomEvents.updateWalletEvent,
+    async (e: any, arg: { publicKey: string; existingMints: { mint: string; icon?: string }[] }) => {
+      const publicKey = new PublicKey(arg.publicKey);
+      const solBalance = await getSolanaBalance(solanaConnection, publicKey);
+      let error: string | undefined | null = null;
+      await new Promise<void>((resolve, reject) => {
+        updateWalletBalance(db, { publicKey: arg.publicKey, balance: solBalance }, (err: Error | null) => {
+          if (err) {
+            error = err.message;
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
       });
 
-      tokenAccsToDelete = res.accounts.filter(a => a.toDelete);
+      await getTokensOwnedByWallet(solanaConnection, publicKey, arg.existingMints).then(async (res) => {
+        const tokenAccs = await getWalletTokenAccounts(db, arg.publicKey);
+        let tokenAccsToInsert: ITokenAccount[] = [];
+        let tokenAccsToUpdate: ITokenAccount[] = [];
+        let tokenAccsToDelete: any[];
+        let tokensToInsert: IToken[] = [];
+        let tokensToUpdate: IToken[] = [];
 
-      try {
-        if (tokensToInsert.length)
-          await new Promise<void>((resolve, reject) => {
-            insertTokens(db, tokensToInsert, (result) => {
-              if (result.error) {
-                error = result.error;
-                reject(result.error);
-              } else {
-                resolve();
-              }
-            });
+        res.accounts
+          .filter((a) => !a.toDelete)
+          .forEach((acc) => {
+            let token = res.tokens.find((t) => t.mint === acc.mint);
+            if (tokenAccs?.find((a) => a.accountAddress === acc.accountAddress)) {
+              tokenAccsToUpdate.push(acc);
+              if (token) tokensToUpdate.push(token);
+            } else {
+              tokenAccsToInsert.push(acc);
+              if (token) tokensToInsert.push(token);
+            }
           });
 
-        if (tokensToUpdate.length)
-          await new Promise<void>((resolve, reject) => {
-            updateTokens(db, tokensToUpdate, (err: Error | null) => {
-              if (err) {
-                error = err.message;
-                reject(err.message);
-              } else {
-                resolve();
-              }
-            });
-          });
+        tokenAccsToDelete = res.accounts.filter((a) => a.toDelete);
 
-        if (tokenAccsToInsert.length)
-          await new Promise<void>((resolve, reject) => {
-            insertWalletTokenAccounts(db, tokenAccsToInsert, (result) => {
-              if (result.error) {
-                error = result.error;
-                reject(result.error);
-              } else {
-                resolve();
-              }
+        try {
+          if (tokensToInsert.length)
+            await new Promise<void>((resolve, reject) => {
+              insertTokens(db, tokensToInsert, (result) => {
+                if (result.error) {
+                  error = result.error;
+                  reject(result.error);
+                } else {
+                  resolve();
+                }
+              });
             });
-          });
 
-        if (tokenAccsToUpdate.length)
-          await new Promise<void>((resolve, reject) => {
-            updateTokenAccountBalances(
-              db,
-              tokenAccsToUpdate.map((a) => {
-                return { accountAddress: a.accountAddress, balance: a.amount };
-              }),
-              (err: Error | null) => {
+          if (tokensToUpdate.length)
+            await new Promise<void>((resolve, reject) => {
+              updateTokens(db, tokensToUpdate, (err: Error | null) => {
                 if (err) {
                   error = err.message;
                   reject(err.message);
                 } else {
                   resolve();
                 }
-              }
-            );
-          });
-        if(tokenAccsToDelete.length)
-          await new Promise<void>((resolve, reject) => {
-            deleteTokenAccounts(
-              db,
-              tokenAccsToDelete.map((a) => {
-                return { publicKey: a.publicKey, mint: a.mint };
-              }),
-              (err: Error | null) => {
-                if (err) {
-                  error = err.message;
-                  reject(err.message);
+              });
+            });
+
+          if (tokenAccsToInsert.length)
+            await new Promise<void>((resolve, reject) => {
+              insertWalletTokenAccounts(db, tokenAccsToInsert, (result) => {
+                if (result.error) {
+                  error = result.error;
+                  reject(result.error);
                 } else {
                   resolve();
                 }
-              }
-            );
-          });
-      } catch (err) {
-        console.error('An error occurred:', err);
-      }
-    });
+              });
+            });
 
-    return new Promise((resolve) => {
-      resolve(error);
-    });
-  });
+          if (tokenAccsToUpdate.length)
+            await new Promise<void>((resolve, reject) => {
+              updateTokenAccountBalances(
+                db,
+                tokenAccsToUpdate.map((a) => {
+                  return { accountAddress: a.accountAddress, balance: a.amount };
+                }),
+                (err: Error | null) => {
+                  if (err) {
+                    error = err.message;
+                    reject(err.message);
+                  } else {
+                    resolve();
+                  }
+                }
+              );
+            });
+          if (tokenAccsToDelete.length)
+            await new Promise<void>((resolve, reject) => {
+              deleteTokenAccounts(
+                db,
+                tokenAccsToDelete.map((a) => {
+                  return { publicKey: a.publicKey, mint: a.mint };
+                }),
+                (err: Error | null) => {
+                  if (err) {
+                    error = err.message;
+                    reject(err.message);
+                  } else {
+                    resolve();
+                  }
+                }
+              );
+            });
+        } catch (err) {
+          console.error('An error occurred:', err);
+        }
+      });
+
+      return new Promise((resolve) => {
+        resolve(error);
+      });
+    }
+  );
 };
 
 const GetWalletDetailsHandler = (db: sqlite3.Database) => {

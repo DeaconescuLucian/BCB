@@ -1,6 +1,6 @@
 import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { ComputeBudgetProgram, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
-import { createSignedTransaction, sendTransaction } from '../transactions';
+import {calculateTransactionCost, createSignedTransaction, sendTransaction } from '../transactions';
 import { checkPrice, createPoolKeys, getMinimalMarketV3 } from './helpers';
 import BN from 'bn.js';
 import * as raydium from '@raydium-io/raydium-sdk';
@@ -151,8 +151,6 @@ export default class Trade {
     );
 
     const instructions = [
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 100000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }),
       createAssociatedTokenAccountIdempotentInstruction(
         this.wallet.publicKey,
         tokenAccount.address,
@@ -163,7 +161,14 @@ export default class Trade {
     ];
 
     const block = await this.connection.getLatestBlockhash('finalized');
-    const tx = await createSignedTransaction(instructions, this.connection, this.wallet, block.blockhash);
+    const units = await calculateTransactionCost(instructions, this.connection, this.wallet, block.blockhash);
+
+    const realInstructions = [
+      ...instructions,
+      ComputeBudgetProgram.setComputeUnitLimit({ units: Math.floor(units! * 1.1) }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }),
+    ]
+    const tx = await createSignedTransaction(realInstructions, this.connection, this.wallet, block.blockhash);
     const result = await sendTransaction(tx, block, this.connection, this.isSimulated);
     if (result.success) {
       if (this.isSimulated) {

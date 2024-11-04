@@ -1,5 +1,5 @@
 import { Connection, Context, KeyedAccountInfo, Keypair, Logs, PublicKey } from '@solana/web3.js';
-import TrackProcess, { TrackedToken } from './trackProcess';
+import TrackProcess, { ITrackProcessInterface, TrackedToken } from './trackProcess';
 import { checkIfTransactionIsLPBurn, getMinimalMarketV3, MinimalTokenAccountData } from './helpers';
 import Trade from './trade';
 import { FilterKey, FilterList, FilterValue, TokenState } from './filters';
@@ -11,6 +11,7 @@ import {
   MarketStateV3,
   LiquidityStateV4,
 } from '@raydium-io/raydium-sdk';
+import { getSolanaBalance, getWSOLBalance } from '../utils';
 
 export class NPTTrackProcess extends TrackProcess {
   raydiumSubscriptionId: number | null = null;
@@ -45,6 +46,9 @@ export class NPTTrackProcess extends TrackProcess {
               let meta = resp.meta;
               if (await checkIfTransactionIsLPBurn(meta, lpSupply)) {
                 console.log(`Detected LP Burn for token ${key.toString()}`);
+                console.log(`Opening position`);
+
+                this.createTrade(state);
                 await this.unsubscribefromToken(sub);
                 return;
               }
@@ -59,11 +63,12 @@ export class NPTTrackProcess extends TrackProcess {
     );
     this.onLogSubscriptions.add(sub);
 
-    console.log(`Subscribed to token ${key.toString()} for ${this.settings?.trackduration} seconds`);
+    console.log(`Subscribed to token ${key.toString()} for ${this.settings.trackDuration} seconds`);
 
     setTimeout(async () => {
+      console.log(`Unsubscribing from token ${key.toString()}`);
       await this.unsubscribefromToken(sub);
-    }, (this.settings?.trackduration || 500) * 1000);
+    }, (this.settings.trackDuration || 500) * 1000);
   }
 
   async unsubscribefromToken(sub: number) {
@@ -122,19 +127,16 @@ export class NPTTrackProcess extends TrackProcess {
       console.log(`Checking filters for token`);
 
       if (resultsArray.includes(false)) {
-        this.pools.delete(id.toString());
+        //this.pools.delete(id.toString());
         console.log(`Skipping pool due to filters`);
         return;
       } else {
         console.log(`Adding token to tracker`);
         this.addToken(state);
+        await state.initP;
+        //TODO: remove
+        this.createTrade(state);
       }
-
-      await state.initP;
-      console.log(`wait 10s`);
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-      let trade = new Trade(this, state, 0.001, 100, 50, this.wallet, 100, true);
-      trade.buy();
     } catch (e) {
       console.log({ error: e }, `Failed to process pool`);
     }
@@ -147,14 +149,6 @@ export class NPTTrackProcess extends TrackProcess {
     }
     console.log('Starting tracker process');
     this.initialized = true;
-
-    const filters: FilterList = new Map<FilterKey, FilterValue>([
-      ['NOT_MINTABLE', 1],
-      ['NOT_FREEZABLE', 1],
-      // ['MINIMUM_SOLANA_POOL', 1],
-      // ['MAXIMUM_SOLANA_POOL', 1000],
-      // ['MINIMUM_POOL_PERCENTAGE', 95],
-    ]);
 
     const runTimestamp = Math.floor(new Date().getTime() / 1000);
 
@@ -172,12 +166,11 @@ export class NPTTrackProcess extends TrackProcess {
 
         if (poolOpenTime > runTimestamp && !existing) {
           this.pools.add(key);
-          console.log(key)
 
           console.log(`Pool Detected Time: ${newrunTimestampReadable}`);
           console.log(`Pool Open Time: ${poolOpenTimeReadable}`);
           console.log(`New pool: ${key}`);
-          this.processRaydiumPool(updatedAccountInfo.accountId, poolState, filters);
+          this.processRaydiumPool(updatedAccountInfo.accountId, poolState, this.settings.poolFilters);
         }
       },
       {
@@ -206,7 +199,7 @@ export class NPTTrackProcess extends TrackProcess {
         ],
       }
     );
-    console.log("subscription created");
+    console.log('subscription created');
 
     this.openBookSubscriptionId = this.connection.onProgramAccountChange(
       this.OPENBOOK_PROGRAM_ID,
@@ -239,11 +232,11 @@ export class NPTTrackProcess extends TrackProcess {
       await this.connection.removeProgramAccountChangeListener(this.raydiumSubscriptionId);
     if (this.openBookSubscriptionId !== null)
       await this.connection.removeProgramAccountChangeListener(this.openBookSubscriptionId);
-    this.onLogSubscriptions.forEach(log => {
+    this.onLogSubscriptions.forEach((log) => {
       this.connection.removeOnLogsListener(log);
-    })
+    });
     this.onLogSubscriptions.clear();
-    this.trades.forEach(trade => {
+    this.trades.forEach((trade) => {
       trade.clearUpdateInterval();
     });
   }
@@ -262,10 +255,71 @@ export class NPTTrackProcess extends TrackProcess {
         state.poolId = p.poolId;
         const market = await getMinimalMarketV3(this.connection, poolState.marketId, `processed`);
         this.saveTokenAccount(poolState.baseMint, market);
-        //let trade = new Trade(this, state, 0.001, 100, 50, this.wallet, 100, true);
+        this.createTrade(state);
       });
+      this.mapSettings(settings);
+      this.mapPoolFilters(poolFilters);
     } catch (error) {
-      console.log(error)
+      console.log(error);
+    }
+  }
+
+  async createTrade(state: TokenState): Promise<void> {
+    let trade;
+    const balance = await getWSOLBalance(this.connection, this.wallet.publicKey);
+    const solBalance = await getSolanaBalance(this.connection, this.wallet.publicKey);
+    if(solBalance > 0.0002)
+    {
+      if (this.settings.buyAmountType === 'Fixed') {
+        if (balance >= this.settings.buyAmountValue) {
+          trade = new Trade(
+            this,
+            state,
+            this.settings.buyAmountValue,
+            this.settings.targetPercentage,
+            this.settings.stopLossPercentage,
+            this.wallet,
+            100,
+            true
+          );
+        } else {
+          console.log('Insufficient  WSOL balance');
+        }
+      }
+      if (this.settings.buyAmountType === 'Dynamic') {
+        const amount = (this.settings.buyAmountValue / 100) * balance;
+        if (amount >= this.settings.buyAmountMinValue) {
+          if (balance >= amount)
+            trade = new Trade(
+              this,
+              state,
+              amount,
+              this.settings.targetPercentage,
+              this.settings.stopLossPercentage,
+              this.wallet,
+              100,
+              true
+            );
+          else console.log('Insufficient  WSOL balance');
+        } else {
+          if (balance >= this.settings.buyAmountMinValue)
+            trade = new Trade(
+              this,
+              state,
+              this.settings.buyAmountMinValue,
+              this.settings.targetPercentage,
+              this.settings.stopLossPercentage,
+              this.wallet,
+              100,
+              true
+            );
+          else console.log('Insufficient WSOL balance');
+        }
+      }
+      trade?.buy();
+    }
+    else {
+      console.log('Insufficient SOL balance');
     }
   }
 }

@@ -118,6 +118,11 @@ function NewPoolsTrackingSettings(props: INewPoolsTrackingSettings) {
       setBudgetError(`Insuficient balance in wallet ${selectedWalletDetails.alias}`);
       return `Insuficient balance in wallet ${selectedWalletDetails.alias}`;
     }
+    if(value < 0.1)
+      {
+        setBudgetError(`Budget must be at least 0.1 SOL`);
+        return `Budget must be at least 0.1 SOL`;
+      }
     setBudgetError((null as unknown) as string);
     return null;
   };
