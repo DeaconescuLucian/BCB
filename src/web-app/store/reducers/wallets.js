@@ -97,7 +97,6 @@ const walletsSlice = createSlice({
         state.wallets = action.payload;
         state.selectedWalletDetails = state.wallets.find(w => w.publicKey === state.selectedWallet) || null;
         state.fetchWalletsDone = true;
-
       })
       .addCase(fetchTokens.pending, (state, action) => {
         if (action.meta.arg)

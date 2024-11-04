@@ -147,6 +147,33 @@ export async function sendTransaction(
   }
 }
 
+export async function calculateTransactionCost(
+  instructions: TransactionInstruction[],
+  connection: Connection,
+  signer: Keypair,
+  blockhash?: string
+): Promise<number | undefined> {
+  if (!blockhash) {
+    blockhash = (await connection.getLatestBlockhash('finalized')).blockhash;
+  }
+
+  const tx_msg = new TransactionMessage({
+    payerKey: signer.publicKey,
+    instructions: instructions,
+    recentBlockhash: blockhash,
+  }).compileToV0Message();
+
+  const tx = new VersionedTransaction(tx_msg);
+  tx.sign([signer]);
+  const sim = await connection.simulateTransaction(tx, { commitment: 'processed' })
+  
+  console.log(sim.value.logs)
+  console.log(`Estimated transaction cost: ${sim.value.unitsConsumed} lamports`);
+  return new Promise((resolve) => {
+    resolve(sim.value.unitsConsumed);
+  })
+}
+
 export async function createSignedTransaction(
   instructions: TransactionInstruction[],
   connection: Connection,
@@ -358,6 +385,7 @@ export async function swapWithJupiterAPI(
   return sendTransaction(transaction!, lastbk, connection, simulate);
 }
 
+//not usable
 export async function swap(
   params: swapParams,
   fees: feesParams,
