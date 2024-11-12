@@ -9,17 +9,28 @@ import Empty from '../../../components/Empty';
 import { timeAgo } from '../../../utils';
 import CopyToClipboard from '../../../components/CopyToClipboard';
 import { useToast } from '../../../contexts/ToastContext';
+import { updatePageSettings } from '../../../utils';
+import { formatTinyNumber, tinyNumber } from '../../../utils';
 
 const NPTProcess = (props) => {
+  const pageSettings = 'npt-process-settings';
+  let NPTSettingsString = window.localStorage.getItem(pageSettings);
+  let NPTSettings = null;
+  if (NPTSettingsString) {
+    NPTSettings = JSON.parse(NPTSettingsString);
+  }
+
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-  const {showToast} = useToast();
+  const { showToast } = useToast();
   const { loadingParentRef } = useRef(null);
   const [pools, setPools] = useState([]);
   const [settings, setSettings] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [positions, setPositions] = useState([]);
   const [processStatus, setProcessStatus] = useState(!!props.data.isActive);
+  const [totalPct, setTotalPct] = useState(props.data.profitPercentage);
+  const [netProfit, setNetProfit] = useState(props.data.profit);
 
   const [tabs] = useState([
     { name: 'Tracked Pools', url: '/track-process' },
@@ -27,8 +38,12 @@ const NPTProcess = (props) => {
     { name: 'Transactions', url: '/track-process' },
     { name: 'Settings', url: '/track-process' },
   ]);
-  const [activeTab, setActiveTab] = useState({ name: 'Tracked Pools', url: '/track-process' });
+  const [activeTab, setActiveTab] = useState({
+    name: NPTSettings?.activeTab || 'Tracked Pools',
+    url: '/track-process',
+  });
   const [tableData, setTableData] = useState([]);
+  const [tableKey, setTableKey] = useState(NPTSettings?.activeTab || 'Tracked Pools');
   const [columns, setColumns] = useState([]);
   const [actions, setActions] = useState([]);
   const [tableType, setTableType] = useState({
@@ -97,26 +112,69 @@ const NPTProcess = (props) => {
       name: 'Amount',
       propertyName: 'amount',
       percentWidth: 10,
+      template: (value) => {
+        return (
+          <span className={'truncate'}>
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+          </span>
+        );
+      },
     },
     {
       name: 'Starting Price',
       propertyName: 'startingPrice',
       percentWidth: 10,
+      template: (value) => {
+        return (
+          <span className={'truncate'}>
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+          </span>
+        );
+      },
     },
     {
       name: 'Current Price',
       propertyName: 'currentPrice',
       percentWidth: 10,
+      template: (value) => {
+        return (
+          <span className={'truncate'}>
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+          </span>
+        );
+      },
     },
     {
       name: 'Exit Price',
       propertyName: 'exitPrice',
       percentWidth: 10,
+      template: (value) => {
+        return (
+          <span className={'truncate'}>
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+          </span>
+        );
+      },
     },
     {
       name: 'Status',
       propertyName: 'status',
       percentWidth: 10,
+      template: (value) => {
+        return (
+          <span
+            className={
+              value === 'open' || value === 'closed'
+                ? 'profit'
+                : value === 'open fail' || value === 'close fail'
+                ? 'loss'
+                : 'idle'
+            }
+          >
+            {value}
+          </span>
+        );
+      },
     },
     {
       name: 'Pct',
@@ -124,11 +182,13 @@ const NPTProcess = (props) => {
       percentWidth: 10,
       template: (value) => {
         return (
-          <span className={value !== 100 ? value > 100 ? 'profit' : 'loss' : ''}>
-            {value}%{value !== 100 ? value > 100 ? profitSvg : lossSvg : ''}
+          <span className={value && value !== 100 ? (value > 100 ? 'profit' : 'loss') : ''}>
+            {value || '-'}
+            {value ? '%' : ''}
+            {value ? (value !== 100 ? (value > 100 ? profitSvg : lossSvg) : '') : ''}
           </span>
-        )
-      } 
+        );
+      },
     },
     {
       name: 'Actions',
@@ -136,35 +196,37 @@ const NPTProcess = (props) => {
       percentWidth: 10,
     },
   ];
+
   const transactionsColumns = [
     {
       name: 'Signature',
       propertyName: 'signature',
-      percentWidth: 20,
+      percentWidth: 30,
       canCopy: true,
     },
     {
       name: 'From',
       propertyName: 'from',
-      percentWidth: 20,
+      percentWidth: 30,
       canCopy: true,
     },
     {
       name: 'Status',
       propertyName: 'status',
-      percentWidth: 20,
+      percentWidth: 10,
       template: (value) => {
         return (
-          <span className={value !== 'pending' ? value === 'success' ? 'profit' : 'loss' : 'idle'}>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{value !== 'pending' ? value === 'success' ? successSvg : warningSvg : pendingSvg}
+          <span className={value !== 'pending' ? (value === 'success' ? 'profit' : 'loss') : 'idle'}>
+            {value} &nbsp;&nbsp;
+            {value !== 'pending' ? (value === 'success' ? successSvg : warningSvg) : pendingSvg}
           </span>
-        )
-      } 
+        );
+      },
     },
     {
       name: 'Value',
       propertyName: 'value',
-      percentWidth: 20,
+      percentWidth: 10,
     },
     {
       name: 'Time',
@@ -172,6 +234,7 @@ const NPTProcess = (props) => {
       percentWidth: 20,
     },
   ];
+
   const settingsColumns = [
     {
       name: 'Setting',
@@ -192,7 +255,7 @@ const NPTProcess = (props) => {
       action: (r) => {
         //close position
       },
-    }
+    },
   ];
 
   const trackedPoolsActions = [
@@ -202,8 +265,8 @@ const NPTProcess = (props) => {
       action: (r) => {
         //close position
       },
-    }
-  ]
+    },
+  ];
 
   const updateTableData = () => {
     switch (activeTab.name) {
@@ -238,7 +301,7 @@ const NPTProcess = (props) => {
 
   const loadData = async () => {
     setLoading(true);
-    setLoadingMessage('Retrieving data...')
+    setLoadingMessage('Retrieving data...');
     const result = await window.electron.invoke(CustomEvents.getTrackProcessDetailsEvent, props.data.id);
     if (result) {
       setPools(result.data.pools);
@@ -257,9 +320,11 @@ const NPTProcess = (props) => {
           return {
             ...e,
             percentage:
-              e.status === 'open'
+              e.status === 'open' || e.status === 'close pending' || e.status === 'close fail'
                 ? Number(((e.currentPrice / e.startingPrice) * 100).toFixed(2))
-                : Number(((e.currentPrice / e.exitPrice) * 100).toFixed(2)),
+                : e.status === 'closed'
+                ? Number(((e.exitPrice / e.startingPrice) * 100).toFixed(2))
+                : '',
           };
         })
       );
@@ -278,9 +343,11 @@ const NPTProcess = (props) => {
               return {
                 ...e,
                 percentage:
-                  e.status === 'open'
+                  e.status === 'open' || e.status === 'close pending' || e.status === 'close fail'
                     ? Number(((e.currentPrice / e.startingPrice) * 100).toFixed(2))
-                    : Number(((e.currentPrice / e.exitPrice) * 100).toFixed(2)),
+                    : e.status === 'closed'
+                    ? Number(((e.exitPrice / e.startingPrice) * 100).toFixed(2))
+                    : '',
               };
             })
           );
@@ -315,42 +382,93 @@ const NPTProcess = (props) => {
 
   const startStopProcess = async (status) => {
     setLoading(true);
-    if(status)
-    {
+    if (status) {
       setLoadingMessage('Starting process...');
       const result = await window.electron.invoke(CustomEvents.startTrackProcessEvent, props.data.id);
       if (result) {
-        if(result.success)
-        {
+        if (result.success) {
           setProcessStatus(status);
-          showToast('Process started', 'success')
-        }
-        else
-        {
-          showToast("Couldn't start process", 'fail')
+          showToast('Process started', 'success');
+        } else {
+          showToast("Couldn't start process", 'fail');
         }
         setLoading(false);
       }
-    }
-    else
-    {
+    } else {
       setLoadingMessage('Stopping process...');
       const result = await window.electron.invoke(CustomEvents.stopTrackProcessEvent, props.data.id);
-      if(result)
-      {
-        showToast('Process stopped', 'success')
+      if (result) {
+        showToast('Process stopped', 'success');
         setProcessStatus(status);
         setLoading(false);
       }
     }
-    
-  }
+  };
 
   useEffect(() => {
+    window.electron.invoke(CustomEvents.viewTrackProcessEvent, props.data.id);
     loadData();
-  }, []);
+    const unsubscribeUpdateTrackEvent = window.electron.on(CustomEvents.updateTrackProcessEvent, (msg) => {
+      if (msg.updateType === 'processDataUpdate') {
+        console.log(transactions);
+        setPositions(msg.positions);
+        setPools(msg.pools);
+        setTransactions(
+          msg.transactions.map((e) => {
+            return {
+              ...e,
+              value: Number(e.value.toFixed(4)),
+              time: timeAgo(e.time)
+            };
+          })
+        );
+        setTotalPct(msg.totalPct);
+        setNetProfit(msg.netProfit);
+        switch (activeTab.name) {
+          case 'Tracked Pools':
+            setTableData(msg.pools);
+            break;
+          case 'Positions':
+            setTableData(
+              msg.positions.map((e) => {
+                return {
+                  ...e,
+                  percentage:
+                    e.status === 'open' || e.status === 'close pending' || e.status === 'close fail'
+                      ? Number(((e.currentPrice / e.startingPrice) * 100).toFixed(2))
+                      : e.status === 'closed'
+                      ? Number(((e.exitPrice / e.startingPrice) * 100).toFixed(2))
+                      : '',
+                };
+              })
+            );
+            break;
+          case 'Transactions':
+            setTableData(
+              msg.transactions.map((e) => {
+                return {
+                  ...e,
+                  value: Number(e.value.toFixed(4)),
+                  time: timeAgo(e.time)
+                };
+              })
+            );
+            break;
+          default:
+            break;
+        }
+      }
+    });
+
+    return () => {
+      window.electron.invoke(CustomEvents.viewTrackProcessEvent, '');
+      unsubscribeUpdateTrackEvent();
+    };
+  }, [activeTab]);
 
   useEffect(() => {
+    updatePageSettings('activeTab', activeTab.name, pageSettings);
+    setTableKey(activeTab.name);
     updateTableData();
   }, [activeTab]);
 
@@ -361,15 +479,30 @@ const NPTProcess = (props) => {
           <div className="row">
             <span className="title">
               {props.data.processType}{' '}
-              {props.data.profit !== 0 ? (
-                props.data.profit > 0 ? (
+              {totalPct !== 0 ? (
+                totalPct > 100 ? (
                   <span className="profit">
-                    {profitSvg}
-                    {Number(props.data.profitPercentage.toFixed(2))}%
+                    {totalPct ? profitSvg : ''}
+                    {totalPct ? `${Number(totalPct?.toFixed(2))} %` : ''}
                   </span>
                 ) : (
                   <span className="loss">
-                    {lossSvg} {Number(props.data.profitPercentage.toFixed(2))}%
+                    {totalPct ? lossSvg : ''} {totalPct ? `${Number(totalPct?.toFixed(2))} %` : ''}
+                  </span>
+                )
+              ) : (
+                ''
+              )}
+              {netProfit !== 0 ? (
+                netProfit > 0 ? (
+                  <span className="profit">
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    {netProfit ? `+ ${Number(netProfit?.toFixed(9))} SOL` : ''}
+                  </span>
+                ) : (
+                  <span className="loss">
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    {netProfit ? `${Number(netProfit?.toFixed(9))} SOL` : ''}
                   </span>
                 )
               ) : (
@@ -380,7 +513,10 @@ const NPTProcess = (props) => {
           <div className="row">
             {' '}
             <span>{walletSvg}</span>
-            <span>{props.data.wallet}<CopyToClipboard text={props.data.wallet}/></span>
+            <span>
+              {props.data.wallet}
+              <CopyToClipboard text={props.data.wallet} />
+            </span>
           </div>
         </div>
         <div className="right-side">
@@ -392,7 +528,7 @@ const NPTProcess = (props) => {
           <div className="row">
             <Switch
               onChange={() => {
-                startStopProcess(!processStatus)
+                startStopProcess(!processStatus);
               }}
               theme="process-status"
               value={processStatus}
@@ -408,7 +544,13 @@ const NPTProcess = (props) => {
         }}
       ></Tabstrip>
       {tableData?.length > 0 ? (
-        <Table columns={columns} rows={tableData} actions={actions} pagination={{ pageSizes: [10, 20, 30, 40] }}></Table>
+        <Table
+          key={tableKey}
+          columns={columns}
+          rows={tableData}
+          actions={actions}
+          pagination={{ pageSizes: [10, 20, 30, 40] }}
+        ></Table>
       ) : (
         <Empty text={tableType?.noData}></Empty>
       )}

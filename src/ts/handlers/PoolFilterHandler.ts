@@ -4,7 +4,7 @@ import sqlite3 from 'sqlite3';
 import * as poolFilterDb from '../database/lookup/poolFiltersLookup';
 
 
-const GetConnectionsHandler = (db: sqlite3.Database) => {
+const GetPoolFiltersHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.getPoolFiltersEvent, async () => {
     return new Promise((resolve, reject) => {
       poolFilterDb.getPoolFilters(db, async (err, rows) => {
@@ -30,7 +30,7 @@ const GetConnectionsHandler = (db: sqlite3.Database) => {
 };
 
 const handlePoolFilter = (db: sqlite3.Database) => {
-    GetConnectionsHandler(db);
+    GetPoolFiltersHandler(db);
 };
 
 export default handlePoolFilter;

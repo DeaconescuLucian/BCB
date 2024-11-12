@@ -11,15 +11,7 @@ import TrackProcessManager from '../solana/bot/trackProcessManager';
 import { NPTTrackProcess } from '../solana/bot/NPTTrackProcess';
 import { getWalletSecret } from '../database/wallets';
 import { simpleTransfer, wrapSol } from '../solana/transactions';
-import { getWSOLBalance } from '../solana/utils';
-
-function generateGUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
+import { generateGUID } from '../generalUtils';
 
 const createNPTProcess = (
   db: sqlite3.Database,
@@ -83,32 +75,36 @@ const CreateTrackProcessHandler = (db: sqlite3.Database, connection: Connection)
       connection,
       false
     );
-    //secret 
-    console.log(wallet.secretKey.toString());
-    await response.confirmation?.then(async (msg: any) => {
-      if (msg.status === 'success') {
-        const wltKeyPair =  getKeyPairFromSecret(wallet.secretKey);
-        const response = await wrapSol(wltKeyPair!, Number((Number(arg.budget) * 0.9  - 0.04).toFixed(9)), connection, false);
-        await response.confirmation?.then(async (wrapMsg: any) => {
-          if (wrapMsg.status === 'success') {
-            switch (arg.trackProcessTypeId) {
-              case 0:
-                return createNPTProcess(db, arg, newGuid, wallet);
-              default:
-                break;
-            }
-          } else {
-            return new Promise(async (resolve, reject) => {
-              reject('fail');
-            });
+
+    console.log(`GENERATED WALLET SECRET KEY: ${wallet.secretKey}`);
+    const msg = await response.confirmation;
+    if (msg.status === 'success') {
+      const wltKeyPair = getKeyPairFromSecret(wallet.secretKey);
+      const response = await wrapSol(
+        wltKeyPair!,
+        Number((Number(arg.budget) * 0.9 - 0.04).toFixed(9)),
+        connection,
+        false
+      );
+      await response.confirmation?.then(async (wrapMsg: any) => {
+        if (wrapMsg.status === 'success') {
+          switch (arg.trackProcessTypeId) {
+            case 0:
+              return createNPTProcess(db, arg, newGuid, wallet);
+            default:
+              break;
           }
-        });
-      } else {
-        return new Promise(async (resolve, reject) => {
-          reject('fail');
-        });
-      }
-    });
+        } else {
+          return new Promise(async (resolve, reject) => {
+            reject('fail');
+          });
+        }
+      });
+    } else {
+      return new Promise(async (resolve, reject) => {
+        reject('fail');
+      });
+    }
   });
 };
 
@@ -295,7 +291,18 @@ const GetTrackProcessDetailsHandler = (db: sqlite3.Database) => {
           settings,
           pools,
           transactions,
-          positions,
+          positions: positions.sort((a:any, b:any) => {
+            if (a.openTime === null && b.openTime !== null) {
+              return -1;
+            }
+            if (a.openTime !== null && b.openTime === null) {
+              return 1;
+            }
+            if (a.openTime !== null && b.openTime !== null) {
+              return b.openTime.localeCompare(a.openTime);
+            }
+            return 0;
+          }),
         });
       }
     });
@@ -315,7 +322,7 @@ const StartTrackProcessHandler = (
         if (values.error) {
           reject(values.error);
         } else {
-          const [poolFilters, settings, pools, _, positions, trackProcessData] = values;
+          const [poolFilters, settings, pools, transactions, positions, trackProcessData] = values;
           const trackProcess = new NPTTrackProcess(
             arg,
             getKeyPairFromSecret(trackProcessData[0].walletSecretKey)!,
@@ -328,7 +335,7 @@ const StartTrackProcessHandler = (
             positions: positions.filter((e: any) => e.status === 'open'),
           });
           trackProcess.startProcess();
-          tpm.register(arg, trackProcess);
+          tpm.register(arg, trackProcess, positions.filter((e: any) => e.status !== 'open'), transactions);
           await trackProcessDb.startTrackProcess(db, arg).then(async (r) => {
             sendToRenderer(window, CustomEvents.updateTrackProcessEvent, {
               id: arg,
@@ -363,6 +370,15 @@ const StopTrackProcessHandler = (db: sqlite3.Database, window: BrowserWindow | n
   });
 };
 
+const ViewTrackProcessHandler = (tpm: TrackProcessManager) => {
+  registerHandler(CustomEvents.viewTrackProcessEvent, async (e: any, arg: string) => {
+    return new Promise(async (resolve, reject) => {
+      tpm.viewTrackProcess(arg);
+      resolve('view');
+    });
+  });
+};
+
 const handleTrackProcess = (
   db: sqlite3.Database,
   window: BrowserWindow | null,
@@ -374,6 +390,7 @@ const handleTrackProcess = (
   GetTrackProcessDetailsHandler(db);
   StartTrackProcessHandler(db, window, connection, tpm);
   StopTrackProcessHandler(db, window, tpm);
+  ViewTrackProcessHandler(tpm);
 };
 
 export default handleTrackProcess;

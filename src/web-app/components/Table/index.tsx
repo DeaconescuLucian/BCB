@@ -40,12 +40,13 @@ interface ITable {
   rows: IRow[];
   actions?: IAction[];
   pagination?: IPagination;
+  constantlyUpdated: boolean;
 }
 
-const Table = ({ columns, rows, actions, pagination }: ITable) => {
+const Table = ({ columns, rows, actions, pagination, constantlyUpdated }: ITable) => {
   const [paginationOptionsHidden, setPaginationOptionsHidden] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [currentPageSize, setCurrentPageSize] = useState(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
+  const [currentPageSize, setCurrentPageSize] = useState(pagination?.pageSizes ? pagination?.pageSizes[0] : 0);
   const [totalPages, setTotalPages] = useState(
     pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0
   );
@@ -55,14 +56,18 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
   const [currentActions, setCurrentActions] = useState(actions);
 
   useEffect(() => {
-    setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
-    setCurrentPage(1);
+    if(!constantlyUpdated)
+      {
+        setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
+        setCurrentPage(1);
+        setDisplayedRows(rows.slice(0, pagination?.pageSizes ? pagination.pageSizes[0] : rows.length));
+      }
     setTotalPages(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0);
-    setDisplayedRows(rows.slice(0, pagination?.pageSizes ? pagination.pageSizes[0] : rows.length));
+
   }, [rows]);
 
   useEffect(() => {
-    setDisplayedRows(rows.slice((currentPage - 1) * currentPageSize, currentPage * currentPageSize));
+    setDisplayedRows(rows.slice((currentPage - 1) * currentPageSize!, currentPage * currentPageSize!));
   }, [currentPage, currentPageSize]);
 
   return (
@@ -214,7 +219,7 @@ const Table = ({ columns, rows, actions, pagination }: ITable) => {
                         onClick={() => {
                           if (!disabled) {
                             const newTotalPages = Math.ceil(rows.length / s);
-                            const newCurrentPage = Math.ceil(Math.ceil(currentPage * currentPageSize) / s);
+                            const newCurrentPage = Math.ceil(Math.ceil(currentPage * currentPageSize!) / s);
                             setPaginationOptionsHidden(true);
                             setCurrentPageSize(s);
                             setCurrentPage(newCurrentPage);

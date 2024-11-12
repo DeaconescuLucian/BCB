@@ -23,27 +23,75 @@ export async function insertTrackProcess(db: sqlite3.Database, trackProcess: any
 export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | null, rows?: any[]) => void): void {
   db.serialize(() => {
     db.all(
-      `SELECT tp.id AS id, 
-          COUNT(DISTINCT tpp.poolId) AS poolNo, 
-          COUNT(DISTINCT tpposO.positionId) AS openPositionNo, 
+      `SELECT tp.id AS id,
+          COUNT(DISTINCT tpp.poolId) AS poolNo,
+          COUNT(DISTINCT tpposO.positionId) AS openPositionNo,
           COUNT(DISTINCT tpposC.positionId) AS closedPositionNo,
-          tp.walletPublicKey AS wallet, 
+          tp.walletPublicKey AS wallet,
           tp.isActive AS isActive,
           tp.lastStartOn AS lastStartOn,
           tpt.name AS processType,
           tp.createdOn AS createdOn,
-          (COALESCE(SUM(tpposC.amount * tpposC.exitPrice) - SUM(tpposC.amount * tpposC.startingPrice), 0) 
-          + COALESCE(SUM(tpposO.amount * tpposO.currentPrice) - SUM(tpposO.amount * tpposO.startingPrice), 0) / IIF(COUNT(DISTINCT tpp.poolId) = 0, 1, COUNT(DISTINCT tpp.poolId))) AS profit,
-          (((COALESCE(SUM(tpposC.amount * tpposC.exitPrice) - SUM(tpposC.amount * tpposC.startingPrice), 0) 
-          + COALESCE(SUM(tpposO.amount * tpposO.currentPrice) - SUM(tpposO.amount * tpposO.startingPrice), 0))
-          / COALESCE(COALESCE(SUM(tpposC.amount * tpposC.startingPrice), 0) + COALESCE(SUM(tpposO.amount * tpposO.startingPrice), 0), 1) + 1) * 100  ) AS profitPercentage
+          (
+              COALESCE((
+                  SELECT SUM(tpposC.amount * COALESCE(tpposC.exitPrice, 0)) - SUM(tpposC.amount * tpposC.startingPrice)
+                  FROM trackProcessPositions tpposC
+                  WHERE tpposC.trackProcessId = tp.id AND tpposC.status = 'closed'
+              ), 0)
+              +
+              COALESCE((
+                  SELECT SUM(tpposO.amount * tpposO.currentPrice) - SUM(tpposO.amount * tpposO.startingPrice)
+                  FROM trackProcessPositions tpposO
+                  WHERE tpposO.trackProcessId = tp.id AND tpposO.status IN ('open', 'close pending', 'close fail')
+              ), 0)
+          ) AS profit,
+          (
+              (
+                  COALESCE((
+                      SELECT SUM(tpposC.amount * COALESCE(tpposC.exitPrice, 0)) - SUM(tpposC.amount * tpposC.startingPrice)
+                      FROM trackProcessPositions tpposC
+                      WHERE tpposC.trackProcessId = tp.id AND tpposC.status = 'closed'
+                  ), 0)
+                  +
+                  COALESCE((
+                      SELECT SUM(tpposO.amount * tpposO.currentPrice) - SUM(tpposO.amount * tpposO.startingPrice)
+                      FROM trackProcessPositions tpposO
+                      WHERE tpposO.trackProcessId = tp.id AND tpposO.status IN ('open', 'close pending', 'close fail')
+                  ), 0)
+                  +
+                  COALESCE((
+                      SELECT SUM(tpposC.amount * tpposC.startingPrice)
+                      FROM trackProcessPositions tpposC
+                      WHERE tpposC.trackProcessId = tp.id AND tpposC.status = 'closed'
+                  ), 0)
+                  +
+                  COALESCE((
+                      SELECT SUM(tpposO.amount * tpposO.startingPrice)
+                      FROM trackProcessPositions tpposO
+                      WHERE tpposO.trackProcessId = tp.id AND tpposO.status IN ('open', 'close pending', 'close fail')
+                  ), 0)
+              ) /
+              NULLIF(
+                  COALESCE((
+                      SELECT SUM(tpposC.amount * tpposC.startingPrice)
+                      FROM trackProcessPositions tpposC
+                      WHERE tpposC.trackProcessId = tp.id AND tpposC.status = 'closed'
+                  ), 0)
+                  +
+                  COALESCE((
+                      SELECT SUM(tpposO.amount * tpposO.startingPrice)
+                      FROM trackProcessPositions tpposO
+                      WHERE tpposO.trackProcessId = tp.id AND tpposO.status IN ('open', 'close pending', 'close fail')
+                  ), 0), 0
+              )
+          ) * 100 AS profitPercentage
       FROM trackProcess tp
-          LEFT JOIN trackProcessType tpt ON tp.trackProcessTypeId = tpt.id
-          LEFT JOIN trackProcessPools tpp ON tp.id = tpp.trackProcessId
-          LEFT JOIN trackProcessPositions tpposO ON tp.id = tpposO.trackProcessId
-                                                AND tpposO.status = 'open'
-          LEFT JOIN trackProcessPositions tpposC ON tp.id = tpposC.trackProcessId
-                                                AND tpposC.status = 'closed'
+      LEFT JOIN trackProcessType tpt ON tp.trackProcessTypeId = tpt.id
+      LEFT JOIN trackProcessPools tpp ON tp.id = tpp.trackProcessId
+      LEFT JOIN trackProcessPositions tpposO ON tp.id = tpposO.trackProcessId
+                                            AND tpposO.status IN ('open', 'close pending', 'close fail')
+      LEFT JOIN trackProcessPositions tpposC ON tp.id = tpposC.trackProcessId
+                                            AND tpposC.status = 'closed'
       GROUP BY tp.id;`,
       (err: Error | null, rows: any[]) => {
         if (err) {
@@ -66,14 +114,12 @@ export function getTrackedPools(
   db.serialize(() => {
     db.all(
       `SELECT 
-          pk.poolId AS poolId,
-          pk.baseMint AS baseMint,
-          pk.quoteMint AS quoteMint,
-          pk.marketId as marketId
-       FROM trackProcess tp
-          RIGHT  JOIN trackProcessPools tpp ON tp.id = tpp.trackProcessId
-          RIGHT  JOIN poolKeys pk ON tpp.poolId = pk.poolId
-       WHERE tp.id = '${tpId}'
+          tpp.poolId AS poolId,
+          tpp.baseMint AS baseMint,
+          tpp.quoteMint AS quoteMint,
+          tpp.marketId as marketId
+       FROM trackProcessPools tpp
+       WHERE tpp.trackProcessId = '${tpId}'
        ORDER BY tpp.trackedOn DESC
       `,
       (err: Error | null, rows: any[]) => {
@@ -188,15 +234,52 @@ export function getPositions(
   db.serialize(() => {
     db.all(
       `SELECT 
+          tpp.positionId AS id,
+          tpp.mint AS mint,
+          tpp.poolId AS poolId,
+          tpp.amount AS amount,
+          tpp.startingPrice AS startingPrice,
+          tpp.currentPrice AS currentPrice,
+          tpp.exitPrice AS exitPrice,
+          tpp.status AS status,
+          tpp.openTime AS openTime
+       FROM trackProcess tp
+          RIGHT JOIN trackProcessPositions tpp ON tp.id = tpp.trackProcessId
+       WHERE tp.id = '${tpId}'
+       ORDER BY tpp.openTime DESC
+      `,
+      (err: Error | null, rows: any[]) => {
+        if (err) {
+          console.error('Error retrieving positions:', err.message);
+          callback(err);
+        } else {
+          console.log('Retrieved track positions.');
+          callback(null, rows);
+        }
+      }
+    );
+  });
+}
+
+export function getNonTrackedPositions(
+  db: sqlite3.Database,
+  positionIds: string[],
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
+  db.serialize(() => {
+    db.all(
+      `SELECT 
+          tpp.positionId AS id,
           tpp.mint AS mint,
           tpp.amount AS amount,
           tpp.startingPrice AS startingPrice,
           tpp.currentPrice AS currentPrice,
           tpp.exitPrice AS exitPrice,
-          tpp.status AS status
+          tpp.status AS status,
+          tpp.openTime AS openTime
        FROM trackProcess tp
           RIGHT JOIN trackProcessPositions tpp ON tp.id = tpp.trackProcessId
-       WHERE tp.id = '${tpId}'
+       WHERE tp.id NOT IN (${positionIds.join(',')})
        ORDER BY tpp.openTime DESC
       `,
       (err: Error | null, rows: any[]) => {

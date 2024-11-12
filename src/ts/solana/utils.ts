@@ -108,6 +108,11 @@ export async function getWSOLBalance(connection: Connection, publicKey: PublicKe
   return (await connection.getTokenAccountBalance(tokenAccount)).value.uiAmount!;
 }
 
+export async function getTokenBalance(connection: Connection, publicKey: PublicKey, mint: string): Promise<number> {
+  const tokenAccount = getAssociatedTokenAddressSync(new PublicKey(mint), publicKey, true);
+  return (await connection.getTokenAccountBalance(tokenAccount)).value.uiAmount!;
+}
+
 export interface IToken {
   mint: string;
   name?: string;

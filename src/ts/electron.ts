@@ -76,6 +76,7 @@ function createTray(): void {
         if (mainWindow === null) {
           createWindow();
           try {
+            tpm.updateWindow(mainWindow);
             const result = await connectionDb.getActiveConnection(dbConnection);
             if (result) solanaConnection = createConnection(result);
             setupHandlers(dbConnection, solanaConnection, mainWindow, tpm);
@@ -122,20 +123,19 @@ app.on('ready', async () => {
   createTray();
   createWindow();
   dbConnection = db.openConnection();
-  tpm = new TrackProcessManager();
   try {
     await db.initDatabase(dbConnection);
     console.log('Database initialized successfully.');
     const result = await connectionDb.getActiveConnection(dbConnection);
     if (result) solanaConnection = createConnection(result);
+    tpm = TrackProcessManager.getInstance(dbConnection, mainWindow);
+    tpm.cleanUp();
     registerHandlers();
   } catch (err) {
     console.error('Error initializing database:', err);
     db.closeConnection(dbConnection);
     return;
   }
-
-  // await startBackgroundProcess(ProcessType.MAIN);
 });
 
 app.on('window-all-closed', (event: any) => {

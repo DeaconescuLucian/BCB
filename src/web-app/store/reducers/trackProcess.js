@@ -30,21 +30,21 @@ const trackProcessSlice = createSlice({
   initialState,
   reducers: {
     updateTrackProcess: (state, action) => {
-        const update = action.payload;
-        switch (update.updateType) {
-          case 'start':
-            state.trackProcesses = state.trackProcesses.map((track) =>
-              track.id === update.id ? { ...track, isActive: true } : track
-            );
-            break;
-          case 'stop':
-            state.trackProcesses = state.trackProcesses.map((track) =>
-              track.id === update.id ? { ...track, isActive: false } : track
-            );
-            break;
+      const update = action.payload;
+      switch (update.updateType) {
+        case 'start':
+          state.trackProcesses = state.trackProcesses.map((track) =>
+            track.id === update.id ? { ...track, isActive: true } : track
+          );
+          break;
+        case 'stop':
+          state.trackProcesses = state.trackProcesses.map((track) =>
+            track.id === update.id ? { ...track, isActive: false } : track
+          );
+          break;
           default:
             break;
-        }
+      }
     },
   },
   extraReducers: (builder) => {
