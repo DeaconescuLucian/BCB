@@ -8,7 +8,7 @@ const TrackProcess = () => {
   const trackProcess = trackProcesses.find(tp => tp.id === window.location.search.split('=')[1]);
   
   const renderView = () => {
-    switch (trackProcess.processType) {
+    switch (trackProcess?.processType) {
       case 'NPT ( New Pools Track )':
         return <NPTProcess data={trackProcess}></NPTProcess>;
       default:

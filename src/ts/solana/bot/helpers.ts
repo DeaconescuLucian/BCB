@@ -1,6 +1,6 @@
 import { GetStructureSchema, LiquidityPoolKeys, struct, publicKey, MARKET_STATE_LAYOUT_V3, Liquidity, LiquidityStateV4, Market, MAINNET_PROGRAM_ID } from "@raydium-io/raydium-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { PublicKey, Connection, Commitment, ConfirmedTransactionMeta } from "@solana/web3.js";
+import { PublicKey, Connection, Commitment, ConfirmedTransactionMeta, VersionedTransactionResponse, Finality } from "@solana/web3.js";
 
 
 export type MinimalMarketStateLayoutV3 = typeof MINIMAL_MARKET_STATE_LAYOUT_V3;
@@ -174,4 +174,32 @@ export async function checkSupply(
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
   return;
+}
+
+export async function getReceivedAmount(connection: Connection, signature: string, owner: string, mint: string, commitment?: Finality): Promise<number> {
+  let trData = await connection.getTransaction(
+    signature,
+    {
+      commitment: commitment || 'confirmed',
+      maxSupportedTransactionVersion: 2,
+    }
+  );
+  let meta = trData?.meta;
+  if (meta ) {
+    const postBalance = meta.postTokenBalances?.find(a => a.mint === mint && a.owner === owner)?.uiTokenAmount.uiAmount || 0;
+    const preBalance = meta.preTokenBalances?.find(a => a.mint === mint && a.owner === owner)?.uiTokenAmount.uiAmount || 0;
+    return postBalance - preBalance;
+  }
+  return 0;
+}
+
+export async function getFinalizedTransaction(connection: Connection, signature: string): Promise<VersionedTransactionResponse | null> {
+  let trData = await connection.getTransaction(
+    signature,
+    {
+      commitment: 'finalized',
+      maxSupportedTransactionVersion: 2,
+    }
+  );
+  return trData;
 }

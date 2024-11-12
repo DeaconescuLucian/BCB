@@ -13,17 +13,17 @@ export async function createTableTransactions(db: sqlite3.Database) {
     await runQuery(db, sql);    
 }
 
-export function insertTransaction(db: sqlite3.Database, t: any): void {
-    db.serialize(() => {
-        db.run(`INSERT INTO transactions (signature, wallet, value, "date", status, type) VALUES (?, ?, ?, ?, ?, ?)`,
-            [t.signature, t.wallet, t.value, t.date.toISOString(), t.status, t.type], (err: Error | null) => {
-                if (err) {
-                    console.error('Error inserting transaction:', err.message);
-                } else {
-                    console.log('Transaction inserted successfully.');
-                }
-            });
-    });
+export async function insertTransaction(db: sqlite3.Database, t: any): Promise<void> {
+    const sql = `INSERT INTO transactions (signature, wallet, value, "date", status, type) 
+                 VALUES ('${t.signature}', '${t.wallet}', ${t.value}, '${t.date.toISOString()}', '${t.status}', '${t.type}')`;
+
+    try {
+        await runQuery(db, sql);
+        console.log('Transaction inserted successfully.');
+    } catch (err: any) {
+        console.error('Error inserting transaction:', err.message);
+        throw err;
+    }
 }
 
 export function getLatestTransactions(db: sqlite3.Database, callback: (err: Error | null, rows?: any[]) => void): void {
@@ -43,15 +43,14 @@ export function getLatestTransactions(db: sqlite3.Database, callback: (err: Erro
     });
 }
 
-export function updateTransaction(db: sqlite3.Database, t: any): void {
-    db.serialize(() => {
-        db.run(`UPDATE transactions SET "date" = ? , status = ? WHERE signature = ?`,
-            [t.date.toISOString(), t.status, t.signature], (err: Error | null) => {
-                if (err) {
-                    console.error('Error updating transaction:', err.message);
-                } else {
-                    console.log('Transaction updated successfully.');
-                }
-            });
-    });
+export async function updateTransaction(db: sqlite3.Database, t: any): Promise<void> {
+    const sql = `UPDATE transactions SET "date" = '${t.date.toISOString()}', status = '${t.status}' WHERE signature = '${t.signature}'`;
+
+    try {
+        await runQuery(db, sql);
+        console.log('Transaction updated successfully.');
+    } catch (err: any) {
+        console.error('Error updating transaction:', err.message);
+        throw err;
+    }
 }

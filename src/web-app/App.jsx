@@ -43,9 +43,13 @@ function App() {
     const unsubscribeUpdateTrackEvent = window.electron.on(CustomEvents.updateTrackProcessEvent, (msg) => {
       dispatch(updateTrackProcess(msg));
     });
+    const trackProcessesTimeout = setInterval(() => {
+      dispatch(fetchTrackProcesses(false));
+    }, 10000);
 
     return () => {
       unsubscribeUpdateTrackEvent();
+      clearInterval(trackProcessesTimeout);
     }
   }, []);
 

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import close_icon from "../../assets/icons/close.svg";
 import window_minimize_icon from "../../assets/icons/window-minimize.svg";
 import window_maximize_icon from "../../assets/icons/window-maximize.svg";
+import { CustomEvents } from "../../../ts/events";
 
 function TopBar() {
   const minimizeWindow = () => {
@@ -32,6 +33,7 @@ function TopBar() {
 
   const closeWindow = () => {
     if (window.electron && typeof window.electron.closeWindow === "function") {
+      window.electron.invoke(CustomEvents.viewTrackProcessEvent, '');
       window.electron.closeWindow();
     } else {
       console.error("Electron API is not available.");

@@ -4,6 +4,7 @@ import { MinimalMarketLayoutV3, MinimalTokenAccountData } from './helpers';
 import { FilterKey, FilterList, FilterValue, TokenState } from './filters';
 import * as raydium from '@raydium-io/raydium-sdk';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { LiquidityStateV4 } from '@raydium-io/raydium-sdk';
 
 export type TrackedToken = {
   mint: PublicKey;
@@ -18,7 +19,7 @@ export interface ITrackProcessInterface {
   RAYDIUM_LIQUIDITY_PROGRAM_ID_V4: PublicKey;
   OPENBOOK_PROGRAM_ID: PublicKey;
   markets: Set<string>;
-  pools: Set<string>;
+  pools: Map<string, {poolId: string, baseMint: string, quoteMint: string}>;
   tokenAccounts: Map<string, MinimalTokenAccountData>;
   trades: Trade[];
   tokens: TrackedToken[];
@@ -30,7 +31,14 @@ export interface ITrackProcessInterface {
   saveTokenAccount(mint: PublicKey, accountData: MinimalMarketLayoutV3): MinimalTokenAccountData;
   mapSettings(settings: any[]): void;
   mapPoolFilters(poolFilters: any[]): void;
-  createTrade(state: TokenState): Promise<void>;
+  createTrade(state: TokenState, mint: string, simulate: boolean): Promise<void>;
+  savePool(poolId: string, poolState: LiquidityStateV4): Promise<void>;
+  savePosition(poolId: string, positionId: string, mint: string, amount: number, signature: string): Promise<void>;
+  openPosition(positionId: string, amount: number, startingPrice: number,  openTime: string, signature: string): Promise<void>;
+  updatePositionStatus(positionId: string, status: string, signature?: string, amount?: number): Promise<void>;
+  closePosition(positionId: string, exitPrice: number, closeTime: string, signature: string): Promise<void>;
+  gatherTradesUpdates(): any[];
+  gatherPoolsUpdates(): any[];
 }
 
 export default class TrackProcess implements ITrackProcessInterface {
@@ -41,7 +49,7 @@ export default class TrackProcess implements ITrackProcessInterface {
     this.connection = connection;
     this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4 = raydium.MAINNET_PROGRAM_ID.AmmV4;
     this.OPENBOOK_PROGRAM_ID = raydium.MAINNET_PROGRAM_ID.OPENBOOK_MARKET;
-    this.pools = new Set<string>();
+    this.pools = new Map<string, {poolId: string, baseMint: string, quoteMint: string}>();
     this.markets = new Set<string>();
     this.tokenAccounts = new Map<string, MinimalTokenAccountData>();
     this.trades = [];
@@ -54,7 +62,7 @@ export default class TrackProcess implements ITrackProcessInterface {
   RAYDIUM_LIQUIDITY_PROGRAM_ID_V4: PublicKey;
   OPENBOOK_PROGRAM_ID: PublicKey;
   markets: Set<string>;
-  pools: Set<string>;
+  pools: Map<string, {poolId: string, baseMint: string, quoteMint: string}>;
   tokenAccounts: Map<string, MinimalTokenAccountData>;
   trades: Trade[];
   tokens: TrackedToken[];
@@ -72,7 +80,27 @@ export default class TrackProcess implements ITrackProcessInterface {
   initialize(params: any): void {
     throw new Error('Method not implemented.');
   }
-  async createTrade(state: TokenState): Promise<void> {
+  async createTrade(state: TokenState, mint: string, simulate: boolean): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+
+  async savePool(poolId: string, poolState: LiquidityStateV4): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+
+  async savePosition(poolId: string, positionId: string, mint: string, amount: number, signature: string): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+
+  async openPosition(positionId: string, amount: number, startingPrice: number,  openTime: string, signature: string): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+
+  async updatePositionStatus(positionId: string, status: string, signature?: string, amount?: number): Promise<void> {
+    throw new Error('Method not implemented.');
+  }
+
+  async closePosition(positionId: string, exitPrice: number, closeTime: string, signature: string): Promise<void> {
     throw new Error('Method not implemented.');
   }
 
@@ -133,4 +161,12 @@ export default class TrackProcess implements ITrackProcessInterface {
       })
     );
   }
+
+  gatherTradesUpdates(): any[] {
+    throw new Error('Method not implemented.');
+  }
+  gatherPoolsUpdates(): any[] {
+    throw new Error('Method not implemented.');
+  }
+
 }

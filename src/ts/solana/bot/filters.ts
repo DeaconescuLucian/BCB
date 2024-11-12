@@ -153,7 +153,7 @@ export class TokenState {
         await this.initP;
         let s = await this.getMintSupplyRaw();
 
-        if(this.baseMintVault) return (this.baseMintVault! / Number(s) >= value!);
+        if(this.baseMintVault) return (this.baseMintVault! / Number(s) >= (value / 100)!);
         else return false;
     }
 }

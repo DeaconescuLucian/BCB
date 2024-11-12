@@ -82,8 +82,7 @@ const SwapHandler = (solanaConnection: Connection, db: sqlite3.Database, mainWin
                 arg.fees,
                 arg.slippage
               );
-            else
-            {
+            else {
               response = await swapWithRaydiumAPI(
                 solanaConnection,
                 arg.params.wallet,
@@ -199,7 +198,7 @@ const SimpleTransferHandler = (
         const keyPair = getKeyPairFromSecret(wallet.secretKey);
         if (keyPair) {
           response = await simpleTransfer(
-            { walletA: keyPair, walletB: new PublicKey(arg.walletB), amount: arg.amount },
+            { walletA: keyPair, walletB: new PublicKey(arg.walletB), amount: Number(arg.amount) },
             { prioFee: arg.fee },
             solanaConnection,
             arg.simulate
@@ -237,41 +236,51 @@ const SimpleTokenTransferHandler = (
       arg: { walletA: string; walletB: string; mint: string; amount: number; fee: number; simulate: boolean }
     ) => {
       let response: any = null;
-      const wallet = await getWalletSecret(db, arg.walletA);
-      if (wallet) {
-        const keyPair = getKeyPairFromSecret(wallet.secretKey);
-        if (keyPair) {
-          response = await simpleTokenTransfer(
-            {
-              walletA: keyPair,
-              walletB: new PublicKey(arg.walletB),
-              mint: new PublicKey(arg.mint),
-              amount: arg.amount,
-            },
-            { prioFee: arg.fee },
-            solanaConnection,
-            arg.simulate
-          );
-          const prices = await getTokensPrice([arg.mint, 'So11111111111111111111111111111111111111112']);
-          const solanaAmount = arg.amount * (prices[arg.mint] / prices['So11111111111111111111111111111111111111112']);
+      try {
+        const wallet = await getWalletSecret(db, arg.walletA);
+        if (wallet) {
+          const keyPair = getKeyPairFromSecret(wallet.secretKey);
+          if (keyPair) {
+            response = await simpleTokenTransfer(
+              {
+                walletA: keyPair,
+                walletB: new PublicKey(arg.walletB),
+                mint: new PublicKey(arg.mint),
+                amount: Number(arg.amount),
+              },
+              { prioFee: arg.fee },
+              solanaConnection,
+              arg.simulate
+            );
+            const prices = await getTokensPrice([arg.mint, 'So11111111111111111111111111111111111111112']);
+            const solanaAmount =
+              arg.amount * (prices[arg.mint] / prices['So11111111111111111111111111111111111111112']);
 
-          const transaction = {
-            signature: response.signature,
-            wallet: arg.walletA,
-            value: solanaAmount,
-            date: new Date(),
-            status: 'pending',
-            type: 'token transfer',
-          };
-          saveTransactionHelper(arg.simulate, transaction, response, mainWindow, db);
+            const transaction = {
+              signature: response.signature,
+              wallet: arg.walletA,
+              value: solanaAmount,
+              date: new Date(),
+              status: 'pending',
+              type: 'token transfer',
+            };
+            saveTransactionHelper(arg.simulate, transaction, response, mainWindow, db);
+          }
         }
-      }
 
-      return {
-        status: response?.success ? 'success' : 'fail',
-        message: response?.success ? 'Transaction successful' : 'Transaction failed',
-        error: response?.error ? response.error : null,
-      };
+        return {
+          status: response?.success ? 'success' : 'fail',
+          message: response?.success ? 'Transaction successful' : 'Transaction failed',
+          error: response?.error ? response.error : null,
+        };
+      } catch (error) {
+        console.error(error);
+        return {
+          status: response?.success ? 'success' : 'fail',
+          message: response?.success ? 'Transaction successful' : 'Transaction failed',
+          error: response?.error ? response.error : null,
+        };
+      }
     }
   );
 };

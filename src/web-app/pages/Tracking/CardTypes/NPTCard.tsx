@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { walletSvg, poolSvg, profitSvg, lossSvg } from '../../../assets/svg';
 import CopyToClipboard from '../../../components/CopyToClipboard';
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,7 @@ interface NPTCardProps {
   data: any;
 }
 
-const NPTCard = memo((props: NPTCardProps) => {
+const NPTCard = (props: NPTCardProps) => {
     const { data } = props;
     const navigate = useNavigate();
   return (
@@ -71,14 +71,14 @@ const NPTCard = memo((props: NPTCardProps) => {
               <div className="col-6">
                 <div className="row center">
                   <span className={data.profit !== 0 ? (data.profit > 0 ? 'profit' : 'loss') : ''}>
-                    {Number(data.profit?.toFixed(2))}<span className='currency'>SOL</span>
+                    {Number(data.profit?.toFixed(4))}<span className='currency'>SOL</span>
                   </span>
                 </div>
               </div>
               <div className="col-6">
                 <div className="row center">
                   <span className={data.profit !== 0 ? (data.profit > 0 ? 'profit' : 'loss') : ''}>
-                    {Number(data.profitPercentage?.toFixed(2))}%
+                    {data.profitPercentage !== null ? Number(data.profitPercentage?.toFixed(2)) : ''}%
                   </span>
                 </div>
               </div>
@@ -88,6 +88,6 @@ const NPTCard = memo((props: NPTCardProps) => {
       </div>
     </div>
   );
-});
+};
 
 export default NPTCard;

@@ -1,8 +1,8 @@
-import { Connection, Context, KeyedAccountInfo, Keypair, Logs, PublicKey } from '@solana/web3.js';
-import TrackProcess, { ITrackProcessInterface, TrackedToken } from './trackProcess';
+import { Context, KeyedAccountInfo, Logs, PublicKey } from '@solana/web3.js';
+import TrackProcess from './trackProcess';
 import { checkIfTransactionIsLPBurn, getMinimalMarketV3, MinimalTokenAccountData } from './helpers';
 import Trade from './trade';
-import { FilterKey, FilterList, FilterValue, TokenState } from './filters';
+import { FilterList, TokenState } from './filters';
 import * as raydium from '@raydium-io/raydium-sdk';
 import * as bs58 from 'bs58';
 import {
@@ -12,6 +12,7 @@ import {
   LiquidityStateV4,
 } from '@raydium-io/raydium-sdk';
 import { getSolanaBalance, getWSOLBalance } from '../utils';
+import TrackProcessManager from './trackProcessManager';
 
 export class NPTTrackProcess extends TrackProcess {
   raydiumSubscriptionId: number | null = null;
@@ -48,7 +49,7 @@ export class NPTTrackProcess extends TrackProcess {
                 console.log(`Detected LP Burn for token ${key.toString()}`);
                 console.log(`Opening position`);
 
-                this.createTrade(state);
+                this.createTrade(state, state.poolState.baseMint.toString(), false);
                 await this.unsubscribefromToken(sub);
                 return;
               }
@@ -127,15 +128,15 @@ export class NPTTrackProcess extends TrackProcess {
       console.log(`Checking filters for token`);
 
       if (resultsArray.includes(false)) {
-        //this.pools.delete(id.toString());
         console.log(`Skipping pool due to filters`);
         return;
       } else {
         console.log(`Adding token to tracker`);
         this.addToken(state);
         await state.initP;
-        //TODO: remove
-        this.createTrade(state);
+        await this.savePool(id.toString(), poolState);
+        //Just for testing
+        //this.createTrade(state, state.poolState.baseMint.toString(), false);
       }
     } catch (e) {
       console.log({ error: e }, `Failed to process pool`);
@@ -151,7 +152,6 @@ export class NPTTrackProcess extends TrackProcess {
     this.initialized = true;
 
     const runTimestamp = Math.floor(new Date().getTime() / 1000);
-
     this.raydiumSubscriptionId = this.connection.onProgramAccountChange(
       this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4,
       async (updatedAccountInfo: KeyedAccountInfo) => {
@@ -163,9 +163,12 @@ export class NPTTrackProcess extends TrackProcess {
 
         const poolOpenTimeReadable = new Date(poolOpenTime * 1000).toLocaleString();
         const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
-
         if (poolOpenTime > runTimestamp && !existing) {
-          this.pools.add(key);
+          this.pools.set(key, {
+            poolId: key,
+            baseMint: poolState.baseMint.toString(),
+            quoteMint: poolState.quoteMint.toString(),
+          });
 
           console.log(`Pool Detected Time: ${newrunTimestampReadable}`);
           console.log(`Pool Open Time: ${poolOpenTimeReadable}`);
@@ -244,43 +247,61 @@ export class NPTTrackProcess extends TrackProcess {
   initialize(params: { pools: any[]; poolFilters: any[]; settings: any[]; positions: any[] }): void {
     const { pools, poolFilters, settings, positions } = params;
     try {
-      pools.forEach(async (p) => {
-        this.pools.add(p.poolId);
-        this.markets.add(p.marketId);
-
-        //create Token state
-        const poolAccountInfo = await this.connection.getAccountInfo(p.poolId);
-        const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(poolAccountInfo!.data);
-        let state = new TokenState(poolState, ([] as unknown) as FilterList, this.connection);
-        state.poolId = p.poolId;
-        const market = await getMinimalMarketV3(this.connection, poolState.marketId, `processed`);
-        this.saveTokenAccount(poolState.baseMint, market);
-        this.createTrade(state);
-      });
       this.mapSettings(settings);
       this.mapPoolFilters(poolFilters);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  async createTrade(state: TokenState): Promise<void> {
-    let trade;
-    const balance = await getWSOLBalance(this.connection, this.wallet.publicKey);
-    const solBalance = await getSolanaBalance(this.connection, this.wallet.publicKey);
-    if(solBalance > 0.0002)
-    {
-      if (this.settings.buyAmountType === 'Fixed') {
-        if (balance >= this.settings.buyAmountValue) {
-          trade = new Trade(
+      positions.forEach(async (pos) => {
+        const p = pools.find((p) => p.poolId === pos.poolId);
+        if (p) {
+          this.pools.set(p.poolId, {
+            poolId: p.poolId,
+            baseMint: p.baseMint,
+            quoteMint: p.quoteMint,
+          });
+          this.markets.add(p.marketId);
+          const poolAccountInfo = await this.connection.getAccountInfo(new PublicKey(p.poolId));
+          const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(poolAccountInfo!.data);
+          let state = new TokenState(poolState, ([] as unknown) as FilterList, this.connection);
+          state.poolId = new PublicKey(p.poolId);
+          const market = await getMinimalMarketV3(this.connection, poolState.marketId, `processed`);
+          this.saveTokenAccount(poolState.baseMint, market);
+          const trade = new Trade(
             this,
             state,
+            p.baseMint,
             this.settings.buyAmountValue,
             this.settings.targetPercentage,
             this.settings.stopLossPercentage,
             this.wallet,
             100,
-            true
+            false
+          );
+          trade.reopen(pos.amount, pos.startingPrice, pos.currentPrice, pos.openTime, pos.id);
+          this.trades.push(trade);
+        }
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async createTrade(state: TokenState, mint: string, simulate: boolean): Promise<void> {
+    let trade;
+    const balance = await getWSOLBalance(this.connection, this.wallet.publicKey);
+    const solBalance = await getSolanaBalance(this.connection, this.wallet.publicKey);
+
+    if (solBalance > 0.0002) {
+      if (this.settings.buyAmountType === 'Fixed') {
+        if (balance >= this.settings.buyAmountValue) {
+          trade = new Trade(
+            this,
+            state,
+            mint,
+            this.settings.buyAmountValue,
+            this.settings.targetPercentage,
+            this.settings.stopLossPercentage,
+            this.wallet,
+            100,
+            simulate
           );
         } else {
           console.log('Insufficient  WSOL balance');
@@ -293,12 +314,13 @@ export class NPTTrackProcess extends TrackProcess {
             trade = new Trade(
               this,
               state,
+              mint,
               amount,
               this.settings.targetPercentage,
               this.settings.stopLossPercentage,
               this.wallet,
               100,
-              true
+              simulate
             );
           else console.log('Insufficient  WSOL balance');
         } else {
@@ -306,20 +328,127 @@ export class NPTTrackProcess extends TrackProcess {
             trade = new Trade(
               this,
               state,
+              mint,
               this.settings.buyAmountMinValue,
               this.settings.targetPercentage,
               this.settings.stopLossPercentage,
               this.wallet,
               100,
-              true
+              simulate
             );
           else console.log('Insufficient WSOL balance');
         }
       }
-      trade?.buy();
-    }
-    else {
+      if (trade) {
+        this.trades.push(trade);
+        trade.buy();
+      }
+    } else {
       console.log('Insufficient SOL balance');
     }
+  }
+
+  gatherTradesUpdates() {
+    return this.trades.map((trade) => {
+      return {
+        mint: trade.mint,
+        status: trade.status,
+        startingPrice: trade.openPrice,
+        openTime: trade.openTime,
+        currentPrice: trade.currentPrice,
+        exitPrice: trade.exitPrice,
+        amount: trade.ownedTokenAmount,
+        id: trade.positionId,
+      };
+    });
+  }
+
+  gatherPoolsUpdates() {
+    let pools = [];
+    for (const pool of this.pools.values()) {
+      pools.push(pool);
+    }
+    return pools;
+  }
+
+  async savePool(poolId: string, poolState: LiquidityStateV4) {
+    const trackedPool = {
+      trackProcessId: this.id,
+      poolId: poolId,
+      trackedOn: new Date().toISOString(),
+      baseMint: poolState.baseMint.toString(),
+      quoteMint: poolState.quoteMint.toString(),
+      marketId: poolState.marketId.toString(),
+    };
+    return await TrackProcessManager.getInstance().saveTrackedPool(trackedPool);
+  }
+
+  async savePosition(poolId: string, positionId: string, mint: string, amount: number, signature: string) {
+    const position = {
+      trackProcessId: this.id,
+      positionId,
+      poolId,
+      mint,
+      status: 'open pending',
+      amount,
+      signature,
+      type: 'NPT open',
+      wallet: this.wallet,
+    };
+    return await TrackProcessManager.getInstance().savePosition(position, this.id);
+  }
+
+  async openPosition(positionId: string, amount: number, startingPrice: number, openTime: string, signature: string) {
+    return await TrackProcessManager.getInstance().openPosition(
+      positionId,
+      amount,
+      startingPrice,
+      openTime,
+      signature,
+      this.id
+    );
+  }
+
+  async updatePositionStatus(positionId: string, status: string, signature: string, amount?: number): Promise<void> {
+    if (status === 'open fail' || status === 'close fail') {
+      const positionToRemove = this.trades.find((t) => t.positionId === positionId);
+      if (positionToRemove)
+        TrackProcessManager.getInstance().updateTpNoTrackPositions(this.id, {
+          id: positionToRemove.positionId,
+          mint: positionToRemove.mint,
+          amount: positionToRemove.ownedTokenAmount,
+          startingPrice: positionToRemove.openPrice,
+          currentPrice: positionToRemove.currentPrice,
+          exitPrice: positionToRemove.exitPrice,
+          status: positionToRemove.status,
+          openTime: positionToRemove.openTime,
+          poolId: positionToRemove.state.poolId,
+        });
+      this.trades = this.trades.filter((t) => t.positionId !== positionId);
+    }
+    return await TrackProcessManager.getInstance().updatePositionStatus(positionId, status, signature!, this.id, {
+      signature,
+      amount: amount,
+      wallet: this.wallet,
+      type: 'NPT close',
+    });
+  }
+
+  async closePosition(positionId: string, exitPrice: number, closeTime: string, signature: string) {
+    const positionToRemove = this.trades.find((t) => t.positionId === positionId);
+    if (positionToRemove)
+      TrackProcessManager.getInstance().updateTpNoTrackPositions(this.id, {
+        id: positionToRemove.positionId,
+        mint: positionToRemove.mint,
+        amount: positionToRemove.ownedTokenAmount,
+        startingPrice: positionToRemove.openPrice,
+        currentPrice: positionToRemove.currentPrice,
+        exitPrice: positionToRemove.exitPrice,
+        status: positionToRemove.status,
+        openTime: positionToRemove.openTime,
+        poolId: positionToRemove.state.poolId,
+      });
+    this.trades = this.trades.filter((t) => t.positionId !== positionId);
+    return await TrackProcessManager.getInstance().closePosition(positionId, exitPrice, closeTime, signature, this.id);
   }
 }

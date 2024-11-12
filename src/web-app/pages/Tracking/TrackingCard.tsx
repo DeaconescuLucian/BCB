@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import DefaultTrackingCard from './CardTypes/DefaultCard';
 import NPTCard from './CardTypes/NPTCard';
 import { navigateAndSave } from '../../utils';
@@ -31,4 +31,4 @@ const TrackingCard: React.FC<TrackingCardProps> = ({ type, data }) => {
   );
 };
 
-export default TrackingCard;
+export default memo(TrackingCard);

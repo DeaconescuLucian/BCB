@@ -1,5 +1,5 @@
 .track-process-page {
-  height: calc(100% - 35px);
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -22,6 +22,9 @@
 
   .idle {
     color: @color-pending;
+    svg {
+      fill: @color-pending !important;
+    }
   }
 
   .npt-process {
@@ -46,7 +49,7 @@
       background-color: @color-base;
 
       .left-side {
-        width: 50%;
+        width: 70%;
 
         .copy-icon {
             svg {
