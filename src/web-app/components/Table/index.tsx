@@ -211,7 +211,7 @@ const Table = ({ columns, rows, actions, pagination, constantlyUpdated }: ITable
                     const pageSizeIndex = pagination.pageSizes.findIndex((p) => p === s);
                     let previousPageSize = 0;
                     if (pageSizeIndex > 0) previousPageSize = pagination.pageSizes[pageSizeIndex - 1];
-                    const disabled = previousPageSize > rows.length;
+                    const disabled = previousPageSize >= rows.length;
                     return (
                       <div
                         key={`pagesize-option-${s}`}
