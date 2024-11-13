@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CustomEvents } from '../../../../ts/events';
 import Loading from '../../../components/Loading';
-import { walletSvg, profitSvg, lossSvg, pendingSvg, successSvg, warningSvg, crossSvg } from '../../../assets/svg';
+import {
+  walletSvg,
+  profitSvg,
+  lossSvg,
+  pendingSvg,
+  successSvg,
+  warningSvg,
+  crossSvg,
+  saveSvg,
+} from '../../../assets/svg';
 import Switch from '../../../components/Switch';
 import Tabstrip from '../../../components/Tabstrip';
 import Table from '../../../components/Table';
@@ -11,6 +20,11 @@ import CopyToClipboard from '../../../components/CopyToClipboard';
 import { useToast } from '../../../contexts/ToastContext';
 import { updatePageSettings } from '../../../utils';
 import { formatTinyNumber, tinyNumber } from '../../../utils';
+import Dialog from '../../../components/Dialog';
+import Input from '../../../components/FormControls/Input';
+import Button from '../../../components/FormControls/Button';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchWallets } from '../../../store/reducers/wallets';
 
 const NPTProcess = (props) => {
   const pageSettings = 'npt-process-settings';
@@ -20,6 +34,8 @@ const NPTProcess = (props) => {
     NPTSettings = JSON.parse(NPTSettingsString);
   }
 
+  const dispatch = useDispatch();
+  const { wallets } = useSelector((state) => state.wallets);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const { showToast } = useToast();
@@ -31,6 +47,9 @@ const NPTProcess = (props) => {
   const [processStatus, setProcessStatus] = useState(!!props.data.isActive);
   const [totalPct, setTotalPct] = useState(props.data.profitPercentage);
   const [netProfit, setNetProfit] = useState(props.data.profit);
+  const [showSaveWalletDialog, setShowSaveWalletDialog] = useState(false);
+  const [walletAlias, setWalletAlias] = useState('');
+  const [walletAliasError, setWalletAliasError] = useState('Wallet alias must be between 3 and 20 characters long.');
 
   const [tabs] = useState([
     { name: 'Tracked Pools', url: '/track-process' },
@@ -418,7 +437,7 @@ const NPTProcess = (props) => {
             return {
               ...e,
               value: Number(e.value.toFixed(4)),
-              time: timeAgo(e.time)
+              time: timeAgo(e.time),
             };
           })
         );
@@ -449,7 +468,7 @@ const NPTProcess = (props) => {
                 return {
                   ...e,
                   value: Number(e.value.toFixed(4)),
-                  time: timeAgo(e.time)
+                  time: timeAgo(e.time),
                 };
               })
             );
@@ -471,6 +490,32 @@ const NPTProcess = (props) => {
     setTableKey(activeTab.name);
     updateTableData();
   }, [activeTab]);
+
+  const saveWallet = async () => {
+    setLoading(true);
+    const wallet = await window.electron.invoke(CustomEvents.saveWalletFromTrackProcessEvent, {
+      trackProcessId: props.data.id,
+      alias: walletAlias,
+    });
+    if (wallet) {
+      showToast('Wallet saved successfully', 'success');
+    } else {
+      showToast('Error saving wallet', 'fail');
+    }
+    dispatch(fetchWallets());
+    setShowSaveWalletDialog(false);
+    setLoading(false);
+  };
+
+  const validateWalletAlias = (value) => {
+    const errorMessage = 'Wallet alias must be between 3 and 20 characters long.';
+    if (value.length < 3 || value.length > 20) {
+      setWalletAliasError(errorMessage);
+      return errorMessage;
+    }
+    setWalletAliasError(null);
+    return null;
+  };
 
   return (
     <div className={`npt-process`} ref={loadingParentRef}>
@@ -517,6 +562,17 @@ const NPTProcess = (props) => {
               {props.data.wallet}
               <CopyToClipboard text={props.data.wallet} />
             </span>
+            {!wallets.find((w) => w.publicKey === props.data.wallet) && (
+              <span
+                title="Save wallet"
+                className="save-wallet-icon"
+                onClick={() => {
+                  setShowSaveWalletDialog(true);
+                }}
+              >
+                {saveSvg}
+              </span>
+            )}
           </div>
         </div>
         <div className="right-side">
@@ -555,6 +611,45 @@ const NPTProcess = (props) => {
         <Empty text={tableType?.noData}></Empty>
       )}
       {loading && <Loading text={loadingMessage} parentRef={loadingParentRef}></Loading>}
+      {showSaveWalletDialog && (
+        <Dialog className="track-process-save-wallet-dialog" onClose={() => setShowSaveWalletDialog(false)}>
+          <div className="track-process-save-wallet-dialog-header">
+            <div className="title">
+              {' '}
+              <span>Save wallet</span>
+              <span
+                onClick={() => {
+                  setShowSaveWalletDialog(false);
+                }}
+              >
+                {crossSvg}
+              </span>
+            </div>
+            <div className="subtitle">
+              {' '}
+              <span>Select an alias for the wallet</span>
+            </div>
+          </div>
+          <Input
+            type="text"
+            theme="primary"
+            validate={validateWalletAlias}
+            onChange={(value) => setWalletAlias(value)}
+            value={walletAlias}
+            placeholder="Alias"
+          ></Input>
+          <Button
+            theme="primary"
+            type="save"
+            text="Save wallet"
+            onClick={() => {
+              saveWallet();
+            }}
+            disabled={!!walletAliasError}
+            tooltipDisabled={walletAliasError}
+          ></Button>
+        </Dialog>
+      )}
     </div>
   );
 };
