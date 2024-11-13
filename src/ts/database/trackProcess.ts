@@ -326,3 +326,28 @@ export function getTrackProcessShallowData(
     );
   });
 }
+
+export function getTrackProcessWalletSecret(
+  db: sqlite3.Database,
+  tpId: string,
+  callback: (err: Error | null, rows?: any[]) => void
+): void {
+  db.serialize(() => {
+    db.all(
+      `SELECT 
+          tp.walletSecretKey AS secretKey,
+          tp.walletPublicKey AS publicKey
+       FROM trackProcess tp
+       WHERE tp.id = '${tpId}'
+      `,
+      (err: Error | null, rows: any[]) => {
+        if (err) {
+          console.error('Error retrieving wallet:', err.message);
+          callback(err);
+        } else {
+          callback(null, rows);
+        }
+      }
+    );
+  });
+}

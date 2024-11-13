@@ -71,7 +71,8 @@ export const CustomEvents = {
   startTrackProcessEvent: 'start-track-process',
   stopTrackProcessEvent: 'stop-track-process',
   updateTrackProcessEvent: 'update-track-process',
-  viewTrackProcessEvent: 'view-track-process'
+  viewTrackProcessEvent: 'view-track-process',
+  saveWalletFromTrackProcessEvent: 'save-wallet-from-track-process'
 };
 
 export function verifyUniqueEvents(processType: ConfigDict): boolean {

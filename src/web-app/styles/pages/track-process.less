@@ -128,4 +128,64 @@
       margin-bottom: 10px;
     }
   }
+
+  .track-process-save-wallet-dialog {
+    width: 400px;
+    min-height: 240px;
+    height: 240px;
+    background-color: @color-dark;
+    border-radius: 10px;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: start !important;
+  
+    .track-process-save-wallet-dialog-header {
+      position: sticky;
+      top: 0px;
+      padding: 15px;
+      background-color: @color-dark;
+      width: calc(100% - 30px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: @color-font-white;
+      font-size: 18px;
+      letter-spacing: 1px;
+      z-index: 100;
+      border-radius: 10px;
+
+      .title {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+      }
+  
+      .subtitle {
+        width: 100%;
+        display: flex;
+        color: @color-font-gray;
+        font-size: 14px;
+        margin-bottom: 30px;
+      }
+  
+      svg {
+        width: 20px;
+        height: 20px;
+        fill: @color-info;
+        cursor: pointer;
+      }
+    }
+
+    input {
+      width: 360px;
+    }
+  }
+
+  .save-wallet-icon {
+    cursor: pointer;
+    svg {
+      fill: @color-brand !important;
+    }
+  }
 }

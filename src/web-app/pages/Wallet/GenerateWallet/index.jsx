@@ -42,7 +42,7 @@ function GenerateWallet() {
 
   const validateWalletAlias = (value) => {
     const errorMessage = 'Wallet alias must be between 3 and 20 characters long.';
-    if (value.length < 3) return errorMessage;
+    if (value.length < 3 || value.length > 20) return errorMessage;
 
     return null;
   };

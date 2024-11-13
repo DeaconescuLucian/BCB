@@ -5,6 +5,7 @@ import { generateWallet, getKeyPairFromSecret } from '../solana/wallet';
 import * as trackProcessDb from '../database/trackProcess';
 import * as trackProcessPoolFiltersDb from '../database/trackProcessPoolFilters';
 import * as trackProcessSettingsDb from '../database/trackProcessSettings';
+import * as walletDb from '../database/wallets';
 import { BrowserWindow } from 'electron';
 import { Connection, PublicKey } from '@solana/web3.js';
 import TrackProcessManager from '../solana/bot/trackProcessManager';
@@ -291,7 +292,7 @@ const GetTrackProcessDetailsHandler = (db: sqlite3.Database) => {
           settings,
           pools,
           transactions,
-          positions: positions.sort((a:any, b:any) => {
+          positions: positions.sort((a: any, b: any) => {
             if (a.openTime === null && b.openTime !== null) {
               return -1;
             }
@@ -335,7 +336,12 @@ const StartTrackProcessHandler = (
             positions: positions.filter((e: any) => e.status === 'open'),
           });
           trackProcess.startProcess();
-          tpm.register(arg, trackProcess, positions.filter((e: any) => e.status !== 'open'), transactions);
+          tpm.register(
+            arg,
+            trackProcess,
+            positions.filter((e: any) => e.status !== 'open'),
+            transactions
+          );
           await trackProcessDb.startTrackProcess(db, arg).then(async (r) => {
             sendToRenderer(window, CustomEvents.updateTrackProcessEvent, {
               id: arg,
@@ -379,6 +385,35 @@ const ViewTrackProcessHandler = (tpm: TrackProcessManager) => {
   });
 };
 
+const SaveTrackProcessWalletHandler = (db: sqlite3.Database) => {
+  registerHandler(CustomEvents.saveWalletFromTrackProcessEvent, async (e: any, arg: any) => {
+    return new Promise(async (resolve, reject) => {
+      trackProcessDb.getTrackProcessWalletSecret(db, arg.trackProcessId, async (err, rows) => {
+        if (rows) {
+          walletDb.insertWallet(
+            db,
+            {
+              wallet: {
+                publicKey: rows[0].publicKey,
+                secretKey: rows[0].secretKey,
+              },
+              alias: arg.alias,
+              balance: 0,
+            },
+            (result: any) => {
+              resolve(result);
+            }
+          );
+        }
+        else
+        {
+          reject('not saved')
+        }
+      });
+    });
+  });
+};
+
 const handleTrackProcess = (
   db: sqlite3.Database,
   window: BrowserWindow | null,
@@ -391,6 +426,7 @@ const handleTrackProcess = (
   StartTrackProcessHandler(db, window, connection, tpm);
   StopTrackProcessHandler(db, window, tpm);
   ViewTrackProcessHandler(tpm);
+  SaveTrackProcessWalletHandler(db);
 };
 
 export default handleTrackProcess;

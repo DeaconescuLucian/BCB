@@ -24,23 +24,7 @@ const ImportWalletHandler = (db: sqlite3.Database, solanaConnection: Connection)
       const solBalance = await getSolanaBalance(solanaConnection, response.data?.keyPair.publicKey as PublicKey);
       return new Promise((resolve) => {
         walletDb.insertWallet(db, { wallet: response.data, alias: arg.alias, balance: solBalance }, (result: any) => {
-          if (!result.error)
-            //TODO: needs fix when wallet is empty
-            getTokensOwnedByWallet(solanaConnection, new PublicKey(response.data?.publicKey)).then((res) => {
-              if (res.tokens.length) {
-                insertTokens(db, res.tokens, (r) => {
-                  if (!r.error) {
-                    if (res.accounts.length)
-                      insertWalletTokenAccounts(db, res.accounts, (r) => {
-                        resolve(result);
-                      });
-                  }
-                });
-              }
-            });
-          else {
-            resolve(result);
-          }
+          resolve(result)
         });
       });
     } catch (error) {
