@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as isDev from 'electron-is-dev';
 import * as remoteMain from '@electron/remote/main';
 import * as electronReload from 'electron-reload';
-import { fork, ChildProcess, execSync } from 'child_process';
+import { execSync } from 'child_process';
 import { registerHandler, sendToRenderer } from './ipcHandler';
 import { setupHandlers } from './handlers';
 import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './events';

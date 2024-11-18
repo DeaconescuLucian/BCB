@@ -1,5 +1,5 @@
 import sqlite3 from 'sqlite3';
-import { runQuery } from './db';
+import { runQuery } from '../db';
 
 
 export async function createTableTrackProcessTransactions(db: sqlite3.Database) {

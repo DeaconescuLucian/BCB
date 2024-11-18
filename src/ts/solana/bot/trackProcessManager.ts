@@ -1,8 +1,8 @@
 import TrackProcess from './trackProcess';
-import * as trackProcessPoolDb from '../../database/trackProcessPools';
-import * as trackProcessPositionDb from '../../database/trackProcessPositions';
+import * as trackProcessPoolDb from '../../database/trackProcess/trackProcessPools';
+import * as trackProcessPositionDb from '../../database/trackProcess/trackProcessPositions';
 import * as transactionsDb from '../../database/transactions';
-import * as trackProcessTransactionsDb from '../../database/trackProcessTransactions';
+import * as trackProcessTransactionsDb from '../../database/trackProcess/trackProcessTransactions';
 import sqlite3 from 'sqlite3';
 import { sendToRenderer } from '../../ipcHandler';
 import { CustomEvents } from '../../events';
