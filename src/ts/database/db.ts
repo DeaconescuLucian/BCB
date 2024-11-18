@@ -5,13 +5,8 @@ import { createTableWalletTokenAccounts } from './walletTokenAccounts';
 import { createTableTokens, insertUSDC, insertWSOL } from './tokens';
 import { createTableConnections, insertDefaultConnection } from './connections';
 import { createLookups } from './lookup';
-import { createTableTrackProcess } from './trackProcess';
-import { createTableTrackProcessSettings } from './trackProcessSettings';
-import { createTablePoolKeys } from './poolKeys';
-import { createTableTrackProcessPoolFilters } from './trackProcessPoolFilters';
-import { createTableTrackProcessPools } from './trackProcessPools';
-import { createTableTrackProcessTransactions } from './trackProcessTransactions';
-import { createTableTrackProcessPositions } from './trackProcessPositions';
+import { createDataCollectSchema } from './dataCollection';
+import { createTrackProcessSchema } from './trackProcess';
 
 export function runQuery(db: sqlite3.Database, sql: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -48,13 +43,8 @@ export async function initDatabase(db: sqlite3.Database): Promise<void> {
                 await createTableTokens(db);
                 await createTableWalletTokenAccounts(db);
                 await createTableConnections(db);
-                await createTableTrackProcess(db);
-                await createTableTrackProcessSettings(db);
-                await createTableTrackProcessPoolFilters(db);
-                await createTablePoolKeys(db);
-                await createTableTrackProcessPools(db);
-                await createTableTrackProcessTransactions(db);
-                await createTableTrackProcessPositions(db);
+                await createDataCollectSchema(db);
+                await createTrackProcessSchema(db);
                 await insertDefaultConnection(db, 'mainnet-beta');
                 await insertWSOL(db);
                 await insertUSDC(db);

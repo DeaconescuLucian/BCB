@@ -1,24 +1,24 @@
 import sqlite3 from 'sqlite3';
-import { runQuery } from './db';
+import { runQuery } from '../db';
 
-export async function createTableTrackProcessSettings(db: sqlite3.Database) {
-  const sql = `CREATE TABLE IF NOT EXISTS trackProcessSettings (
-                 trackProcessId TEXT NOT NULL,
-                 settingId INTEGER NOT NULL,
-                 settingValue TEXT,
-                 FOREIGN KEY (trackProcessId) REFERENCES trackProcess(id),
-                 FOREIGN KEY (settingId) REFERENCES trackProcessSettingsLookup(id),
-                 PRIMARY KEY (trackProcessId, settingId) )`;
+export async function createTableDataCollectProcessPoolFilters(db: sqlite3.Database) {
+  const sql = `CREATE TABLE IF NOT EXISTS dataCollectProcessPoolFilters (
+                 dataCollectProcessId TEXT NOT NULL,
+                 poolFilterId INTEGER NOT NULL,
+                 filterValue TEXT,
+                 FOREIGN KEY (dataCollectProcessId) REFERENCES dataCollectProcess(id),
+                 FOREIGN KEY (poolFilterId) REFERENCES poolFiltersLookup(id),
+                 PRIMARY KEY (dataCollectProcessId, poolFilterId) )`;
   await runQuery(db, sql);
 }
 
-export function insertSettings(
+export function insertPoolFilters(
   db: sqlite3.Database,
-  settings: any[]
+  filters: any[]
 ): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     const insertStatement = db.prepare(
-      `INSERT OR IGNORE INTO trackProcessSettings (trackProcessId, settingId, settingValue) VALUES (?, ?, ?)`
+      `INSERT OR IGNORE INTO dataCollectProcessPoolFilters (dataCollectProcessId, poolFilterId, filterValue) VALUES (?, ?, ?)`
     );
     
     db.serialize(() => {
@@ -30,14 +30,16 @@ export function insertSettings(
     
         let hasError = false;
     
-        const promises = settings.map((s) => {
+        const promises = filters.map((f) => {
           return new Promise((resolve) => {
-            insertStatement.run(s.trackProcessId, s.settingId, s.settingValue, (err: any) => {
+            insertStatement.run(f.trackProcessId, f.poolFilterId, f.filterValue, (err: any) => {
               if (err) {
-                console.error('Error inserting setting:', err.message);
+                console.error('Error inserting pool filter:', err.message);
                 hasError = true;
+                resolve('ceva eroare'); 
+              } else {
+                resolve('da');
               }
-              resolve('mhm');
             });
           });
         });
@@ -71,4 +73,3 @@ export function insertSettings(
     });
   });
 }
-
