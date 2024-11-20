@@ -1,5 +1,5 @@
 import { registerHandler, sendToRenderer } from '../ipcHandler';
-import { CustomEvents, ProcessType } from '../events';
+import { CustomEvents } from '../events';
 import sqlite3 from 'sqlite3';
 import { generateWallet, getKeyPairFromSecret } from '../solana/wallet';
 import * as trackProcessDb from '../database/trackProcess/trackProcess';
@@ -8,8 +8,8 @@ import * as trackProcessSettingsDb from '../database/trackProcess/trackProcessSe
 import * as walletDb from '../database/wallets';
 import { BrowserWindow } from 'electron';
 import { Connection, PublicKey } from '@solana/web3.js';
-import TrackProcessManager from '../solana/bot/trackProcessManager';
-import { NPTTrackProcess } from '../solana/bot/NPTTrackProcess';
+import TrackProcessManager from '../solana/tracking/trackProcessManager';
+import { NPTTrackProcess } from '../solana/tracking/NPTTrackProcess';
 import { getWalletSecret } from '../database/wallets';
 import { simpleTransfer, wrapSol } from '../solana/transactions';
 import { generateGUID } from '../generalUtils';
@@ -417,9 +417,9 @@ const SaveTrackProcessWalletHandler = (db: sqlite3.Database) => {
 const handleTrackProcess = (
   db: sqlite3.Database,
   window: BrowserWindow | null,
-  connection: Connection,
-  tpm: TrackProcessManager
+  connection: Connection
 ) => {
+  const tpm = TrackProcessManager.getInstance();
   CreateTrackProcessHandler(db, connection);
   GetTrackProcessesHandler(db);
   GetTrackProcessDetailsHandler(db);

@@ -6,20 +6,19 @@ import * as electronReload from 'electron-reload';
 import { execSync } from 'child_process';
 import { registerHandler, sendToRenderer } from './ipcHandler';
 import { setupHandlers } from './handlers';
-import { ProcessType, ScriptConfig, verifyUniqueEvents, CustomEvents } from './events';
+import { CustomEvents, verifyUniqueEvents } from './events';
 import sqlite3 from 'sqlite3';
 import * as db from './database/db';
 import * as transactionsDb from './database/transactions';
 import { createConnection } from './solana/utils';
 import { Connection } from '@solana/web3.js';
 import * as connectionDb from './database/connections';
-import TrackProcessManager from './solana/bot/trackProcessManager';
-
-if (!verifyUniqueEvents(ProcessType)) {
+import TrackProcessManager from './solana/tracking/trackProcessManager';
+import DataCollectorManager from './solana/dataCollection/dataCollectorManager';
+if (!verifyUniqueEvents()) {
   execSync('yarn run close-web-app');
   process.exit(1);
 }
-
 electronReload.default(__dirname, {});
 
 let mainWindow: BrowserWindow | null;
@@ -27,6 +26,7 @@ let tray: Tray;
 let dbConnection: sqlite3.Database;
 let solanaConnection: Connection;
 let tpm: TrackProcessManager;
+let dcm: DataCollectorManager;
 
 remoteMain.initialize();
 
@@ -58,7 +58,7 @@ function createWindow(): void {
   mainWindow?.on('show', async () => {
     try {
       const rows = await mainWindow?.webContents.executeJavaScript(`window.electron.invoke('get-latest-transactions')`);
-      sendToRenderer(mainWindow, ProcessType.TRANSACTION.updateEvent, rows.data);
+      sendToRenderer(mainWindow, CustomEvents.transactionUpdateEvent, rows.data);
     } catch (error) {
       console.log('Error retrieving transaction history:', error);
     }
@@ -77,9 +77,10 @@ function createTray(): void {
           createWindow();
           try {
             tpm.updateWindow(mainWindow);
+            dcm.updateWindow(mainWindow);
             const result = await connectionDb.getActiveConnection(dbConnection);
             if (result) solanaConnection = createConnection(result);
-            setupHandlers(dbConnection, solanaConnection, mainWindow, tpm);
+            setupHandlers(dbConnection, solanaConnection, mainWindow);
           } catch (error) {
             console.log(error);
           }
@@ -92,6 +93,7 @@ function createTray(): void {
       label: 'Quit',
       click: async () => {
         await tpm.removeAll();
+        await dcm.removeAll();
         execSync('yarn run close-web-app');
         db.closeConnection(dbConnection);
         process.exit(1);
@@ -104,7 +106,7 @@ function createTray(): void {
 }
 
 function registerHandlers() {
-  setupHandlers(dbConnection, solanaConnection, mainWindow, tpm);
+  setupHandlers(dbConnection, solanaConnection, mainWindow);
 
   registerHandler(CustomEvents.getLatestTransactionsEvent, async () => {
     return new Promise((resolve, reject) => {
@@ -129,6 +131,7 @@ app.on('ready', async () => {
     const result = await connectionDb.getActiveConnection(dbConnection);
     if (result) solanaConnection = createConnection(result);
     tpm = TrackProcessManager.getInstance(dbConnection, mainWindow);
+    dcm = DataCollectorManager.getInstance(dbConnection, mainWindow);
     tpm.cleanUp();
     registerHandlers();
   } catch (err) {

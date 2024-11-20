@@ -5,11 +5,10 @@ import * as transactionsDb from '../../database/transactions';
 import * as trackProcessTransactionsDb from '../../database/trackProcess/trackProcessTransactions';
 import sqlite3 from 'sqlite3';
 import { sendToRenderer } from '../../ipcHandler';
-import { CustomEvents } from '../../events';
 import { BrowserWindow } from 'electron';
 import { calculateProfitPCT } from '../../generalUtils';
 import { SequentialExecutor } from '../../sequentialExecutor';
-import { ProcessType } from '../../events';
+import { CustomEvents } from '../../events';
 export interface ITrackProcessManager {
   trackProcesses: Map<string, TrackProcess>;
   db: sqlite3.Database;
@@ -22,7 +21,7 @@ export interface ITrackProcessManager {
   remove(id: string): void;
   removeAll(): void;
   removePosition(trackProcessId: string, positionId: string): void;
-  removePool(trackProcessId: string, positionId: string): void;
+  removePool(trackProcessId: string, poolId: string): void;
   saveTrackedPool(trackProcessId: string, pool: any): Promise<void>;
   viewTrackProcess(tp: string): void;
   updateTpNoTrackPositions(tp: string, position: any): void;
@@ -317,7 +316,7 @@ export default class TrackProcessManager implements ITrackProcessManager {
           else return tx;
         });
       }
-      sendToRenderer(this.window, ProcessType.TRANSACTION.updateEvent, currArr.find(tx => tx.signature === transaction.signature));
+      sendToRenderer(this.window, CustomEvents.transactionUpdateEvent, currArr.find(tx => tx.signature === transaction.signature));
       this.tpTransactions.set(tp, currArr);
       return new Promise((resolve) => {
         resolve();

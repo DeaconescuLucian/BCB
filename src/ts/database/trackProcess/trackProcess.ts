@@ -92,6 +92,7 @@ export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | nu
                                             AND tpposO.status IN ('open', 'close pending', 'close fail')
       LEFT JOIN trackProcessPositions tpposC ON tp.id = tpposC.trackProcessId
                                             AND tpposC.status = 'closed'
+      WHERE tp.trackProcessTypeId = 0
       GROUP BY tp.id;`,
       (err: Error | null, rows: any[]) => {
         if (err) {

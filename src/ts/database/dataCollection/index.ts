@@ -13,6 +13,8 @@ export async function createDataCollectSchema(db: sqlite3.Database): Promise<voi
                 await dataCollectPools.createTableDataCollectPools(db);
                 await dataCollectPoolFilters.createTableDataCollectProcessPoolFilters(db);
                 await dataCollectPoolPrices.createTableDataCollectPoolPrices(db);
+                //insert commands
+                await dataCollectProcess.insertDataCollectProcesses(db);
                 resolve();
             } catch (err) {
                 reject(err);

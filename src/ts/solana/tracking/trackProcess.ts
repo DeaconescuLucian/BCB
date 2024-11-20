@@ -1,7 +1,7 @@
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import Trade from './trade';
-import { MinimalMarketLayoutV3, MinimalTokenAccountData } from './helpers';
-import { FilterKey, FilterList, FilterValue, TokenState } from './filters';
+import { MinimalMarketLayoutV3, MinimalTokenAccountData } from '../helpers';
+import { FilterKey, FilterList, FilterValue, TokenState } from '../filters';
 import * as raydium from '@raydium-io/raydium-sdk';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { LiquidityStateV4 } from '@raydium-io/raydium-sdk';

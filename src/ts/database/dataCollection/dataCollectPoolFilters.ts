@@ -4,11 +4,12 @@ import { runQuery } from '../db';
 export async function createTableDataCollectProcessPoolFilters(db: sqlite3.Database) {
   const sql = `CREATE TABLE IF NOT EXISTS dataCollectProcessPoolFilters (
                  dataCollectProcessId TEXT NOT NULL,
+                 poolId TEXT NOT NULL,
                  poolFilterId INTEGER NOT NULL,
                  filterValue TEXT,
                  FOREIGN KEY (dataCollectProcessId) REFERENCES dataCollectProcess(id),
-                 FOREIGN KEY (poolFilterId) REFERENCES poolFiltersLookup(id),
-                 PRIMARY KEY (dataCollectProcessId, poolFilterId) )`;
+                 FOREIGN KEY (poolFilterId) REFERENCES dataCollectPoolFiltersLookup(id),
+                 PRIMARY KEY (dataCollectProcessId, poolId, poolFilterId) )`;
   await runQuery(db, sql);
 }
 
@@ -18,7 +19,7 @@ export function insertPoolFilters(
 ): Promise<string> {
   return new Promise(async (resolve) => {
     const insertStatement = db.prepare(
-      `INSERT OR IGNORE INTO dataCollectProcessPoolFilters (dataCollectProcessId, poolFilterId, filterValue) VALUES (?, ?, ?)`
+      `INSERT OR IGNORE INTO dataCollectProcessPoolFilters (dataCollectProcessId, poolId, poolFilterId, filterValue) VALUES (?, ?, ?)`
     );
     
     db.serialize(() => {
@@ -32,7 +33,7 @@ export function insertPoolFilters(
     
         const promises = filters.map((f) => {
           return new Promise((resolve) => {
-            insertStatement.run(f.trackProcessId, f.poolFilterId, f.filterValue, (err: any) => {
+            insertStatement.run(f.dataCollectProcessId, f.poolId, f.poolFilterId, f.filterValue, (err: any) => {
               if (err) {
                 console.error('Error inserting pool filter:', err.message);
                 hasError = true;
