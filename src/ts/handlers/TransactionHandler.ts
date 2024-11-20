@@ -1,5 +1,5 @@
 import { registerHandler, sendToRenderer } from '../ipcHandler';
-import { CustomEvents, ProcessType } from '../events';
+import { CustomEvents } from '../events';
 import sqlite3 from 'sqlite3';
 import { Connection, PublicKey } from '@solana/web3.js';
 import {
@@ -28,7 +28,7 @@ const saveTransactionHelper = (
     if (response.success) {
       transactionsDb.insertTransaction(db, transaction);
       if (window?.isVisible()) {
-        sendToRenderer(window, ProcessType.TRANSACTION.updateEvent, transaction);
+        sendToRenderer(window, CustomEvents.transactionUpdateEvent, transaction);
       }
       if (response.confirmation) {
         response.confirmation.then((msg: any) => {
@@ -43,7 +43,7 @@ const saveTransactionHelper = (
           };
           transactionsDb.updateTransaction(db, data);
           if (window?.isVisible()) {
-            sendToRenderer(window, ProcessType.TRANSACTION.updateEvent, data);
+            sendToRenderer(window, CustomEvents.transactionUpdateEvent, data);
           }
         });
       }

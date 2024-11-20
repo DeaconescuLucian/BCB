@@ -1,8 +1,8 @@
 import { Context, KeyedAccountInfo, Logs, PublicKey } from '@solana/web3.js';
 import TrackProcess from './trackProcess';
-import { checkIfTransactionIsLPBurn, getMinimalMarketV3, MinimalTokenAccountData } from './helpers';
+import { checkIfTransactionIsLPBurn, getMinimalMarketV3, MinimalTokenAccountData } from '../helpers';
 import Trade from './trade';
-import { FilterList, TokenState } from './filters';
+import { FilterList, TokenState } from '../filters';
 import * as raydium from '@raydium-io/raydium-sdk';
 import * as bs58 from 'bs58';
 import {

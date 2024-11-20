@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ProcessType } from '../../../ts/events';
-import { rightArrowSvg, leftArrowSvg } from '../../assets/svg';
+import { CustomEvents } from '../../../ts/events';
 import TransactionItem from './TransactionItem';
 import Tabstrip from '../Tabstrip';
 import Empty from '../Empty';
@@ -23,10 +22,8 @@ function TransactionHistory(props) {
   const maxHeight = 600;
   const [isClosed, setIsClosed] = useState(false);
 
-  const transactionProcess = ProcessType.TRANSACTION;
-
   useEffect(() => {
-    const unsubscribe = window.electron.on(transactionProcess.updateEvent, (msg) => {
+    const unsubscribe = window.electron.on(CustomEvents.transactionUpdateEvent, (msg) => {
       if (!Array.isArray(msg)) {
         let index = transactionList.findIndex((e) => e.signature === msg.signature);
         if (index === -1) {

@@ -1,10 +1,10 @@
 import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { ComputeBudgetProgram, Connection, Finality, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { calculateTransactionCost, createSignedTransaction, sendTransaction } from '../transactions';
-import { checkPrice, createPoolKeys, getFinalizedTransaction, getMinimalMarketV3, getReceivedAmount } from './helpers';
+import { checkPrice, createPoolKeys, getFinalizedTransaction, getMinimalMarketV3, getReceivedAmount } from '../helpers';
 import BN from 'bn.js';
 import * as raydium from '@raydium-io/raydium-sdk';
-import { TokenState } from './filters';
+import { TokenState } from '../filters';
 import { ITrackProcessInterface } from './trackProcess';
 import { generateGUID } from '../../generalUtils';
 import TrackProcessManager from './trackProcessManager';

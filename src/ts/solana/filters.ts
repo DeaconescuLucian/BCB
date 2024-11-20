@@ -137,6 +137,11 @@ export class TokenState {
         }
     }
 
+    public async getSolanaPool(): Promise<number> {
+        await this.initP;
+        return this.quoteMintVault!
+    }
+
     public async checkMinimumSolanaPool(value: number): Promise<boolean> {
         await this.initP;
         if(this.quoteMintVault) return this.quoteMintVault! >= value!;
@@ -147,6 +152,12 @@ export class TokenState {
         await this.initP;
         if(this.quoteMintVault) return this.quoteMintVault! <= value!;
         else return false;
+    }
+
+    public async getPoolPercentage(): Promise<number> {
+        await this.initP;
+        let s = await this.getMintSupplyRaw();
+        return this.baseMintVault! / Number(s)
     }
 
     public async checkMinimumPoolPercentage(value: number): Promise<boolean> {
