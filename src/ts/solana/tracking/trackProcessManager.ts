@@ -309,7 +309,7 @@ export default class TrackProcessManager implements ITrackProcessManager {
             return {
               ...tx,
               status: transaction.status,
-              time: tx.date.toISOString(),
+              time: tx.date,
               from: tx.wallet,
               date: null
             };
