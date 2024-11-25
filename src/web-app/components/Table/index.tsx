@@ -56,14 +56,14 @@ const Table = ({ columns, rows, actions, pagination, constantlyUpdated }: ITable
   const [currentActions, setCurrentActions] = useState(actions);
 
   useEffect(() => {
-    if(!constantlyUpdated)
-      {
-        setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
-        setCurrentPage(1);
-        setDisplayedRows(rows.slice(0, pagination?.pageSizes ? pagination.pageSizes[0] : rows.length));
-      }
+    if (!constantlyUpdated) {
+      setCurrentPageSize(pagination?.pageSizes ? pagination.pageSizes[0] : 0);
+      setCurrentPage(1);
+      setDisplayedRows(rows.slice(0, pagination?.pageSizes ? pagination.pageSizes[0] : rows.length));
+    } else {
+      setDisplayedRows(rows.slice((currentPage - 1) * currentPageSize!, currentPage * currentPageSize!));
+    }
     setTotalPages(pagination?.pageSizes ? Math.ceil(rows.length / pagination.pageSizes[0]) : 0);
-
   }, [rows]);
 
   useEffect(() => {
@@ -121,9 +121,9 @@ const Table = ({ columns, rows, actions, pagination, constantlyUpdated }: ITable
                           {column.iconProperty && column.iconDefault && !row[column.iconProperty] && (
                             <img className="no-hover" src={column.iconDefault}></img>
                           )}
-                          {
-                            column.template ? column.template(row[column.propertyName]) : row[column.propertyName]  ?? '-'
-                          }
+                          {column.template
+                            ? column.template(row[column.propertyName])
+                            : row[column.propertyName] ?? '-'}
                         </td>
                       )}
                     </>
