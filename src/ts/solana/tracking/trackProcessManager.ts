@@ -260,18 +260,18 @@ export default class TrackProcessManager implements ITrackProcessManager {
 
       const profit = calculateProfitPCT(newPositions);
       try {
-        sendToRenderer(this.window, CustomEvents.updateTrackProcessEvent, {
-          updateType: 'processDataUpdate',
-          positions: newPositions,
-          pools: newPools,
-          transactions: transactions,
-          totalPct: profit.totalPct,
-          netProfit: profit.netProfit,
-        });
+        if (this.window)
+          sendToRenderer(this.window, CustomEvents.updateTrackProcessEvent, {
+            updateType: 'processDataUpdate',
+            positions: newPositions,
+            pools: newPools,
+            transactions: transactions,
+            totalPct: profit.totalPct,
+            netProfit: profit.netProfit,
+          });
       } catch (error) {
         console.log('Error sending updates');
         console.log(error);
-        console.log(newPositions);
       }
     }
   }
@@ -294,7 +294,7 @@ export default class TrackProcessManager implements ITrackProcessManager {
           from: transaction.wallet,
           time: transaction.date.toISOString(),
           date: transaction.date.toISOString(),
-          wallet: transaction.wallet
+          wallet: transaction.wallet,
         });
         console.log('ADDING TRACK PROCESS TRANSACTION');
         await transactionsDb.insertTransaction(this.db, transaction);
@@ -313,12 +313,22 @@ export default class TrackProcessManager implements ITrackProcessManager {
               time: tx.date,
               from: tx.wallet,
               date: tx.date,
-              wallet: tx.from
+              wallet: tx.from,
             };
           else return tx;
         });
       }
-      sendToRenderer(this.window, CustomEvents.transactionUpdateEvent, currArr.find(tx => tx.signature === transaction.signature));
+      try {
+        if (this.window)
+          sendToRenderer(
+            this.window,
+            CustomEvents.transactionUpdateEvent,
+            currArr.find((tx) => tx.signature === transaction.signature)
+          );
+      } catch {
+        //nada
+      }
+
       this.tpTransactions.set(tp, currArr);
       return new Promise((resolve) => {
         resolve();
