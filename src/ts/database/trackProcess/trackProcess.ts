@@ -99,7 +99,6 @@ export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | nu
           console.error('Error retrieving track processes:', err.message);
           callback(err);
         } else {
-          console.log('Retrieved track processes.');
           callback(null, rows);
         }
       }

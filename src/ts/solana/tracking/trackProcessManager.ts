@@ -231,26 +231,26 @@ export default class TrackProcessManager implements ITrackProcessManager {
       const tp = this.trackProcesses.get(this.viewedTrackProcess);
       const noTrackPositions = this.tpNoTrackPosition.get(this.viewedTrackProcess);
       const transactions = (this.tpTransactions.get(this.viewedTrackProcess) || []).sort((a, b) => {
-        if (b.time === null && a.time !== null) {
+        if (a.time === undefined && b.time !== undefined) {
           return -1;
         }
-        if (b.time !== null && a.time === null) {
+        if (a.time !== undefined && b.time === undefined) {
           return 1;
         }
-        if (a.time !== null && b.time !== null) {
+        if (a.time !== undefined && b.time !== undefined) {
           return b.time.localeCompare(a.time);
         }
         return 0;
-      });;
+      });
 
       const newPositions = [...(tp?.gatherTradesUpdates() || []), ...(noTrackPositions || [])].sort((a, b) => {
-        if (b.openTime === null && a.openTime !== null) {
+        if (a.openTime === undefined && b.openTime !== undefined) {
           return -1;
         }
-        if (b.openTime !== null && a.openTime === null) {
+        if (a.openTime !== undefined && b.openTime === undefined) {
           return 1;
         }
-        if (a.openTime !== null && b.openTime !== null) {
+        if (a.openTime !== undefined && b.openTime !== undefined) {
           return b.openTime.localeCompare(a.openTime);
         }
         return 0;
@@ -293,7 +293,8 @@ export default class TrackProcessManager implements ITrackProcessManager {
           ...transaction,
           from: transaction.wallet,
           time: transaction.date.toISOString(),
-          date: null
+          date: transaction.date.toISOString(),
+          wallet: transaction.wallet
         });
         console.log('ADDING TRACK PROCESS TRANSACTION');
         await transactionsDb.insertTransaction(this.db, transaction);
@@ -311,7 +312,8 @@ export default class TrackProcessManager implements ITrackProcessManager {
               status: transaction.status,
               time: tx.date,
               from: tx.wallet,
-              date: null
+              date: tx.date,
+              wallet: tx.from
             };
           else return tx;
         });

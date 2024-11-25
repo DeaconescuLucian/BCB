@@ -429,8 +429,19 @@ const NPTProcess = (props) => {
     loadData();
     const unsubscribeUpdateTrackEvent = window.electron.on(CustomEvents.updateTrackProcessEvent, (msg) => {
       if (msg.updateType === 'processDataUpdate') {
-        console.log(transactions);
-        setPositions(msg.positions);
+        setPositions(
+          msg.positions.map((e) => {
+            return {
+              ...e,
+              percentage:
+                e.status === 'open' || e.status === 'close pending' || e.status === 'close fail'
+                  ? Number(((e.currentPrice / e.startingPrice) * 100).toFixed(2))
+                  : e.status === 'closed'
+                  ? Number(((e.exitPrice / e.startingPrice) * 100).toFixed(2))
+                  : '',
+            };
+          })
+        );
         setPools(msg.pools);
         setTransactions(
           msg.transactions.map((e) => {
@@ -606,6 +617,7 @@ const NPTProcess = (props) => {
           rows={tableData}
           actions={actions}
           pagination={{ pageSizes: [10, 20, 30, 40] }}
+          constantlyUpdated={true}
         ></Table>
       ) : (
         <Empty text={tableType?.noData}></Empty>

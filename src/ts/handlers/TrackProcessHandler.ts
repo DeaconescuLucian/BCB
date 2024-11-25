@@ -293,13 +293,13 @@ const GetTrackProcessDetailsHandler = (db: sqlite3.Database) => {
           pools,
           transactions,
           positions: positions.sort((a: any, b: any) => {
-            if (a.openTime === null && b.openTime !== null) {
+            if (a.openTime === undefined && b.openTime !== undefined) {
               return -1;
             }
-            if (a.openTime !== null && b.openTime === null) {
+            if (a.openTime !== undefined && b.openTime === undefined) {
               return 1;
             }
-            if (a.openTime !== null && b.openTime !== null) {
+            if (a.openTime !== undefined && b.openTime !== undefined) {
               return b.openTime.localeCompare(a.openTime);
             }
             return 0;
