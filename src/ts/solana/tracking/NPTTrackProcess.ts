@@ -135,6 +135,11 @@ export class NPTTrackProcess extends TrackProcess {
         this.addToken(state);
         await state.initP;
         await this.savePool(id.toString(), poolState);
+        for (const pool of this.pools.values()) {
+          if (pool.poolId === id.toString()) {
+            pool.tracked = true;
+          }
+        }
         //Just for testing
         //this.createTrade(state, state.poolState.baseMint.toString(), false);
       }
@@ -168,6 +173,7 @@ export class NPTTrackProcess extends TrackProcess {
             poolId: key,
             baseMint: poolState.baseMint.toString(),
             quoteMint: poolState.quoteMint.toString(),
+            tracked: false,
           });
 
           console.log(`Pool Detected Time: ${newrunTimestampReadable}`);
@@ -256,6 +262,7 @@ export class NPTTrackProcess extends TrackProcess {
             poolId: p.poolId,
             baseMint: p.baseMint,
             quoteMint: p.quoteMint,
+            tracked: p.tracked,
           });
           this.markets.add(p.marketId);
           const poolAccountInfo = await this.connection.getAccountInfo(new PublicKey(p.poolId));
@@ -366,7 +373,7 @@ export class NPTTrackProcess extends TrackProcess {
   gatherPoolsUpdates() {
     let pools = [];
     for (const pool of this.pools.values()) {
-      pools.push(pool);
+      if (pool.tracked) pools.push(pool);
     }
     return pools;
   }
