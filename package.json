@@ -73,6 +73,7 @@
     "close-web-app": "npx kill-port 3000",
     "start": "concurrently \"cross-env BROWSER=none yarn react-start\" \"wait-on http://localhost:3000 && electron .\"",
     "build": "yarn react-build && yarn electron-build",
+    "buildstart": "yarn build && yarn start",
     "tsc": "tsc"
   },
   "browserslist": {

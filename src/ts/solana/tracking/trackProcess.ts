@@ -49,7 +49,7 @@ export default class TrackProcess implements ITrackProcessInterface {
     this.connection = connection;
     this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4 = raydium.MAINNET_PROGRAM_ID.AmmV4;
     this.OPENBOOK_PROGRAM_ID = raydium.MAINNET_PROGRAM_ID.OPENBOOK_MARKET;
-    this.pools = new Map<string, {poolId: string, baseMint: string, quoteMint: string}>();
+    this.pools = new Map<string, {poolId: string, baseMint: string, quoteMint: string, tracked: boolean}>();
     this.markets = new Set<string>();
     this.tokenAccounts = new Map<string, MinimalTokenAccountData>();
     this.trades = [];
@@ -62,7 +62,7 @@ export default class TrackProcess implements ITrackProcessInterface {
   RAYDIUM_LIQUIDITY_PROGRAM_ID_V4: PublicKey;
   OPENBOOK_PROGRAM_ID: PublicKey;
   markets: Set<string>;
-  pools: Map<string, {poolId: string, baseMint: string, quoteMint: string}>;
+  pools: Map<string, {poolId: string, baseMint: string, quoteMint: string, tracked:boolean}>;
   tokenAccounts: Map<string, MinimalTokenAccountData>;
   trades: Trade[];
   tokens: TrackedToken[];
