@@ -58,6 +58,13 @@ export async function cleanUpOpenFailPositions(db: sqlite3.Database) {
   await runQuery(db, sql); 
 }
 
+export async function cleanUpOpenPendingPositions(db: sqlite3.Database) {
+  const sql = `DELETE 
+                FROM trackProcessPositions
+              WHERE status = 'open pending'`;
+  await runQuery(db, sql); 
+}
+
 export async function updateClosePendingPositions(db: sqlite3.Database) {
   const sql = `UPDATE trackProcessPositions SET status = 'open' WHERE status = 'close pending'`;
   await runQuery(db, sql); 

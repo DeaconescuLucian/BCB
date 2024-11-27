@@ -342,6 +342,7 @@ export default class TrackProcessManager implements ITrackProcessManager {
       await trackProcessPoolDb.cleanUpPools(this.db);
       await trackProcessPositionDb.updateClosePendingPositions(this.db);
       await trackProcessPositionDb.cleanUpOpenFailPositions(this.db);
+      await trackProcessPositionDb.cleanUpOpenPendingPositions(this.db);
       return new Promise((resolve) => {
         resolve();
       });
