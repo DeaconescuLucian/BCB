@@ -95,7 +95,10 @@ export class NPTDataCollector extends DataCollector {
   }
 
   private async scheduleNextUpdate(state: TokenState, poolId: string) {
-    const updateInterval = setTimeout(() => this.updatePrice(state, poolId).then(() => this.scheduleNextUpdate(state, poolId)), 60000);
+    const updateInterval = setTimeout(
+      () => this.updatePrice(state, poolId).then(() => this.scheduleNextUpdate(state, poolId)),
+      60000
+    );
     this.priceUpdatesIntervals.set(poolId, updateInterval);
   }
 
@@ -130,7 +133,7 @@ export class NPTDataCollector extends DataCollector {
           clearInterval(this.priceUpdatesIntervals.get(poolId)!);
           this.priceUpdatesIntervals.delete(poolId);
         }
-        const tokenIndex = this.tokens.findIndex(e => e.mint === state.poolState.baseMint);
+        const tokenIndex = this.tokens.findIndex((e) => e.mint === state.poolState.baseMint);
         if (tokenIndex !== -1) {
           this.tokens.splice(tokenIndex, 1);
         }
@@ -189,77 +192,77 @@ export class NPTDataCollector extends DataCollector {
     this.initialized = true;
 
     const runTimestamp = Math.floor(new Date().getTime() / 1000);
-    if (this.pools.size < 100)
-      this.raydiumSubscriptionId = this.connection.onProgramAccountChange(
-        this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4,
-        async (updatedAccountInfo: KeyedAccountInfo) => {
-          const key = updatedAccountInfo.accountId.toString();
-          const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(updatedAccountInfo.accountInfo.data);
-          const poolOpenTime = parseInt(poolState.poolOpenTime.toString());
-          const existing = this.foundPools.find(e => e === key);
-          this.foundPools.push(key)
-          const newrunTimestamp = Math.floor(new Date().getTime() / 1000);
-          const poolOpenTimeReadable = new Date(poolOpenTime * 1000).toLocaleString();
-          const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
+    this.raydiumSubscriptionId = this.connection.onProgramAccountChange(
+      this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4,
+      async (updatedAccountInfo: KeyedAccountInfo) => {
+        const key = updatedAccountInfo.accountId.toString();
+        const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(updatedAccountInfo.accountInfo.data);
+        const poolOpenTime = parseInt(poolState.poolOpenTime.toString());
+        const existing = this.foundPools.find((e) => e === key);
+        this.foundPools.push(key);
+        const newrunTimestamp = Math.floor(new Date().getTime() / 1000);
+        const poolOpenTimeReadable = new Date(poolOpenTime * 1000).toLocaleString();
+        const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
+        if (this.pools.size < 100)
           if (poolOpenTime > runTimestamp && !existing) {
             console.log(`Pool Detected Time: ${newrunTimestampReadable}`);
             console.log(`Pool Open Time: ${poolOpenTimeReadable}`);
             console.log(`New pool: ${key}`);
             this.processRaydiumPool(updatedAccountInfo.accountId, poolState);
           }
-        },
-        {
-          commitment: 'processed',
-          encoding: 'base64',
-          filters: [
-            { dataSize: raydium.LIQUIDITY_STATE_LAYOUT_V4.span },
-            {
-              memcmp: {
-                offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('quoteMint'),
-                bytes: raydium.Token.WSOL.mint.toBase58(),
-              },
+      },
+      {
+        commitment: 'processed',
+        encoding: 'base64',
+        filters: [
+          { dataSize: raydium.LIQUIDITY_STATE_LAYOUT_V4.span },
+          {
+            memcmp: {
+              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('quoteMint'),
+              bytes: raydium.Token.WSOL.mint.toBase58(),
             },
-            {
-              memcmp: {
-                offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('marketProgramId'),
-                bytes: this.OPENBOOK_PROGRAM_ID.toBase58(),
-              },
+          },
+          {
+            memcmp: {
+              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('marketProgramId'),
+              bytes: this.OPENBOOK_PROGRAM_ID.toBase58(),
             },
-            {
-              memcmp: {
-                offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('status'),
-                bytes: bs58.encode([6, 0, 0, 0, 0, 0, 0, 0]),
-              },
+          },
+          {
+            memcmp: {
+              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('status'),
+              bytes: bs58.encode([6, 0, 0, 0, 0, 0, 0, 0]),
             },
-          ],
-        }
-      );
+          },
+        ],
+      }
+    );
     console.log('subscription created');
-    if (this.pools.size < 100)
-      this.openBookSubscriptionId = this.connection.onProgramAccountChange(
-        this.OPENBOOK_PROGRAM_ID,
-        async (updatedAccountInfo) => {
-          const key = updatedAccountInfo.accountId.toString();
-          const existing = this.markets.has(key);
+    this.openBookSubscriptionId = this.connection.onProgramAccountChange(
+      this.OPENBOOK_PROGRAM_ID,
+      async (updatedAccountInfo) => {
+        const key = updatedAccountInfo.accountId.toString();
+        const existing = this.markets.has(key);
+        if (this.pools.size < 100)
           if (!existing) {
             this.markets.add(key);
             const _ = this.processOpenBookMarket(updatedAccountInfo);
           }
-        },
-        {
-          commitment: 'processed',
-          encoding: 'base64',
-          filters: [
-            { dataSize: raydium.MARKET_STATE_LAYOUT_V3.span },
-            {
-              memcmp: {
-                offset: raydium.MARKET_STATE_LAYOUT_V3.offsetOf('quoteMint'),
-                bytes: raydium.Token.WSOL.mint.toBase58(),
-              },
+      },
+      {
+        commitment: 'processed',
+        encoding: 'base64',
+        filters: [
+          { dataSize: raydium.MARKET_STATE_LAYOUT_V3.span },
+          {
+            memcmp: {
+              offset: raydium.MARKET_STATE_LAYOUT_V3.offsetOf('quoteMint'),
+              bytes: raydium.Token.WSOL.mint.toBase58(),
             },
-          ],
-        }
-      );
+          },
+        ],
+      }
+    );
   }
 
   async stopProcess(): Promise<void> {
