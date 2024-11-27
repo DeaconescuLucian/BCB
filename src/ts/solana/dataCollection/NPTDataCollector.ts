@@ -138,7 +138,11 @@ export class NPTDataCollector extends DataCollector {
           this.tokens.splice(tokenIndex, 1);
         }
         this.pools.delete(poolId);
-        DataCollectorManager.getInstance().updateDcNoTrackPools(this.id, currentPool);
+        DataCollectorManager.getInstance().updateDcNoTrackPools(this.id, {
+          ...currentPool,
+          trackedOn: currentPool?.trackedOn.toISOString(),
+          lpBurnOn: currentPool?.lpBurnOn?.toISOString(),
+        });
       }
     } catch (error) {
       console.error('Failed to update price:', error);
