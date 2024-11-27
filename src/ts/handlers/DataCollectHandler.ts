@@ -8,7 +8,6 @@ import { BrowserWindow } from 'electron';
 import { Connection, PublicKey } from '@solana/web3.js';
 import DataCollectorManager from '../solana/dataCollection/dataCollectorManager';
 import { NPTDataCollector } from '../solana/dataCollection/NPTDataCollector';
-import DataCollector from '../solana/dataCollection/dataCollector';
 
 const GetDataCollectProcessesHandler = (db: sqlite3.Database) => {
   registerHandler(CustomEvents.getDataCollectProcessesEvent, async () => {
@@ -105,8 +104,7 @@ const GetDataCollectProcessDetailsHandler = (db: sqlite3.Database) => {
         });
 
         resolve({
-          pools,
-          poolFilters,
+          pools
         });
       }
     });
@@ -133,8 +131,7 @@ const StartDataCollectProcessHandler = (
               poolFilters: poolFilters.filter((filter: any) => filter.poolId === pool.poolId),
             };
           });
-          const dataCollector = new DataCollector(arg, connection);
-          dataCollector.initialize(pools);
+          const dataCollector = new NPTDataCollector(arg, connection);
           dataCollector.startProcess();
           dcm.register(
             arg,

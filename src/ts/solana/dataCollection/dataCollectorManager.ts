@@ -79,14 +79,29 @@ export default class DataCollectorManager implements IDataCollectorManager {
 
   async saveTrackedPool(pool: any, dataCollectorId: string, filters: any[]): Promise<void> {
     console.log('Saving pool...');
-    await dbDataCollectPools.insertDataCollectProcessPool(this.db, { ...pool, dataCollectProcessId: dataCollectorId });
-    await dbDataCollectPoolFilters.insertPoolFilters(this.db, filters.map(f => {
-      return {
-        ...f,
-        dataCollectProcessId: dataCollectorId,
-        poolId: pool.poolId
-      }
-    }));
+    await dbDataCollectPools.insertDataCollectProcessPool(this.db, {
+      ...pool,
+      dataCollectProcessId: dataCollectorId,
+      trackedOn: pool.trackedOn.toISOString(),
+    });
+    await dbDataCollectPoolFilters.insertPoolFilters(
+      this.db,
+      filters.map((f) => {
+        return {
+          ...f,
+          dataCollectProcessId: dataCollectorId,
+          poolId: pool.poolId,
+        };
+      })
+    );
+    return new Promise((resolve) => {
+      resolve();
+    });
+  }
+
+  async setTrackedPoolLpBurnOn(poolId: string, dataCollectorId: string, lpBurnOn: Date): Promise<void> {
+    console.log('Saving lp burn time...');
+    await dbDataCollectPools.setDataCollectPoolLpBurnOn(this.db, lpBurnOn.toISOString(), dataCollectorId, poolId);
     return new Promise((resolve) => {
       resolve();
     });
@@ -97,8 +112,8 @@ export default class DataCollectorManager implements IDataCollectorManager {
       dataCollectProcessId: dataCollectorId,
       poolId,
       price,
-      date: date.toISOString()
-    }) 
+      date: date.toISOString(),
+    });
     return new Promise((resolve) => {
       resolve();
     });
@@ -113,16 +128,20 @@ export default class DataCollectorManager implements IDataCollectorManager {
       const dc = this.dataCollectors.get(this.viewedDataCollector);
       const noTrackPools = this.dcNoTrackPool.get(this.viewedDataCollector);
 
-      const newPools = [...(dc?.gatherPoolsUpdates() || []), ...(noTrackPools || [])];
+      const newPools = [...(dc?.gatherPoolsUpdates() || []).map(e => {
+        return {
+          ...e,
+          trackedOn: e.trackedOn.toISOString(),
+          lpBurnOn: e.lpBurnOn?.toISOString() || null
+        }
+      }), ...(noTrackPools || [])];
       try {
-        sendToRenderer(this.window, CustomEvents.updateDataCollectProcessEvent, {
-          updateType: 'dataCollectorDataUpdate',
-          pools: newPools,
-        });
+        if (this.window)
+          sendToRenderer(this.window, CustomEvents.updateDataCollectProcessEvent, {
+            updateType: 'dataCollectorDataUpdate',
+            pools: newPools,
+          });
       } catch (error) {
-        console.log('Error sending updates');
-        console.log(error);
-        console.log(newPools);
       }
     }
   }
