@@ -134,7 +134,7 @@ const NPTProcess = (props) => {
       template: (value) => {
         return (
           <span className={'truncate'}>
-            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9).replace(/\.?0+$/, '')) : '-'}
           </span>
         );
       },
@@ -146,7 +146,7 @@ const NPTProcess = (props) => {
       template: (value) => {
         return (
           <span className={'truncate'}>
-            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9).replace(/\.?0+$/, '')) : '-'}
           </span>
         );
       },
@@ -158,7 +158,7 @@ const NPTProcess = (props) => {
       template: (value) => {
         return (
           <span className={'truncate'}>
-            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9).replace(/\.?0+$/, '')) : '-'}
           </span>
         );
       },
@@ -170,7 +170,7 @@ const NPTProcess = (props) => {
       template: (value) => {
         return (
           <span className={'truncate'}>
-            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9)) : '-'}
+            {value ? (value < tinyNumber ? formatTinyNumber(value) : value.toFixed(9).replace(/\.?0+$/, '')) : '-'}
           </span>
         );
       },
@@ -553,7 +553,7 @@ const NPTProcess = (props) => {
                 netProfit > 0 ? (
                   <span className="profit">
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    {netProfit ? `+ ${Number(netProfit?.toFixed(9))} SOL` : ''}
+                    {netProfit ? `+ ${netProfit?.toFixed(9).replace(/\.?0+$/, '')} SOL` : ''}
                   </span>
                 ) : (
                   <span className="loss">

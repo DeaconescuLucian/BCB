@@ -78,10 +78,16 @@ function Menu() {
         case '/trade/transfer':
           changeSelectedTab('trade-menu-item');
           break;
-        case '/track':
+        case '/track/track-processes':
+          changeSelectedTab('track-menu-item');
+          break;
+        case '/track/data-collectors':
           changeSelectedTab('track-menu-item');
           break;
         case '/track-process':
+          changeSelectedTab('track-menu-item');
+          break;
+        case '/data-collector':
           changeSelectedTab('track-menu-item');
           break;
         case '/settings/license':
@@ -181,7 +187,7 @@ function Menu() {
             className="app-menu-item"
             onClick={(e) => {
               handleMenuItemClick(e);
-              navigateAndSave(navigate, '/track');
+              navigateAndSave(navigate, '/track/track-processes');
             }}
           >
             <img src={track_icon}></img>

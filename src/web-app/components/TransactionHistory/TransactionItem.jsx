@@ -2,6 +2,7 @@ import React, { useEffect, useState, memo } from 'react';
 import { successSvg, warningSvg, pendingSvg, viewSvg } from '../../assets/svg';
 import CopyToClipboard from '../CopyToClipboard/index.tsx';
 import { timeAgo } from '../../utils.js';
+import { formatTinyNumber, tinyNumber } from '../../utils.js';
 
 const TransactionItem = memo((props) => {
   const [time, setTime] = useState(timeAgo(props.date));
@@ -48,7 +49,7 @@ const TransactionItem = memo((props) => {
         <div className="truncate">{props.wallet}</div> <CopyToClipboard text={props.wallet}></CopyToClipboard>
       </div>
       <div className="value">
-        <span>{parseFloat(props.value?.toFixed(8))} SOL</span>
+        <span>{props.value?.toFixed(8).replace(/\.?0+$/, '')} SOL</span>
       </div>
       <div className="view" title="View" onClick={() => {
          window.open(`https://solscan.io/tx/${props.signature}`, '_blank');

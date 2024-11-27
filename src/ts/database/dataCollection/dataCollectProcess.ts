@@ -19,7 +19,7 @@ export async function insertDataCollectProcesses(db: sqlite3.Database) {
 export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | null, rows?: any[]) => void): void {
   db.serialize(() => {
     db.all(
-      `SELECT tp.id AS id,
+      `SELECT dcp.id AS id,
           COUNT(DISTINCT dcpp.poolId) AS poolNo,
           dcp.isActive AS isActive,
           tpt.name AS processType
@@ -33,7 +33,6 @@ export function getNPTProcesses(db: sqlite3.Database, callback: (err: Error | nu
           console.error('Error retrieving data collect processes:', err.message);
           callback(err);
         } else {
-          console.log('Retrieved data collect processes.');
           callback(null, rows);
         }
       }

@@ -1,8 +1,6 @@
 import React, { memo } from 'react';
 import DefaultTrackingCard from './CardTypes/DefaultCard';
 import NPTCard from './CardTypes/NPTCard';
-import { navigateAndSave } from '../../utils';
-import { useNavigate } from 'react-router-dom';
 
 type TrackingCardType = 'default' | 'NPT ( New Pools Track )';
 

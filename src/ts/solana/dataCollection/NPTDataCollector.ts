@@ -16,6 +16,7 @@ export class NPTDataCollector extends DataCollector {
   raydiumSubscriptionId: number | null = null;
   openBookSubscriptionId: number | null = null;
   onLogSubscriptions: Set<number> = new Set();
+  foundPools: string[] = [];
 
   async subscribeToLpBurn(state: TokenState) {
     const key = state.poolState.lpMint;
@@ -45,8 +46,8 @@ export class NPTDataCollector extends DataCollector {
               let meta = resp.meta;
               if (await checkIfTransactionIsLPBurn(meta, lpSupply)) {
                 console.log(`Detected LP Burn for token ${key.toString()}`);
-                //save lpBurn time
-                await this.unsubscribefromToken(sub);
+                await this.saveLpBurnOn(state.poolId?.toString()!, new Date());
+                await this.unsubscribefromToken(sub, key.toString());
                 return;
               }
             } catch (e) {
@@ -60,16 +61,14 @@ export class NPTDataCollector extends DataCollector {
     );
     this.onLogSubscriptions.add(sub);
 
-    console.log(`Subscribed to token ${key.toString()} for ${this.settings.trackDuration} seconds`);
-
     setTimeout(async () => {
-      console.log(`Unsubscribing from token ${key.toString()}`);
-      await this.unsubscribefromToken(sub);
-    }, (this.settings.trackDuration || 500) * 1000);
+      await this.unsubscribefromToken(sub, key.toString());
+    }, 600000);
   }
 
-  async unsubscribefromToken(sub: number) {
+  async unsubscribefromToken(sub: number, key: string) {
     try {
+      console.log(`Unsubscribing from token ${key.toString()}`);
       this.onLogSubscriptions.delete(sub);
       this.connection.removeOnLogsListener(sub);
     } catch (e) {
@@ -95,19 +94,22 @@ export class NPTDataCollector extends DataCollector {
     }
   }
 
-  private startPriceUpdates(state: TokenState, poolId: string) {
-    const updateInterval = setInterval(async () => {
-      await this.updatePrice(state, poolId);
-    }, 5000);
+  private async scheduleNextUpdate(state: TokenState, poolId: string) {
+    const updateInterval = setTimeout(() => this.updatePrice(state, poolId).then(() => this.scheduleNextUpdate(state, poolId)), 60000);
     this.priceUpdatesIntervals.set(poolId, updateInterval);
+  }
+
+  private startPriceUpdates(state: TokenState, poolId: string) {
+    console.log(`started price updates for pool ${poolId}`);
+    this.updatePrice(state, poolId);
+    this.scheduleNextUpdate(state, poolId);
   }
 
   private async updatePrice(state: TokenState, poolId: string) {
     try {
       const currentPool = this.pools.get(poolId);
       const currentPriceUpdateCounter = currentPool?.priceUpdateCounter!;
-      if (currentPriceUpdateCounter < 2160) {
-        // 2160 = 3 ore(10800 secunde) / 5 secunde
+      if (currentPriceUpdateCounter < 180) {
         const newPrice = await checkPrice(
           state.poolState.baseVault,
           state.poolState.quoteVault,
@@ -119,14 +121,21 @@ export class NPTDataCollector extends DataCollector {
           priceUpdateCounter: currentPriceUpdateCounter + 1,
           currentPrice: newPrice,
         });
-        let priceDate = currentPool?.trackedOn;
-        priceDate!.setSeconds(priceDate!.getSeconds() + 5 * currentPriceUpdateCounter);
-        DataCollectorManager.getInstance().persistPoolCurrentPrice(this.id, poolId, newPrice!, priceDate!);
+        let priceDate = new Date(currentPool?.trackedOn!);
+        priceDate!.setMinutes(priceDate!.getMinutes() + currentPriceUpdateCounter);
+        await DataCollectorManager.getInstance().persistPoolCurrentPrice(this.id, poolId, newPrice!, priceDate!);
       } else {
-        clearInterval(this.priceUpdatesIntervals.get(poolId)!);
-        this.priceUpdatesIntervals.delete(poolId);
-        this.pools.delete(poolId);
-        DataCollectorManager.getInstance().updateDcNoTrackPools(this.id, currentPool);
+        const updateInterval = this.priceUpdatesIntervals.get(poolId)!;
+        if (updateInterval) {
+          clearInterval(this.priceUpdatesIntervals.get(poolId)!);
+          this.priceUpdatesIntervals.delete(poolId);
+        }
+        const tokenIndex = this.tokens.findIndex(e => e.mint === state.poolState.baseMint);
+        if (tokenIndex !== -1) {
+          this.tokens.splice(tokenIndex, 1);
+        }
+        //this.pools.delete(poolId);
+        //DataCollectorManager.getInstance().updateDcNoTrackPools(this.id, currentPool);
       }
     } catch (error) {
       console.error('Failed to update price:', error);
@@ -180,76 +189,77 @@ export class NPTDataCollector extends DataCollector {
     this.initialized = true;
 
     const runTimestamp = Math.floor(new Date().getTime() / 1000);
-    this.raydiumSubscriptionId = this.connection.onProgramAccountChange(
-      this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4,
-      async (updatedAccountInfo: KeyedAccountInfo) => {
-        const key = updatedAccountInfo.accountId.toString();
-        const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(updatedAccountInfo.accountInfo.data);
-        const poolOpenTime = parseInt(poolState.poolOpenTime.toString());
-        const existing = this.pools.has(key);
-        const newrunTimestamp = Math.floor(new Date().getTime() / 1000);
-
-        const poolOpenTimeReadable = new Date(poolOpenTime * 1000).toLocaleString();
-        const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
-        if (poolOpenTime > runTimestamp && !existing) {
-          console.log(`Pool Detected Time: ${newrunTimestampReadable}`);
-          console.log(`Pool Open Time: ${poolOpenTimeReadable}`);
-          console.log(`New pool: ${key}`);
-          this.processRaydiumPool(updatedAccountInfo.accountId, poolState);
+    if (this.pools.size < 100)
+      this.raydiumSubscriptionId = this.connection.onProgramAccountChange(
+        this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4,
+        async (updatedAccountInfo: KeyedAccountInfo) => {
+          const key = updatedAccountInfo.accountId.toString();
+          const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(updatedAccountInfo.accountInfo.data);
+          const poolOpenTime = parseInt(poolState.poolOpenTime.toString());
+          const existing = this.foundPools.find(e => e === key);
+          this.foundPools.push(key)
+          const newrunTimestamp = Math.floor(new Date().getTime() / 1000);
+          const poolOpenTimeReadable = new Date(poolOpenTime * 1000).toLocaleString();
+          const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
+          if (poolOpenTime > runTimestamp && !existing) {
+            console.log(`Pool Detected Time: ${newrunTimestampReadable}`);
+            console.log(`Pool Open Time: ${poolOpenTimeReadable}`);
+            console.log(`New pool: ${key}`);
+            this.processRaydiumPool(updatedAccountInfo.accountId, poolState);
+          }
+        },
+        {
+          commitment: 'processed',
+          encoding: 'base64',
+          filters: [
+            { dataSize: raydium.LIQUIDITY_STATE_LAYOUT_V4.span },
+            {
+              memcmp: {
+                offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('quoteMint'),
+                bytes: raydium.Token.WSOL.mint.toBase58(),
+              },
+            },
+            {
+              memcmp: {
+                offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('marketProgramId'),
+                bytes: this.OPENBOOK_PROGRAM_ID.toBase58(),
+              },
+            },
+            {
+              memcmp: {
+                offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('status'),
+                bytes: bs58.encode([6, 0, 0, 0, 0, 0, 0, 0]),
+              },
+            },
+          ],
         }
-      },
-      {
-        commitment: 'processed',
-        encoding: 'base64',
-        filters: [
-          { dataSize: raydium.LIQUIDITY_STATE_LAYOUT_V4.span },
-          {
-            memcmp: {
-              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('quoteMint'),
-              bytes: raydium.Token.WSOL.mint.toBase58(),
-            },
-          },
-          {
-            memcmp: {
-              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('marketProgramId'),
-              bytes: this.OPENBOOK_PROGRAM_ID.toBase58(),
-            },
-          },
-          {
-            memcmp: {
-              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('status'),
-              bytes: bs58.encode([6, 0, 0, 0, 0, 0, 0, 0]),
-            },
-          },
-        ],
-      }
-    );
+      );
     console.log('subscription created');
-
-    this.openBookSubscriptionId = this.connection.onProgramAccountChange(
-      this.OPENBOOK_PROGRAM_ID,
-      async (updatedAccountInfo) => {
-        const key = updatedAccountInfo.accountId.toString();
-        const existing = this.markets.has(key);
-        if (!existing) {
-          this.markets.add(key);
-          const _ = this.processOpenBookMarket(updatedAccountInfo);
-        }
-      },
-      {
-        commitment: 'processed',
-        encoding: 'base64',
-        filters: [
-          { dataSize: raydium.MARKET_STATE_LAYOUT_V3.span },
-          {
-            memcmp: {
-              offset: raydium.MARKET_STATE_LAYOUT_V3.offsetOf('quoteMint'),
-              bytes: raydium.Token.WSOL.mint.toBase58(),
+    if (this.pools.size < 100)
+      this.openBookSubscriptionId = this.connection.onProgramAccountChange(
+        this.OPENBOOK_PROGRAM_ID,
+        async (updatedAccountInfo) => {
+          const key = updatedAccountInfo.accountId.toString();
+          const existing = this.markets.has(key);
+          if (!existing) {
+            this.markets.add(key);
+            const _ = this.processOpenBookMarket(updatedAccountInfo);
+          }
+        },
+        {
+          commitment: 'processed',
+          encoding: 'base64',
+          filters: [
+            { dataSize: raydium.MARKET_STATE_LAYOUT_V3.span },
+            {
+              memcmp: {
+                offset: raydium.MARKET_STATE_LAYOUT_V3.offsetOf('quoteMint'),
+                bytes: raydium.Token.WSOL.mint.toBase58(),
+              },
             },
-          },
-        ],
-      }
-    );
+          ],
+        }
+      );
   }
 
   async stopProcess(): Promise<void> {
@@ -261,23 +271,16 @@ export class NPTDataCollector extends DataCollector {
       this.connection.removeOnLogsListener(log);
     });
     this.onLogSubscriptions.clear();
-    this.priceUpdatesIntervals.forEach(interval => {
+    this.priceUpdatesIntervals.forEach((interval) => {
       clearInterval(interval);
     });
     this.priceUpdatesIntervals.clear();
   }
 
-  initialize(pools: any[]): void {
-    try {
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   gatherPoolsUpdates() {
     let pools = [];
     for (const pool of this.pools.values()) {
-      pools.push(pool);
+      if (pool !== null) pools.push(pool);
     }
     return pools;
   }
@@ -291,9 +294,22 @@ export class NPTDataCollector extends DataCollector {
       trackedOn: new Date(),
       priceUpdateCounter: 0,
       currentPrice: null,
+      lpBurnOn: null,
     };
 
     this.pools.set(poolId, pool);
     return await DataCollectorManager.getInstance().saveTrackedPool(pool, this.id, filters);
+  }
+
+  async saveLpBurnOn(poolId: string, lpBurnOn: Date) {
+    const pool = this.pools.get(poolId);
+    if (pool) {
+      this.pools.set(poolId, {
+        ...pool,
+        lpBurnOn: lpBurnOn,
+      });
+      return await DataCollectorManager.getInstance().setTrackedPoolLpBurnOn(poolId, this.id, lpBurnOn);
+    }
+    return;
   }
 }

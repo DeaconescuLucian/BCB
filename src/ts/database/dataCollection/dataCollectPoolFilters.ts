@@ -19,13 +19,13 @@ export function insertPoolFilters(
 ): Promise<string> {
   return new Promise(async (resolve) => {
     const insertStatement = db.prepare(
-      `INSERT OR IGNORE INTO dataCollectProcessPoolFilters (dataCollectProcessId, poolId, poolFilterId, filterValue) VALUES (?, ?, ?)`
+      `INSERT OR IGNORE INTO dataCollectProcessPoolFilters (dataCollectProcessId, poolId, poolFilterId, filterValue) VALUES (?, ?, ?, ?)`
     );
     
     db.serialize(() => {
       db.run('BEGIN TRANSACTION', (err) => {
         if (err) {
-          console.error('Error starting transaction:', err.message);
+          console.error('Error inserting pool filters:', err.message);
           return resolve('error');
         }
     
