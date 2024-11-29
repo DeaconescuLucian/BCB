@@ -1,8 +1,7 @@
 import { LiquidityPoolKeys, LiquidityStateV4, SPL_MINT_LAYOUT } from "@raydium-io/raydium-sdk";
-import { ConfirmedSignatureInfo, ConfirmedTransactionMeta, Connection, ParsedTransactionMeta, PublicKey, VersionedTransactionResponse } from "@solana/web3.js";
+import { ConfirmedSignatureInfo, ConfirmedTransactionMeta, Connection, PublicKey, VersionedTransactionResponse } from "@solana/web3.js";
 import BN from "bn.js";
-import { WSOL } from "@raydium-io/raydium-sdk";
-import { checkIFTransactionIsInitiate, checkIfTransactionIsLPBurn } from "./helpers";
+import { checkIFTransactionIsInitiate, checkIfTransactionIsLPBurn } from "../helpers";
 
 export type FilterValue = number | undefined;
 
@@ -43,13 +42,6 @@ export class TokenState {
     private mint_info: MintInfo | undefined;
     public baseMintVault: number | undefined;
     public quoteMintVault: number | undefined;
-    public tokenMint: PublicKey;
-    public solMint: PublicKey;
-    public tokenVault: PublicKey;
-    public solVault: PublicKey;
-    public tokenVaultSupply: number | undefined;
-    public solVaultSupply: number | undefined;
-    public inverted:boolean;
     public lpSupply: number | undefined;
     private lpchecker: LPStateChecker;
     public initP: Promise<void> | undefined;
@@ -61,25 +53,16 @@ export class TokenState {
         this.poolState = poolState;
         this.filters = filters;
         this.connection = connection;
-        this.inverted = false;
-        this.solMint = poolState.quoteMint;
-        this.tokenMint = poolState.baseMint;
-        this.tokenVault = poolState.baseVault;
-        this.solVault = poolState.quoteVault;
         this.lpchecker = new LPStateChecker(poolState, connection);
-        if (this.poolState.baseMint.toString() === WSOL.mint) {
-            this.inverted = true;
-            this.tokenMint = this.poolState.quoteMint;
-            this.solMint = this.poolState.baseMint;
-            this.tokenVault = this.poolState.quoteVault;
-            this.solVault = this.poolState.baseVault;
-        }
     }
     
-    public async init(tx:ParsedTransactionMeta): Promise<void> {
+    public async init(): Promise<void> {
         this.initP = new Promise<void>(async (resolve, reject) => {
             try {
-                await this.setInitVaultBalances(tx);
+                const tx = await this.lpchecker.getInitiateTransaction();
+                if (tx) {
+                    await this.setInitVaultBalances(tx);
+                }
                 resolve();
             } catch (error) {
                 reject(error);
@@ -91,7 +74,7 @@ export class TokenState {
         if (this.mint_info) return this.mint_info;
         for (let i = 0; i <= retries; i++){
             try {
-                let response = await this.connection.getAccountInfo(this.tokenMint, 'processed');
+                let response = await this.connection.getAccountInfo(this.poolState.baseMint, 'processed');
                 let data = response ? response.data : null;
                 if(!data) throw new Error;
                 const info = SPL_MINT_LAYOUT.decode(data);
@@ -116,21 +99,18 @@ export class TokenState {
         return info!.decimals;
     }
 
-    public async setInitVaultBalances(tx: ParsedTransactionMeta): Promise<void> {
-        let tv, sv;
-        tx?.postTokenBalances?.forEach((balance) => {
-            if(balance.mint === this.poolState.baseMint.toString() && balance.owner === '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1'){
-            this.baseMintVault,tv = balance.uiTokenAmount.uiAmount!;
-            }
-            if(balance.mint === this.poolState.quoteMint.toString() && balance.owner === '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1'){
-            this.quoteMintVault,sv = balance.uiTokenAmount.uiAmount!;
-            }
-            if(balance.mint === this.poolState.lpMint.toString()){
-            this.lpSupply = balance.uiTokenAmount.uiAmount!;
-            }      
-        });
-        this.tokenVaultSupply = this.inverted ? sv : tv;
-        this.solVaultSupply = this.inverted ? tv : sv;
+    public async setInitVaultBalances(trx: VersionedTransactionResponse): Promise<void> {
+    trx?.meta?.postTokenBalances?.forEach((balance) => {
+        if(balance.mint === this.poolState.baseMint.toString() && balance.owner === '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1'){
+        this.baseMintVault = balance.uiTokenAmount.uiAmount!;
+        }
+        if(balance.mint === this.poolState.quoteMint.toString() && balance.owner === '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1'){
+        this.quoteMintVault = balance.uiTokenAmount.uiAmount!;
+        }
+        if(balance.mint === this.poolState.lpMint.toString()){
+        this.lpSupply = balance.uiTokenAmount.uiAmount!;
+        }
+    });
     }
 
     public hasFilter(key: FilterKey): boolean {
@@ -159,32 +139,32 @@ export class TokenState {
 
     public async getSolanaPool(): Promise<number> {
         await this.initP;
-        return this.solVaultSupply!
+        return this.quoteMintVault!
     }
 
     public async checkMinimumSolanaPool(value: number): Promise<boolean> {
         await this.initP;
-        if(this.solVaultSupply) return this.solVaultSupply! >= value!;
+        if(this.quoteMintVault) return this.quoteMintVault! >= value!;
         else return false;
     }
 
     public async checkMaximumSolanaPool(value: number): Promise<boolean> {
         await this.initP;
-        if(this.solVaultSupply) return this.solVaultSupply! <= value!;
+        if(this.quoteMintVault) return this.quoteMintVault! <= value!;
         else return false;
     }
 
     public async getPoolPercentage(): Promise<number> {
         await this.initP;
         let s = await this.getMintSupplyRaw();
-        return this.tokenVaultSupply! / Number(s)
+        return this.baseMintVault! / Number(s)
     }
 
     public async checkMinimumPoolPercentage(value: number): Promise<boolean> {
         await this.initP;
         let s = await this.getMintSupplyRaw();
 
-        if(this.tokenVaultSupply) return (this.tokenVaultSupply! / Number(s) >= (value / 100)!);
+        if(this.baseMintVault) return (this.baseMintVault! / Number(s) >= (value / 100)!);
         else return false;
     }
 }

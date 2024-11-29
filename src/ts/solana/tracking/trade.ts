@@ -1,5 +1,5 @@
 import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
-import { ComputeBudgetProgram, Connection, Finality, Keypair, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { ComputeBudgetProgram, Connection, Finality, Keypair, LAMPORTS_PER_SOL, PublicKey, VersionedTransactionResponse } from '@solana/web3.js';
 import { calculateTransactionCost, createSignedTransaction, sendTransaction } from '../transactions';
 import { checkPrice, createPoolKeys, getFinalizedTransaction, getMinimalMarketV3, getReceivedAmount } from '../helpers';
 import BN from 'bn.js';
@@ -49,7 +49,7 @@ export default class Trade {
     positionId: string = ''
   ) {
     this.state = state;
-    this.token = state.poolState.baseMint;
+    this.token = state.tokenMint;
     this.status = 'open pending';
     this.openPrice = null;
     this.currentPrice = null;
@@ -110,8 +110,8 @@ export default class Trade {
           TrackProcessManager.getInstance().updatePositionAmount(this.positionId, this.ownedTokenAmount);
       }
       const newPrice = await checkPrice(
-        this.state.poolState.baseVault,
-        this.state.poolState.quoteVault,
+        this.state.tokenVault,
+        this.state.solVault,
         this.connection,
         false
       );
@@ -134,9 +134,24 @@ export default class Trade {
   async buy(): Promise<boolean> {
     try {
       console.log(`buying`);
+      if(this.isSimulated){
+        let price = await checkPrice(this.state.tokenVault, this.state.solVault, this.connection, false);
+        this.openPrice = price;
+        this.currentPrice = this.openPrice;
+        this.positionId = generateGUID();
+        this.status = 'open';
+        this.trackProcess.openPosition(this.positionId, 0, price!, new Date().toISOString(), 'simulated');
+        this.calculateTargetAndStopLossPrices();
+        this.startPriceUpdates();
+        return true;
+      }
+
       const buyResult = await this.executeBuy();
       if (buyResult.success) {
         console.log(`Buy success`);
+        const newrunTimestamp = Math.floor(new Date().getTime() / 1000);
+        const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
+        console.log(`Trade Executed Time: ${newrunTimestampReadable}`);
         return true;
       } else {
         console.log(`Buy failed`);
@@ -163,8 +178,8 @@ export default class Trade {
   private async executeBuy(): Promise<{ success: boolean }> {
     this.status = 'open pending';
     let poolState = this.state.poolState;
-    let key = this.state.poolState.baseMint;
-    let tokenAccount = this.trackProcess.tokenAccounts.get(poolState.baseMint.toString());
+    let key = this.state.tokenMint;
+    let tokenAccount = this.trackProcess.tokenAccounts.get(this.state.tokenMint.toString());
     if (!tokenAccount) {
       const market = await getMinimalMarketV3(this.connection, poolState.marketId, `processed`);
       tokenAccount = this.trackProcess.saveTokenAccount(key, market);
@@ -213,47 +228,77 @@ export default class Trade {
     this.positionId = positionId;
     const result = await sendTransaction(tx, block, this.connection, this.isSimulated);
     await this.trackProcess.savePosition(this.state.poolId?.toString()!, positionId, key.toString(), this.quoteAmount, result.signature!);
-    if (result.success) {
-      if (this.isSimulated) {
-        return { success: true };
-      } else {
-        if (result.confirmation) {
-          const c = await result.confirmation;
-          if (c.status === 'success') {
-            await this.openPosition(result.signature!, 'confirmed');
-            return { success: true };
-          } else {
-            console.log('FAILED BUY CONFIRMATION');
-            const trData = await getFinalizedTransaction(this.connection, result.signature!);
-            if (trData) {
-              console.log('FOUND FINALIZED BUY TRANSACTION');
-              if (!trData.meta?.err) {
-                await this.openPosition(result.signature!, 'finalized');
-                return { success: true };
-              } else {
-                this.failOpen(positionId, result.signature!);
-                return { success: false };
-              }
-            } else {
-              this.failOpen(positionId, result.signature!);
-              return { success: false };
-            }
-          }
-        } else {
-          console.log('NO BUY CONFIRMATION');
-          this.failOpen(positionId, result.signature!);
-          return { success: false };
-        }
-      }
-    } else {
-      console.log('FAILED BUY SEND TRANSACTION');
+    if (!result.success) {
       this.failOpen(positionId, result.signature!);
       return { success: false };
     }
+    else{
+      let retries = 100;
+      let trueconf: VersionedTransactionResponse | null = null;
+      for(let i = 0; i < retries; i++){
+        trueconf = await this.connection.getTransaction(result.signature!, {commitment:'confirmed', maxSupportedTransactionVersion:2});
+        if(!trueconf){
+            await new Promise(resolve => setTimeout(resolve, 200));
+            continue;
+        }
+        else break;
+      }
+      if(!trueconf || trueconf.meta?.err){
+        this.failOpen(positionId, result.signature!);
+        return { success: false };
+      }
+      else{
+        await this.openPosition(trueconf, result.signature!);
+        return { success: true };
+      }
+    }
+    //   if (this.isSimulated) {
+    //     return { success: true };
+    //   } else {
+    //     if (result.confirmation) {
+    //       const c = await result.confirmation;
+    //       if (c.status === 'success') {
+    //         await this.openPosition(result.signature!, 'confirmed');
+    //         return { success: true };
+    //       } else {
+    //         console.log('FAILED BUY CONFIRMATION');
+    //         const trData = await getFinalizedTransaction(this.connection, result.signature!);
+    //         if (trData) {
+    //           console.log('FOUND FINALIZED BUY TRANSACTION');
+    //           if (!trData.meta?.err) {
+    //             await this.openPosition(result.signature!, 'finalized');
+    //             return { success: true };
+    //           } else {
+    //             this.failOpen(positionId, result.signature!);
+    //             return { success: false };
+    //           }
+    //         } else {
+    //           this.failOpen(positionId, result.signature!);
+    //           return { success: false };
+    //         }
+    //       }
+    //     } else {
+    //       console.log('NO BUY CONFIRMATION');
+    //       this.failOpen(positionId, result.signature!);
+    //       return { success: false };
+    //     }
+    //   }
+    // } else {
+    //   console.log('FAILED BUY SEND TRANSACTION');
+    //   this.failOpen(positionId, result.signature!);
+    //   return { success: false };
+    // }
   }
 
   async sell(): Promise<boolean> {
     if (this.status !== 'open') return false;
+    if(this.isSimulated){
+      this.exitPrice = this.currentPrice;
+      this.status = 'closed';
+      this.clearUpdateInterval();
+      await this.trackProcess.closePosition(this.positionId, this.exitPrice!, new Date().toISOString(), 'simulated');
+      return true;
+    }
 
     try {
       console.log('Selling');
@@ -281,10 +326,10 @@ export default class Trade {
       return { success: true };
     }
     let poolState = this.state.poolState;
-    let tokenAccount = this.trackProcess.tokenAccounts.get(poolState.baseMint.toString());
+    let tokenAccount = this.trackProcess.tokenAccounts.get(this.state.tokenMint.toString());
     if (!tokenAccount) {
       const market = await getMinimalMarketV3(this.connection, poolState.marketId, `processed`);
-      tokenAccount = this.trackProcess.saveTokenAccount(poolState.baseMint, market);
+      tokenAccount = this.trackProcess.saveTokenAccount(this.state.tokenMint, market);
     }
 
     const quoteToken = raydium.Token.WSOL.mint;
@@ -294,6 +339,8 @@ export default class Trade {
     const tokenAmount = new BN(this.ownedTokenAmount! * lamports_per_token);
 
     tokenAccount.poolKeys = createPoolKeys(this.state.poolId!, poolState, tokenAccount.market!);
+    console.log(`Token account input: ${tokenAccount.address.toString()}`);
+    console.log(`Quote Token account input: ${quotetokenAccount.toString()}`);
 
     const { innerTransaction, address } = raydium.Liquidity.makeSwapFixedInInstruction(
       {
@@ -331,47 +378,71 @@ export default class Trade {
     const result = await sendTransaction(tx, block, this.connection, false);
     await this.trackProcess.updatePositionStatus(this.positionId, 'close pending', result.signature!, this.ownedTokenAmount! * this.currentPrice!);
     console.log(`SELL SIGNATURE: ${result.signature}`);
-    if (result.success) {
-      if (this.isSimulated) {
-        const amount = 0;
-        const token_price = await checkPrice(poolState.baseVault, poolState.quoteVault, this.connection, false);
-        console.log(`execute sell with token price: ${token_price}`);
-        const price = token_price ? token_price : 0;
-        return { success: true, amount, price };
-      } else {
-        if (result.confirmation) {
-          const c = await result.confirmation;
-          if (c.status === 'success') {
-            await this.closePosition(result.signature!, 'confirmed');
-            return { success: true };
-          } else {
-            console.log('FAILED SELL CONFIRMATION');
-            const trData = await getFinalizedTransaction(this.connection, result.signature!);
-            if (trData) {
-              console.log('FOUND FINALIZED SELL TRANSACTION');
-              if (!trData.meta?.err) {
-                await this.closePosition(result.signature!, 'finalized');
-                return { success: true };
-              } else {
-                await this.failClose(result.signature!);
-                return { success: false };
-              }
-            } else {
-              await this.failClose(result.signature!);
-              return { success: false };
-            }
-          }
-        } else {
-          console.log('NO SELL CONFIRMATION');
-          await this.failClose(result.signature!);
-          return { success: false };
-        }
-      }
-    } else {
-      console.log('FAILED SELL SEND TRANSACTION');
-      await this.failClose(result.signature!);
+    if (!result.success) {
+      this.failClose(result.signature!);
       return { success: false };
     }
+    else{
+      let retries = 100;
+      let trueconf: VersionedTransactionResponse | null = null;
+      for(let i = 0; i < retries; i++){
+        trueconf = await this.connection.getTransaction(result.signature!, {commitment:'confirmed', maxSupportedTransactionVersion:2});
+        if(!trueconf){
+            await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+        }
+        else break;
+      }
+      if(!trueconf){
+        this.failClose(result.signature!);
+        return { success: false };
+      }
+      else{
+        await this.closePosition(trueconf, result.signature!);
+        return { success: true };
+      }
+    }
+    // if (result.success) {
+    //   if (this.isSimulated) {
+    //     const amount = 0;
+    //     const token_price = await checkPrice(this.state.tokenVault, this.state.solVault, this.connection, false);
+    //     console.log(`execute sell with token price: ${token_price}`);
+    //     const price = token_price ? token_price : 0;
+    //     return { success: true, amount, price };
+    //   } else {
+    //     if (result.confirmation) {
+    //       const c = await result.confirmation;
+    //       if (c.status === 'success') {
+    //         await this.closePosition(result.signature!, 'confirmed');
+    //         return { success: true };
+    //       } else {
+    //         console.log('FAILED SELL CONFIRMATION');
+    //         const trData = await getFinalizedTransaction(this.connection, result.signature!);
+    //         if (trData) {
+    //           console.log('FOUND FINALIZED SELL TRANSACTION');
+    //           if (!trData.meta?.err) {
+    //             await this.closePosition(result.signature!, 'finalized');
+    //             return { success: true };
+    //           } else {
+    //             //await this.failClose(result.signature!);
+    //             return { success: false };
+    //           }
+    //         } else {
+    //           await this.failClose(result.signature!);
+    //           return { success: false };
+    //         }
+    //       }
+    //     } else {
+    //       console.log('NO SELL CONFIRMATION');
+    //       await this.failClose(result.signature!);
+    //       return { success: false };
+    //     }
+    //   }
+    // } else {
+    //   console.log('FAILED SELL SEND TRANSACTION');
+    //   await this.failClose(result.signature!);
+    //   return { success: false };
+    // }
   }
 
   getPerformance() {
@@ -385,72 +456,59 @@ export default class Trade {
     await this.trackProcess.updatePositionStatus(positionId, 'open fail', signature);
   }
 
-  async openPosition(signature: string, commitment?: Finality) {
+  async openPosition(tx:VersionedTransactionResponse, signature:string) {
     console.log('BUY CONFIRMED');
     let amountReceived = await getReceivedAmount(
-      this.connection,
-      signature,
+      tx,
       this.wallet.publicKey.toString(),
       this.mint,
-      commitment
     );
     const amountPayed = this.quoteAmount;
-    let price = await checkPrice(
-      this.state.poolState.baseVault,
-      this.state.poolState.quoteVault,
-      this.connection,
-      false
-    );
-    if (amountReceived === 0 && commitment !== 'finalized') {
-      amountReceived = await getReceivedAmount(
-        this.connection,
-        signature,
-        this.wallet.publicKey.toString(),
-        this.mint,
-        'finalized'
-      );
-    }
-    if (amountReceived === 0) {
-      try {
-        amountReceived =
-          (await getTokenBalance(this.connection, new PublicKey(this.trackProcess.wallet.publicKey), this.mint)) || 0;
-      } catch (error) {}
-    } else {
-      price = amountPayed / amountReceived;
-    }
-    this.openPrice = price;
+    // let price = await checkPrice(
+    //   this.state.tokenVault,
+    //   this.state.solVault,
+    //   this.connection,
+    //   false
+    // );
+    // if (amountReceived === 0) {
+    //   try {
+    //     amountReceived =
+    //       (await getTokenBalance(this.connection, new PublicKey(this.trackProcess.wallet.publicKey), this.mint)) || 0;
+    //   } catch (error) {}
+    // } else {
+    //   price = amountPayed / amountReceived;
+    // }
+    this.openPrice = amountPayed / amountReceived;
     this.openTime = new Date().toISOString();
     this.status = 'open';
-    await this.trackProcess.openPosition(this.positionId, amountReceived, price!, this.openTime, signature);
+    await this.trackProcess.openPosition(this.positionId, amountReceived, this.openPrice!, this.openTime, signature);
     this.ownedTokenAmount = amountReceived;
     this.currentPrice = this.openPrice;
     this.calculateTargetAndStopLossPrices();
     this.startPriceUpdates();
   }
 
-  async closePosition(signature: string, commitment?: Finality) {
+  async closePosition(tx:VersionedTransactionResponse, signature:string) {
     this.status = 'closed';
     console.log(`SELL CONFIRMATION SUCCESS: ${signature}`);
     let amountReceived = await getReceivedAmount(
-      this.connection,
-      signature,
+      tx,
       this.wallet.publicKey.toString(),
       raydium.Token.WSOL.mint.toString(),
-      commitment
     );
 
-    if (amountReceived === 0 && commitment !== 'finalized') {
-      amountReceived = await getReceivedAmount(
-        this.connection,
-        signature,
-        this.wallet.publicKey.toString(),
-        raydium.Token.WSOL.mint.toString(),
-        'finalized'
-      );
-    }
+    // if (amountReceived === 0 && commitment !== 'finalized') {
+    //   amountReceived = await getReceivedAmount(
+    //     this.connection,
+    //     signature,
+    //     this.wallet.publicKey.toString(),
+    //     raydium.Token.WSOL.mint.toString(),
+    //     'finalized'
+    //   );
+    // }
     let price = await checkPrice(
-      this.state.poolState.baseVault,
-      this.state.poolState.quoteVault,
+      this.state.tokenVault,
+      this.state.solVault,
       this.connection,
       false
     );
@@ -466,17 +524,20 @@ export default class Trade {
   }
 
   async failClose(signature: string) {
-    if (this.closePositionRetryNo === this.closePositionRetries) {
-      console.log('SELL FAILED...max number of retries reached.');
-      this.clearUpdateInterval();
-      this.status = 'close fail';
-      console.log('Removing trade.');
-      await this.trackProcess.updatePositionStatus(this.positionId, 'close fail', signature);
-    } else {
-      this.status = 'open';
-      console.log('SELL FAILED, retrying...');
-      this.closePositionRetryNo += 1;
-      await this.trackProcess.updatePositionStatus(this.positionId, 'open', signature);
-    }
+  //   if (this.closePositionRetryNo === this.closePositionRetries) {
+  //     console.log('SELL FAILED...max number of retries reached.');
+  //     this.clearUpdateInterval();
+  //     this.status = 'close fail';
+  //     console.log('Removing trade.');
+  //     await this.trackProcess.updatePositionStatus(this.positionId, 'close fail', signature);
+  //   } else {
+  //     this.status = 'open';
+  //     console.log('SELL FAILED, retrying...');
+  //     this.closePositionRetryNo += 1;
+  //     await this.trackProcess.updatePositionStatus(this.positionId, 'open', signature);
+  //   }
+  // }
+  this.status = 'open'
+  await this.trackProcess.updatePositionStatus(this.positionId, 'open', signature);
   }
 }
