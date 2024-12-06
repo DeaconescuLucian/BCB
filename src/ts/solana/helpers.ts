@@ -176,14 +176,16 @@ export async function checkSupply(
   return;
 }
 
-export async function getReceivedAmount(connection: Connection, signature: string, owner: string, mint: string, commitment?: Finality): Promise<number> {
-  let trData = await connection.getTransaction(
-    signature,
-    {
-      commitment: commitment || 'confirmed',
-      maxSupportedTransactionVersion: 2,
-    }
-  );
+export async function getReceivedAmount( trData:VersionedTransactionResponse, owner: string, mint: string): Promise<number> {
+  // if(!trData) {
+  //   trData = await connection.getTransaction(
+  //   signature,
+  //   {
+  //     commitment: commitment || 'confirmed',
+  //     maxSupportedTransactionVersion: 2,
+  //   }
+  //   );
+  // }
   let meta = trData?.meta;
   if (meta ) {
     const postBalance = meta.postTokenBalances?.find(a => a.mint === mint && a.owner === owner)?.uiTokenAmount.uiAmount || 0;

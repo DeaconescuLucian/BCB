@@ -167,7 +167,7 @@ export async function calculateTransactionCost(
   tx.sign([signer]);
   const sim = await connection.simulateTransaction(tx, { commitment: 'processed' })
   
-  console.log(sim.value.logs)
+  //console.log(sim.value.logs)
   console.log(`Estimated transaction cost: ${sim.value.unitsConsumed} lamports`);
   return new Promise((resolve) => {
     resolve(sim.value.unitsConsumed);
@@ -226,6 +226,22 @@ interface simpleTokenTransferParams {
 
 export interface feesParams {
   prioFee: number;
+}
+
+export async function closeEmptyTokenAccounts(wallet: Keypair, connection: Connection) {
+  const res = await connection.getTokenAccountsByOwner(wallet.publicKey, { programId: raydium.TOKEN_PROGRAM_ID });
+  for (let i = 0; i < res.value.length; i++) {
+    const acc = res.value[i];
+    let tokenacc = acc.pubkey;
+    let balance = (await connection.getTokenAccountBalance(tokenacc)).value.uiAmount;
+    if (balance === 0 || balance === undefined) {
+      const inst = createCloseAccountInstruction(tokenacc, wallet.publicKey, wallet.publicKey);
+      const block = (await connection.getLatestBlockhash()).blockhash;
+      const tx = await createSignedTransaction([inst], connection, wallet, block);
+      await sendTransaction(tx, block, connection, false);
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
 }
 
 export async function simpleTransfer(

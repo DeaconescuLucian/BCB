@@ -1,7 +1,7 @@
 import { Context, KeyedAccountInfo, Logs, PublicKey } from '@solana/web3.js';
 import DataCollector from './dataCollector';
 import { checkIfTransactionIsLPBurn, checkPrice, getMinimalMarketV3, MinimalTokenAccountData } from '../helpers';
-import { FilterList, TokenState } from '../filters';
+import { FilterList, TokenState } from './dataCollectorFilters';
 import * as raydium from '@raydium-io/raydium-sdk';
 import * as bs58 from 'bs58';
 import {

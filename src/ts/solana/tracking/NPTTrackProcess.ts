@@ -1,7 +1,8 @@
-import { Context, KeyedAccountInfo, Logs, PublicKey } from '@solana/web3.js';
+import { Context, KeyedAccountInfo, Logs, PartiallyDecodedInstruction, PublicKey } from '@solana/web3.js';
 import TrackProcess from './trackProcess';
 import { checkIfTransactionIsLPBurn, getMinimalMarketV3, MinimalTokenAccountData } from '../helpers';
 import Trade from './trade';
+import { closeEmptyTokenAccounts } from '../transactions';
 import { FilterList, TokenState } from '../filters';
 import * as raydium from '@raydium-io/raydium-sdk';
 import * as bs58 from 'bs58';
@@ -49,7 +50,8 @@ export class NPTTrackProcess extends TrackProcess {
                 console.log(`Detected LP Burn for token ${key.toString()}`);
                 console.log(`Opening position`);
 
-                this.createTrade(state, state.poolState.baseMint.toString(), false);
+                this.createTrade(state, state.tokenMint.toString(), false);
+
                 await this.unsubscribefromToken(sub);
                 return;
               }
@@ -82,7 +84,7 @@ export class NPTTrackProcess extends TrackProcess {
   }
 
   async addToken(state: TokenState): Promise<void> {
-    this.tokens.push({ mint: state.poolState.baseMint, state: state });
+    this.tokens.push({ mint: state.tokenMint, state: state });
     this.subscribeToLpBurn(state);
   }
 
@@ -101,12 +103,16 @@ export class NPTTrackProcess extends TrackProcess {
     }
   }
 
-  async processRaydiumPool(id: PublicKey, poolState: LiquidityStateV4, filters: FilterList): Promise<void> {
+  async processRaydiumPool(id: PublicKey, state:TokenState, filters: FilterList, pump:boolean): Promise<void> {
     try {
-      let state = new TokenState(poolState, filters, this.connection);
-      state.poolId = id;
-      state.init();
+      const poolState = state.poolState;
       let results: Promise<boolean>[] = [];
+
+      //Insta-buy if pump.fun migration? True sim flag
+      // if(pump){
+      //   this.createTrade(state, state.tokenMint.toString(), true);
+      //   return;
+      // }
 
       if (state.hasFilter('NOT_MINTABLE')) {
         results.push(state.checkMintable());
@@ -140,8 +146,6 @@ export class NPTTrackProcess extends TrackProcess {
             pool.tracked = true;
           }
         }
-        //Just for testing
-        //this.createTrade(state, state.poolState.baseMint.toString(), false);
       }
     } catch (e) {
       console.log({ error: e }, `Failed to process pool`);
@@ -156,84 +160,76 @@ export class NPTTrackProcess extends TrackProcess {
     console.log('Starting tracker process');
     this.initialized = true;
 
-    const runTimestamp = Math.floor(new Date().getTime() / 1000);
-    this.raydiumSubscriptionId = this.connection.onProgramAccountChange(
-      this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4,
-      async (updatedAccountInfo: KeyedAccountInfo) => {
-        const key = updatedAccountInfo.accountId.toString();
-        const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(updatedAccountInfo.accountInfo.data);
-        const poolOpenTime = parseInt(poolState.poolOpenTime.toString());
-        const existing = this.pools.has(key);
-        const newrunTimestamp = Math.floor(new Date().getTime() / 1000);
+    const sub = this.connection.onLogs(this.RAYDIUM_LIQUIDITY_PROGRAM_ID_V4,
+      async (logs: Logs, ctx: Context) => {
+        if (!logs.err){
+          for (let log of logs.logs){
+            if (log.includes('initialize2: InitializeInstruction2')) {
+              console.log(logs.signature);
+              
+              let pars;
+              for (let i = 0; i < 20; i++) {
+                  pars = await this.connection.getParsedTransaction(logs.signature, {commitment: 'confirmed', maxSupportedTransactionVersion: 2});
+                  if (!pars) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    continue;
+                  }
+                  else break;
+              }
+              let pool;
+              let market;
+              let arr = pars?.transaction.message.instructions!
+              let pump = false;
 
-        const poolOpenTimeReadable = new Date(poolOpenTime * 1000).toLocaleString();
-        const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
-        if (poolOpenTime > runTimestamp && !existing) {
-          this.pools.set(key, {
-            poolId: key,
-            baseMint: poolState.baseMint.toString(),
-            quoteMint: poolState.quoteMint.toString(),
-            tracked: false,
-          });
+              arr.forEach((ix) => {
+                if ('accounts' in ix && (ix as PartiallyDecodedInstruction).accounts.length !== 0) {
+                  //console.log(ix.accounts);
+                  pool = (ix as PartiallyDecodedInstruction).accounts[4];
+                  market = (ix as PartiallyDecodedInstruction).accounts[17];
+                  pump = (ix as PartiallyDecodedInstruction).accounts.some(
+                    (account) => account.toString() === '39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg'
+                  );
+                }
+              });
 
-          console.log(`Pool Detected Time: ${newrunTimestampReadable}`);
-          console.log(`Pool Open Time: ${poolOpenTimeReadable}`);
-          console.log(`New pool: ${key}`);
-          this.processRaydiumPool(updatedAccountInfo.accountId, poolState, this.settings.poolFilters);
+              const m = getMinimalMarketV3(this.connection, market!, 'processed')
+
+              let accinfo;
+              if (pool){
+                for (let i = 0; i < 20; i++) {
+                  accinfo = await this.connection.getAccountInfo(pool, 'processed');
+                  if (!accinfo) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    continue;
+                  }
+                  else break;
+                }
+              }
+              
+              const poolState = LIQUIDITY_STATE_LAYOUT_V4.decode(accinfo!.data);
+              const i = (poolState.baseMint.toString() === raydium.WSOL.mint) ? poolState.quoteMint : poolState.baseMint;
+              this.saveTokenAccount(i, await m);
+
+              this.pools.set(pool!, {
+                poolId: pool!.toString(),
+                baseMint: poolState.baseMint.toString(),
+                quoteMint: poolState.quoteMint.toString(),
+                tracked: false,
+              });
+
+              let state = new TokenState(poolState, this.settings.poolFilters, this.connection);
+              state.poolId = pool!;
+              state.init(pars?.meta!);
+              
+              this.processRaydiumPool(pool!, state, this.settings.poolFilters, pump);
+              break;
+          }
+          }
         }
-      },
-      {
-        commitment: 'processed',
-        encoding: 'base64',
-        filters: [
-          { dataSize: raydium.LIQUIDITY_STATE_LAYOUT_V4.span },
-          {
-            memcmp: {
-              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('quoteMint'),
-              bytes: raydium.Token.WSOL.mint.toBase58(),
-            },
-          },
-          {
-            memcmp: {
-              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('marketProgramId'),
-              bytes: this.OPENBOOK_PROGRAM_ID.toBase58(),
-            },
-          },
-          {
-            memcmp: {
-              offset: raydium.LIQUIDITY_STATE_LAYOUT_V4.offsetOf('status'),
-              bytes: bs58.encode([6, 0, 0, 0, 0, 0, 0, 0]),
-            },
-          },
-        ],
       }
-    );
-    console.log('subscription created');
+      ,'processed');
 
-    this.openBookSubscriptionId = this.connection.onProgramAccountChange(
-      this.OPENBOOK_PROGRAM_ID,
-      async (updatedAccountInfo) => {
-        const key = updatedAccountInfo.accountId.toString();
-        const existing = this.markets.has(key);
-        if (!existing) {
-          this.markets.add(key);
-          const _ = this.processOpenBookMarket(updatedAccountInfo);
-        }
-      },
-      {
-        commitment: 'processed',
-        encoding: 'base64',
-        filters: [
-          { dataSize: raydium.MARKET_STATE_LAYOUT_V3.span },
-          {
-            memcmp: {
-              offset: raydium.MARKET_STATE_LAYOUT_V3.offsetOf('quoteMint'),
-              bytes: raydium.Token.WSOL.mint.toBase58(),
-            },
-          },
-        ],
-      }
-    );
+    this.onLogSubscriptions.add(sub);
   }
 
   async stopProcess(): Promise<void> {
@@ -270,11 +266,11 @@ export class NPTTrackProcess extends TrackProcess {
           let state = new TokenState(poolState, ([] as unknown) as FilterList, this.connection);
           state.poolId = new PublicKey(p.poolId);
           const market = await getMinimalMarketV3(this.connection, poolState.marketId, `processed`);
-          this.saveTokenAccount(poolState.baseMint, market);
+          this.saveTokenAccount(state.tokenMint, market);
           const trade = new Trade(
             this,
             state,
-            p.baseMint,
+            state.tokenMint.toString(), 
             this.settings.buyAmountValue,
             this.settings.targetPercentage,
             this.settings.stopLossPercentage,
@@ -293,66 +289,82 @@ export class NPTTrackProcess extends TrackProcess {
 
   async createTrade(state: TokenState, mint: string, simulate: boolean): Promise<void> {
     let trade;
-    const balance = await getWSOLBalance(this.connection, this.wallet.publicKey);
-    const solBalance = await getSolanaBalance(this.connection, this.wallet.publicKey);
+    trade = new Trade(
+      this,
+      state,
+      mint,
+      this.settings.buyAmountValue,
+      this.settings.targetPercentage,
+      this.settings.stopLossPercentage,
+      this.wallet,
+      100,
+      simulate
+    );
+    this.trades.push(trade);
+    const newrunTimestamp = Math.floor(new Date().getTime() / 1000);
+    const newrunTimestampReadable = new Date(newrunTimestamp * 1000).toLocaleString();
+    console.log(`Trade Buy Initiated Time: ${newrunTimestampReadable}`);
+    trade.buy();
+    // const balance = await getWSOLBalance(this.connection, this.wallet.publicKey);
+    // const solBalance = await getSolanaBalance(this.connection, this.wallet.publicKey);
 
-    if (solBalance > 0.0002) {
-      if (this.settings.buyAmountType === 'Fixed') {
-        if (balance >= this.settings.buyAmountValue) {
-          trade = new Trade(
-            this,
-            state,
-            mint,
-            this.settings.buyAmountValue,
-            this.settings.targetPercentage,
-            this.settings.stopLossPercentage,
-            this.wallet,
-            100,
-            simulate
-          );
-        } else {
-          console.log('Insufficient  WSOL balance');
-        }
-      }
-      if (this.settings.buyAmountType === 'Dynamic') {
-        const amount = (this.settings.buyAmountValue / 100) * balance;
-        if (amount >= this.settings.buyAmountMinValue) {
-          if (balance >= amount)
-            trade = new Trade(
-              this,
-              state,
-              mint,
-              amount,
-              this.settings.targetPercentage,
-              this.settings.stopLossPercentage,
-              this.wallet,
-              100,
-              simulate
-            );
-          else console.log('Insufficient  WSOL balance');
-        } else {
-          if (balance >= this.settings.buyAmountMinValue)
-            trade = new Trade(
-              this,
-              state,
-              mint,
-              this.settings.buyAmountMinValue,
-              this.settings.targetPercentage,
-              this.settings.stopLossPercentage,
-              this.wallet,
-              100,
-              simulate
-            );
-          else console.log('Insufficient WSOL balance');
-        }
-      }
-      if (trade) {
-        this.trades.push(trade);
-        trade.buy();
-      }
-    } else {
-      console.log('Insufficient SOL balance');
-    }
+    // if (solBalance > 0.0002) {
+    //   if (this.settings.buyAmountType === 'Fixed') {
+    //     if (balance >= this.settings.buyAmountValue) {
+    //       trade = new Trade(
+    //         this,
+    //         state,
+    //         mint,
+    //         this.settings.buyAmountValue,
+    //         this.settings.targetPercentage,
+    //         this.settings.stopLossPercentage,
+    //         this.wallet,
+    //         100,
+    //         simulate
+    //       );
+    //     } else {
+    //       console.log('Insufficient  WSOL balance');
+    //     }
+    //   }
+    //   if (this.settings.buyAmountType === 'Dynamic') {
+    //     const amount = (this.settings.buyAmountValue / 100) * balance;
+    //     if (amount >= this.settings.buyAmountMinValue) {
+    //       if (balance >= amount)
+    //         trade = new Trade(
+    //           this,
+    //           state,
+    //           mint,
+    //           amount,
+    //           this.settings.targetPercentage,
+    //           this.settings.stopLossPercentage,
+    //           this.wallet,
+    //           100,
+    //           simulate
+    //         );
+    //       else console.log('Insufficient  WSOL balance');
+    //     } else {
+    //       if (balance >= this.settings.buyAmountMinValue)
+    //         trade = new Trade(
+    //           this,
+    //           state,
+    //           mint,
+    //           this.settings.buyAmountMinValue,
+    //           this.settings.targetPercentage,
+    //           this.settings.stopLossPercentage,
+    //           this.wallet,
+    //           100,
+    //           simulate
+    //         );
+    //       else console.log('Insufficient WSOL balance');
+    //     }
+    //   }
+    //   if (trade) {
+    //     this.trades.push(trade);
+    //     trade.buy();
+    //   }
+    // } else {
+    //   console.log('Insufficient SOL balance');
+    // }
   }
 
   gatherTradesUpdates() {

@@ -1,6 +1,6 @@
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { MinimalMarketLayoutV3, MinimalTokenAccountData } from '../helpers';
-import { FilterKey, FilterList, FilterValue, TokenState } from '../filters';
+import { FilterKey, FilterList, FilterValue, TokenState } from './dataCollectorFilters';
 import * as raydium from '@raydium-io/raydium-sdk';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { LiquidityStateV4 } from '@raydium-io/raydium-sdk';
